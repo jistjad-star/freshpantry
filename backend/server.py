@@ -283,6 +283,64 @@ async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ing
         logger.error(f"Error parsing ingredients with AI: {e}")
         return []
 
+def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook_time: str = "") -> List[str]:
+    """Suggest recipe categories based on ingredients and cooking time"""
+    categories = []
+    ingredient_names = [ing.get('name', '').lower() for ing in ingredients]
+    all_ingredients = ' '.join(ingredient_names)
+    
+    # Meat/fish detection
+    meat_keywords = ['chicken', 'beef', 'pork', 'lamb', 'bacon', 'sausage', 'ham', 'turkey', 'duck', 'meat', 'steak']
+    fish_keywords = ['fish', 'salmon', 'tuna', 'cod', 'shrimp', 'prawn', 'seafood', 'crab', 'lobster', 'anchov', 'mackerel', 'trout']
+    dairy_keywords = ['milk', 'cheese', 'cream', 'butter', 'yogurt', 'yoghurt']
+    egg_keywords = ['egg']
+    
+    has_meat = any(kw in all_ingredients for kw in meat_keywords)
+    has_fish = any(kw in all_ingredients for kw in fish_keywords)
+    has_dairy = any(kw in all_ingredients for kw in dairy_keywords)
+    has_egg = any(kw in all_ingredients for kw in egg_keywords)
+    
+    # Vegan: no meat, fish, dairy, eggs
+    if not has_meat and not has_fish and not has_dairy and not has_egg:
+        categories.append('vegan')
+        categories.append('vegetarian')
+    # Vegetarian: no meat, no fish
+    elif not has_meat and not has_fish:
+        categories.append('vegetarian')
+    # Pescatarian: has fish but no meat
+    elif has_fish and not has_meat:
+        categories.append('pescatarian')
+    
+    # Quick & Easy: based on cooking time
+    def parse_time_minutes(time_str: str) -> int:
+        if not time_str:
+            return 0
+        time_str = time_str.lower()
+        minutes = 0
+        if 'min' in time_str:
+            try:
+                minutes = int(''.join(filter(str.isdigit, time_str.split('min')[0])))
+            except:
+                pass
+        if 'hour' in time_str or 'hr' in time_str:
+            try:
+                hours = int(''.join(filter(str.isdigit, time_str.split('hour')[0].split('hr')[0])))
+                minutes += hours * 60
+            except:
+                pass
+        return minutes
+    
+    total_time = parse_time_minutes(prep_time) + parse_time_minutes(cook_time)
+    if total_time > 0 and total_time <= 30:
+        categories.append('quick-easy')
+    
+    # Low-fat detection (no cream, no butter, no fried)
+    high_fat_keywords = ['cream', 'butter', 'fried', 'oil', 'lard', 'bacon']
+    if not any(kw in all_ingredients for kw in high_fat_keywords):
+        categories.append('low-fat')
+    
+    return categories
+
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
     """Generate an AI image for a recipe"""
     if not EMERGENT_LLM_KEY:
