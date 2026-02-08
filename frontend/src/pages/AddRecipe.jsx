@@ -875,7 +875,7 @@ export default function AddRecipe() {
                     <Select value={newIngredient.category} onValueChange={(value) => setNewIngredient(prev => ({ ...prev, category: value }))}>
                       <SelectTrigger className="fresh-input"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-white">
-                        {CATEGORIES.map(cat => (<SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>))}
+                        {INGREDIENT_CATEGORIES.map(cat => (<SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
