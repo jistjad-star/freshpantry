@@ -37,6 +37,7 @@ export default function AddRecipe() {
   const [loading, setLoading] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const fileInputRef = useRef(null);
+  const instructionsFileInputRef = useRef(null);
   
   // Image upload state
   const [imageFile, setImageFile] = useState(null);
@@ -45,6 +46,14 @@ export default function AddRecipe() {
   const [imageIngredients, setImageIngredients] = useState([]);
   const [imageRawText, setImageRawText] = useState("");
   const [isImageParsed, setIsImageParsed] = useState(false);
+  
+  // Instructions image upload state
+  const [instructionsImageFile, setInstructionsImageFile] = useState(null);
+  const [instructionsImagePreview, setInstructionsImagePreview] = useState(null);
+  const [imageInstructions, setImageInstructions] = useState([]);
+  const [instructionsRawText, setInstructionsRawText] = useState("");
+  const [isInstructionsParsed, setIsInstructionsParsed] = useState(false);
+  const [instructionsLoading, setInstructionsLoading] = useState(false);
   
   // Paste form state
   const [pasteName, setPasteName] = useState("");
