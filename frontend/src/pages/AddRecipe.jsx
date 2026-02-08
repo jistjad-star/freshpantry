@@ -54,6 +54,8 @@ export default function AddRecipe() {
   const [instructionsRawText, setInstructionsRawText] = useState("");
   const [isInstructionsParsed, setIsInstructionsParsed] = useState(false);
   const [instructionsLoading, setInstructionsLoading] = useState(false);
+  const [imagePrepTime, setImagePrepTime] = useState("");
+  const [imageCookTime, setImageCookTime] = useState("");
   
   // Paste form state
   const [pasteName, setPasteName] = useState("");
