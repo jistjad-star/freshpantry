@@ -282,7 +282,7 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         return "", []
     
     try:
-        # Use GPT-4o for vision (gpt-5.2 may not support vision)
+        # Use GPT-5.1 for vision (recommended vision model)
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"image-parse-{uuid.uuid4()}",
@@ -301,12 +301,15 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
             Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
             
             Return ONLY valid JSON, no markdown code blocks."""
-        ).with_model("openai", "gpt-4o")
+        ).with_model("openai", "gpt-5.1")
         
-        # Create message with image using proper format
+        # Create image content using ImageContent class for base64 encoded images
+        image_content = ImageContent(image_base64=image_base64)
+        
+        # Create message with image attachment using file_contents
         user_message = UserMessage(
             text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units.",
-            image_url=f"data:image/png;base64,{image_base64}"
+            file_contents=[image_content]
         )
         
         response = await chat.send_message(user_message)
