@@ -3,7 +3,15 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Configure axios to send cookies
+axios.defaults.withCredentials = true;
+
 export const api = {
+  // Auth
+  createSession: (sessionId) => axios.post(`${API}/auth/session`, { session_id: sessionId }),
+  getMe: () => axios.get(`${API}/auth/me`),
+  logout: () => axios.post(`${API}/auth/logout`),
+
   // Recipes
   getRecipes: () => axios.get(`${API}/recipes`),
   getRecipe: (id) => axios.get(`${API}/recipes/${id}`),
@@ -18,6 +26,15 @@ export const api = {
       ingredients_text: ingredientsText,
       instructions_text: instructionsText
     }),
+  
+  // Parse image (for screenshot feature)
+  parseImage: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axios.post(`${API}/parse-image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
 
   // Shopping List
   getShoppingList: () => axios.get(`${API}/shopping-list`),
