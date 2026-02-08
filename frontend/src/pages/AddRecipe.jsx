@@ -548,21 +548,20 @@ export default function AddRecipe() {
                       <p className="text-sm text-stone-400">Upload multiple images - PNG, JPG up to 10MB each</p>
                     </div>
                   )}
-                  )}
 
                   <Button
                     onClick={handleImageParse}
-                    disabled={loading || !imageFile}
+                    disabled={loading || imageFiles.length === 0}
                     className="btn-primary w-full py-6"
                     data-testid="parse-image-btn"
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                      <><Sparkles className="w-5 h-5 mr-2" />Extract Ingredients</>
+                      <><Sparkles className="w-5 h-5 mr-2" />Extract Ingredients {imageFiles.length > 0 && `(${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''})`}</>
                     )}
                   </Button>
-                  {!imageFile && (
+                  {imageFiles.length === 0 && (
                     <p className="text-sm text-stone-500 text-center mt-2" data-testid="upload-helper-text">
-                      👆 Upload an image above to enable extraction
+                      👆 Upload images above to enable extraction
                     </p>
                   )}
                 </div>
