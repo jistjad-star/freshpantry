@@ -74,8 +74,8 @@ export const api = {
   addFromShopping: () => axios.post(`${API}/pantry/add-from-shopping`),
 
   // Meal Suggestions
-  getMealSuggestions: () => axios.get(`${API}/suggestions/meals`),
-  generateAIRecipe: () => axios.post(`${API}/suggestions/generate-recipe`),
+  getMealSuggestions: (mealType = null) => axios.get(`${API}/suggestions/meals`, { params: mealType ? { meal_type: mealType } : {} }),
+  generateAIRecipe: (mealType = null) => axios.post(`${API}/suggestions/generate-recipe`, { meal_type: mealType }),
 };
 
 export default api;
