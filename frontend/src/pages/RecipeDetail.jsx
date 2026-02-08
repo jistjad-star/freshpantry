@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus, Pencil, X, Check, Leaf, Fish, Salad, Zap, Heart, Calendar, Edit, ChevronDown } from "lucide-react";
+import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus, Pencil, X, Check, Leaf, Fish, Salad, Zap, Heart, Calendar, Edit, ChevronDown, Star, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -17,6 +18,36 @@ const ALL_CATEGORIES = [
   { value: "quick-easy", label: "Quick & Easy", icon: Zap, color: "bg-amber-100 text-amber-700 border-amber-200" },
 ];
 
+// Star Rating Component
+const StarRating = ({ rating, onRate, size = "md", interactive = false }) => {
+  const [hovered, setHovered] = useState(0);
+  const sizeClass = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-6 h-6" : "w-5 h-5";
+  
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button
+          key={star}
+          type="button"
+          disabled={!interactive}
+          onClick={() => interactive && onRate?.(star)}
+          onMouseEnter={() => interactive && setHovered(star)}
+          onMouseLeave={() => interactive && setHovered(0)}
+          className={interactive ? "cursor-pointer" : "cursor-default"}
+        >
+          <Star 
+            className={`${sizeClass} ${
+              star <= (hovered || rating) 
+                ? 'text-amber-400 fill-amber-400' 
+                : 'text-stone-300'
+            } transition-colors`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
+
 export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,6 +61,14 @@ export default function RecipeDetail() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [savingCategories, setSavingCategories] = useState(false);
   const [addingToPlanner, setAddingToPlanner] = useState(false);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(0);
+  const [newComment, setNewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   // Get current week start (Monday)
   const getWeekStart = () => {
