@@ -1001,8 +1001,8 @@ async def parse_instructions_image(file: UploadFile = File(...)):
 # ---- Meal Suggestions Route ----
 
 @api_router.get("/suggestions/meals")
-async def get_meal_suggestions(request: Request):
-    """Get meal suggestions based on pantry inventory"""
+async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None):
+    """Get meal suggestions based on pantry inventory, optionally filtered by meal type"""
     user_id = await get_user_id_or_none(request)
     
     # Get pantry items
@@ -1012,17 +1012,38 @@ async def get_meal_suggestions(request: Request):
     if not pantry or not pantry.get('items'):
         return {"suggestions": [], "message": "Add items to your pantry first!"}
     
-    # Get recipes
+    # Get recipes, optionally filtered by meal type
     recipe_query = {"user_id": user_id} if user_id else {}
+    if meal_type and meal_type in ["breakfast", "lunch", "dinner", "snack"]:
+        recipe_query["meal_type"] = meal_type
+    
     recipes = await db.recipes.find(recipe_query, {"_id": 0}).to_list(100)
     
+    # If no recipes with that meal type, try to infer from name/categories
+    if not recipes and meal_type:
+        all_recipes = await db.recipes.find({"user_id": user_id} if user_id else {}, {"_id": 0}).to_list(100)
+        # Filter by keywords in name
+        meal_keywords = {
+            "breakfast": ["breakfast", "pancake", "egg", "omelette", "toast", "porridge", "cereal", "smoothie", "muffin"],
+            "lunch": ["lunch", "sandwich", "salad", "soup", "wrap", "bowl"],
+            "dinner": ["dinner", "roast", "steak", "curry", "pasta", "stir fry", "casserole", "pie"],
+            "snack": ["snack", "cookie", "cake", "bar", "dip", "nuts", "fruit"]
+        }
+        keywords = meal_keywords.get(meal_type, [])
+        recipes = [
+            r for r in all_recipes 
+            if any(kw in r.get('name', '').lower() for kw in keywords)
+        ]
+    
     if not recipes:
-        return {"suggestions": [], "message": "Add some recipes first!"}
+        meal_label = meal_type.title() if meal_type else "any"
+        return {"suggestions": [], "message": f"No {meal_label} recipes found. Add some recipes first!"}
     
     # Get AI suggestions
     suggestions = await suggest_meals_from_pantry(pantry['items'], recipes)
     
-    return {"suggestions": suggestions, "message": f"Found {len(suggestions)} recipes you can make!"}
+    meal_label = f"{meal_type} " if meal_type else ""
+    return {"suggestions": suggestions, "message": f"Found {len(suggestions)} {meal_label}recipes you can make!"}
 
 @api_router.get("/recipes/grouped")
 async def get_recipes_grouped_by_ingredients(request: Request):
