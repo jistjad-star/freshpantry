@@ -1187,13 +1187,23 @@ async def import_recipe(import_data: RecipeImport, request: Request):
     return recipe
 
 @api_router.get("/recipes", response_model=List[Recipe])
-async def get_recipes(request: Request):
+async def get_recipes(request: Request, sort_by: Optional[str] = None):
     """Get all recipes (for logged in user or all if not logged in)"""
     user_id = await get_user_id_or_none(request)
     
     # If user is logged in, show their recipes. Otherwise show all (backward compat)
     query = {"user_id": user_id} if user_id else {}
-    recipes = await db.recipes.find(query, {"_id": 0}).to_list(1000)
+    
+    # Determine sort order
+    if sort_by == "popularity":
+        # Sort by average_rating descending, then by review_count descending
+        cursor = db.recipes.find(query, {"_id": 0}).sort([("average_rating", -1), ("review_count", -1)])
+    elif sort_by == "newest":
+        cursor = db.recipes.find(query, {"_id": 0}).sort("created_at", -1)
+    else:
+        cursor = db.recipes.find(query, {"_id": 0})
+    
+    recipes = await cursor.to_list(1000)
     
     for recipe in recipes:
         if isinstance(recipe.get('created_at'), str):
