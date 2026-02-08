@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles } from "lucide-react";
+import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -14,12 +14,14 @@ export default function RecipeDetail() {
   const [generating, setGenerating] = useState(false);
   const [cooking, setCooking] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [servings, setServings] = useState(null);
 
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         const response = await api.getRecipe(id);
         setRecipe(response.data);
+        setServings(response.data.servings || 2);
       } catch (error) {
         toast.error("Recipe not found");
         navigate("/recipes");
