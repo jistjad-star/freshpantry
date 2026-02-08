@@ -673,9 +673,9 @@ export default function AddRecipe() {
               <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
                 <ClipboardPaste className="w-5 h-5 text-[#4A7C59] mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-[#1A2E1A]">Paste from Green Chef</p>
+                  <p className="text-sm font-medium text-[#1A2E1A]">Paste Ingredients</p>
                   <p className="text-sm text-stone-500 mt-1">
-                    Copy ingredients from your Green Chef recipe and paste them here.
+                    Copy and paste your ingredient list and we'll parse it automatically.
                   </p>
                 </div>
               </div>
