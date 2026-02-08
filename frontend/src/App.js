@@ -6,6 +6,7 @@ import Dashboard from "@/pages/Dashboard";
 import AddRecipe from "@/pages/AddRecipe";
 import RecipeLibrary from "@/pages/RecipeLibrary";
 import RecipeDetail from "@/pages/RecipeDetail";
+import EditRecipe from "@/pages/EditRecipe";
 import WeeklyPlanner from "@/pages/WeeklyPlanner";
 import ShoppingList from "@/pages/ShoppingList";
 import Pantry from "@/pages/Pantry";
@@ -31,6 +32,7 @@ function AppRouter() {
         <Route path="add-recipe" element={<AddRecipe />} />
         <Route path="recipes" element={<RecipeLibrary />} />
         <Route path="recipes/:id" element={<RecipeDetail />} />
+        <Route path="recipes/:id/edit" element={<EditRecipe />} />
         <Route path="planner" element={<WeeklyPlanner />} />
         <Route path="weekly-planner" element={<WeeklyPlanner />} />
         <Route path="shopping-list" element={<ShoppingList />} />
