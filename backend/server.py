@@ -373,11 +373,11 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         logger.error(f"Error extracting from image: {e}", exc_info=True)
         return "", []
 
-async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str]]:
+async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str]:
     """Use AI vision to extract cooking instructions from an image"""
     if not EMERGENT_LLM_KEY:
         logger.warning("No EMERGENT_LLM_KEY found")
-        return "", []
+        return "", [], "", ""
     
     try:
         chat = LlmChat(
@@ -385,21 +385,26 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
             session_id=f"instructions-parse-{uuid.uuid4()}",
             system_message="""You are a helpful assistant that extracts cooking instructions from images.
             Look carefully at the image and extract ALL cooking steps/instructions.
+            Also estimate the prep time and cook time based on the steps.
             
             Return as JSON with format:
             {
                 "raw_text": "all the instruction text you can see",
-                "instructions": ["Step 1 text", "Step 2 text", "Step 3 text", ...]
+                "instructions": ["Step 1 text", "Step 2 text", "Step 3 text", ...],
+                "prep_time": "estimated prep time (e.g., '15 min', '20 min')",
+                "cook_time": "estimated cook time (e.g., '30 min', '45 min')"
             }
             
             Each instruction should be a complete step. Remove step numbers from the text.
+            Estimate prep_time based on chopping, mixing, preparation steps.
+            Estimate cook_time based on baking, cooking, simmering steps.
             Return ONLY valid JSON, no markdown code blocks."""
         ).with_model("openai", "gpt-5.1")
         
         image_content = ImageContent(image_base64=image_base64)
         
         user_message = UserMessage(
-            text="Extract all cooking instructions from this recipe image. List every step in order.",
+            text="Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time.",
             file_contents=[image_content]
         )
         
@@ -427,19 +432,98 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
                 data = json.loads(clean_response[start:end])
             else:
                 logger.error(f"Could not parse JSON from instructions response: {clean_response}")
-                return "", []
+                return "", [], "", ""
         
         raw_text = data.get("raw_text", "")
         instructions = data.get("instructions", [])
+        prep_time = data.get("prep_time", "")
+        cook_time = data.get("cook_time", "")
         
         # Ensure all instructions are strings
         instructions = [str(inst) for inst in instructions if inst]
         
-        logger.info(f"Extracted {len(instructions)} instructions from image")
-        return raw_text, instructions
+        logger.info(f"Extracted {len(instructions)} instructions from image, prep: {prep_time}, cook: {cook_time}")
+        return raw_text, instructions, prep_time, cook_time
     except Exception as e:
         logger.error(f"Error extracting instructions from image: {e}", exc_info=True)
-        return "", []
+        return "", [], "", ""
+
+async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict]) -> List[dict]:
+    """Use AI to suggest meals based on available pantry ingredients"""
+    if not EMERGENT_LLM_KEY or not pantry_items or not recipes:
+        return []
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"meal-suggest-{uuid.uuid4()}",
+            system_message="""You are a helpful meal planning assistant.
+            Given a list of pantry items and available recipes, suggest which recipes can be made.
+            Consider partial matches - a recipe is still good if most ingredients are available.
+            
+            Return as JSON array with format:
+            [
+                {
+                    "recipe_id": "the recipe id",
+                    "recipe_name": "recipe name",
+                    "match_percentage": 85,
+                    "available_ingredients": ["ingredient1", "ingredient2"],
+                    "missing_ingredients": ["ingredient3"],
+                    "recommendation": "Great choice! Only missing one item."
+                }
+            ]
+            
+            Sort by match_percentage descending. Include all recipes with at least 50% match.
+            Return ONLY valid JSON, no markdown code blocks."""
+        ).with_model("openai", "gpt-5.2")
+        
+        # Format pantry items
+        pantry_text = "\n".join([f"- {item.get('name', '')} ({item.get('quantity', '')} {item.get('unit', '')})" for item in pantry_items])
+        
+        # Format recipes
+        recipes_text = ""
+        for r in recipes:
+            ing_list = ", ".join([ing.get('name', '') for ing in r.get('ingredients', [])])
+            recipes_text += f"\nRecipe ID: {r.get('id')}\nName: {r.get('name')}\nIngredients: {ing_list}\n"
+        
+        user_message = UserMessage(
+            text=f"""My pantry has:
+{pantry_text}
+
+Available recipes:
+{recipes_text}
+
+Which recipes can I make with what I have? Suggest the best matches."""
+        )
+        
+        response = await chat.send_message(user_message)
+        
+        import json
+        clean_response = response.strip()
+        
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
+        clean_response = clean_response.strip()
+        
+        try:
+            suggestions = json.loads(clean_response)
+        except json.JSONDecodeError:
+            start = clean_response.find("[")
+            end = clean_response.rfind("]") + 1
+            if start >= 0 and end > start:
+                suggestions = json.loads(clean_response[start:end])
+            else:
+                return []
+        
+        return suggestions
+    except Exception as e:
+        logger.error(f"Error suggesting meals: {e}", exc_info=True)
+        return []
 
 async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
     """Use AI to consolidate similar ingredients"""
