@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from bs4 import BeautifulSoup
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 import base64
 import re
 
