@@ -531,7 +531,9 @@ async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict
 Available recipes:
 {recipes_text}
 
-Which recipes can I make with what I have? Suggest the best matches."""
+Suggest ALL recipes, even if missing several ingredients. Include recipes with at least 20% match.
+Clearly list what ingredients are missing for each recipe.
+Sort by match percentage (highest first)."""
         )
         
         response = await chat.send_message(user_message)
