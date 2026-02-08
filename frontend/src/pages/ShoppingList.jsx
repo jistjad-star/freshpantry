@@ -133,6 +133,13 @@ export default function ShoppingList() {
 
   const groupByCategory = (items) => items.reduce((acc, item) => { const cat = item.category || 'other'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {});
 
+  // Get estimated price for an item from costEstimate
+  const getItemPrice = (itemName) => {
+    if (!costEstimate?.items) return null;
+    const found = costEstimate.items.find(e => e.name.toLowerCase() === itemName.toLowerCase());
+    return found ? found.estimated_price : null;
+  };
+
   const totalItems = shoppingList?.items?.length || 0;
   const checkedItems = shoppingList?.items?.filter(i => i.checked).length || 0;
   const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0;
