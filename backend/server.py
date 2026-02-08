@@ -1099,6 +1099,28 @@ async def get_recipe(recipe_id: str):
         recipe['created_at'] = datetime.fromisoformat(recipe['created_at'])
     return recipe
 
+@api_router.post("/recipes/{recipe_id}/generate-image")
+async def generate_image_for_recipe(recipe_id: str):
+    """Generate an AI image for an existing recipe"""
+    recipe = await db.recipes.find_one({"id": recipe_id}, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Generate image
+    ingredients = recipe.get('ingredients', [])
+    image_url = await generate_recipe_image(recipe['name'], ingredients)
+    
+    if not image_url:
+        raise HTTPException(status_code=500, detail="Failed to generate image")
+    
+    # Update recipe with new image
+    await db.recipes.update_one(
+        {"id": recipe_id},
+        {"$set": {"image_url": image_url}}
+    )
+    
+    return {"image_url": image_url, "message": "Image generated successfully!"}
+
 @api_router.delete("/recipes/{recipe_id}")
 async def delete_recipe(recipe_id: str, request: Request):
     """Delete a recipe"""
