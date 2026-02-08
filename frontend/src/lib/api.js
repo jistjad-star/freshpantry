@@ -10,6 +10,14 @@ export const api = {
   createRecipe: (data) => axios.post(`${API}/recipes`, data),
   importRecipe: (url) => axios.post(`${API}/recipes/import`, { url }),
   deleteRecipe: (id) => axios.delete(`${API}/recipes/${id}`),
+  
+  // Parse ingredients (for paste feature)
+  parseIngredients: (recipeName, ingredientsText, instructionsText = "") => 
+    axios.post(`${API}/parse-ingredients`, { 
+      recipe_name: recipeName, 
+      ingredients_text: ingredientsText,
+      instructions_text: instructionsText
+    }),
 
   // Shopping List
   getShoppingList: () => axios.get(`${API}/shopping-list`),
