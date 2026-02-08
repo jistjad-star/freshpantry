@@ -140,27 +140,40 @@ export default function AddRecipe() {
   };
 
   const handleInstructionsParse = async () => {
-    if (!instructionsImageFile) {
-      toast.error("Please select an instructions image first");
+    if (instructionsImageFiles.length === 0) {
+      toast.error("Please select at least one instructions image");
       return;
     }
 
     setInstructionsLoading(true);
     try {
-      const response = await api.parseInstructionsImage(instructionsImageFile);
-      setInstructionsRawText(response.data.instructions_text || "");
-      setImageInstructions(response.data.instructions || []);
-      setImagePrepTime(response.data.prep_time || "");
-      setImageCookTime(response.data.cook_time || "");
+      let allInstructions = [];
+      let prepTime = "";
+      let cookTime = "";
+      let rawTexts = [];
+
+      // Parse each image and merge results
+      for (const file of instructionsImageFiles) {
+        const response = await api.parseInstructionsImage(file);
+        rawTexts.push(response.data.instructions_text || "");
+        allInstructions = [...allInstructions, ...(response.data.instructions || [])];
+        if (!prepTime && response.data.prep_time) prepTime = response.data.prep_time;
+        if (!cookTime && response.data.cook_time) cookTime = response.data.cook_time;
+      }
+
+      setInstructionsRawText(rawTexts.join("\n\n---\n\n"));
+      setImageInstructions(allInstructions);
+      setImagePrepTime(prepTime);
+      setImageCookTime(cookTime);
       setIsInstructionsParsed(true);
       
-      if (response.data.instructions?.length > 0) {
-        const timeInfo = response.data.prep_time || response.data.cook_time 
-          ? ` (Prep: ${response.data.prep_time || 'N/A'}, Cook: ${response.data.cook_time || 'N/A'})`
+      if (allInstructions.length > 0) {
+        const timeInfo = prepTime || cookTime 
+          ? ` (Prep: ${prepTime || 'N/A'}, Cook: ${cookTime || 'N/A'})`
           : '';
-        toast.success(`Extracted ${response.data.instructions.length} steps!${timeInfo}`);
+        toast.success(`Extracted ${allInstructions.length} steps from ${instructionsImageFiles.length} image(s)!${timeInfo}`);
       } else {
-        toast.warning("No instructions found. Try a clearer image.");
+        toast.warning("No instructions found. Try clearer images.");
       }
     } catch (error) {
       console.error("Instructions parse error:", error);
@@ -175,8 +188,8 @@ export default function AddRecipe() {
   };
 
   const handleImageParse = async () => {
-    if (!imageFile) {
-      toast.error("Please select an image first");
+    if (imageFiles.length === 0) {
+      toast.error("Please select at least one image");
       return;
     }
     if (!imageName.trim()) {
@@ -186,15 +199,31 @@ export default function AddRecipe() {
 
     setLoading(true);
     try {
-      const response = await api.parseImage(imageFile);
-      setImageRawText(response.data.ingredients_text || "");
-      setImageIngredients(response.data.ingredients || []);
+      let allIngredients = [];
+      let rawTexts = [];
+
+      // Parse each image and merge results
+      for (const file of imageFiles) {
+        const response = await api.parseImage(file);
+        rawTexts.push(response.data.ingredients_text || "");
+        allIngredients = [...allIngredients, ...(response.data.ingredients || [])];
+      }
+
+      // Remove duplicate ingredients by name
+      const uniqueIngredients = allIngredients.reduce((acc, ing) => {
+        const existing = acc.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+        if (!existing) acc.push(ing);
+        return acc;
+      }, []);
+
+      setImageRawText(rawTexts.join("\n\n---\n\n"));
+      setImageIngredients(uniqueIngredients);
       setIsImageParsed(true);
       
-      if (response.data.ingredients?.length > 0) {
-        toast.success(`Extracted ${response.data.ingredients.length} ingredients!`);
+      if (uniqueIngredients.length > 0) {
+        toast.success(`Extracted ${uniqueIngredients.length} ingredients from ${imageFiles.length} image(s)!`);
       } else {
-        toast.warning("No ingredients found. Try a clearer image or use paste instead.");
+        toast.warning("No ingredients found. Try clearer images or use paste instead.");
       }
     } catch (error) {
       console.error("Image parse error:", error);
