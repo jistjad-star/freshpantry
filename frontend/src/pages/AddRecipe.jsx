@@ -55,6 +55,7 @@ export default function AddRecipe() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageName, setImageName] = useState("");
+  const [imageServings, setImageServings] = useState(2);
   const [imageIngredients, setImageIngredients] = useState([]);
   const [imageRawText, setImageRawText] = useState("");
   const [isImageParsed, setIsImageParsed] = useState(false);
@@ -71,6 +72,7 @@ export default function AddRecipe() {
   
   // Paste form state
   const [pasteName, setPasteName] = useState("");
+  const [pasteServings, setPasteServings] = useState(2);
   const [pasteIngredients, setPasteIngredients] = useState("");
   const [pasteInstructions, setPasteInstructions] = useState("");
   const [parsedIngredients, setParsedIngredients] = useState([]);
