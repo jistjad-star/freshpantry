@@ -921,6 +921,64 @@ async def get_meal_suggestions(request: Request):
     
     return {"suggestions": suggestions, "message": f"Found {len(suggestions)} recipes you can make!"}
 
+@api_router.get("/recipes/grouped")
+async def get_recipes_grouped_by_ingredients(request: Request):
+    """Get recipes grouped by shared ingredients"""
+    user_id = await get_user_id_or_none(request)
+    
+    recipe_query = {"user_id": user_id} if user_id else {}
+    recipes = await db.recipes.find(recipe_query, {"_id": 0}).to_list(100)
+    
+    if not recipes:
+        return {"groups": [], "message": "Add some recipes first!"}
+    
+    # Build ingredient -> recipes mapping
+    ingredient_to_recipes = {}
+    for recipe in recipes:
+        for ing in recipe.get('ingredients', []):
+            ing_name = normalize_ingredient_name(ing.get('name', ''))
+            if ing_name:
+                if ing_name not in ingredient_to_recipes:
+                    ingredient_to_recipes[ing_name] = []
+                ingredient_to_recipes[ing_name].append({
+                    'id': recipe['id'],
+                    'name': recipe['name']
+                })
+    
+    # Find shared ingredients (appear in 2+ recipes)
+    shared_ingredients = {
+        ing: recipes_list 
+        for ing, recipes_list in ingredient_to_recipes.items() 
+        if len(recipes_list) >= 2
+    }
+    
+    # Sort by number of recipes sharing the ingredient
+    sorted_shared = sorted(
+        shared_ingredients.items(), 
+        key=lambda x: len(x[1]), 
+        reverse=True
+    )[:20]  # Top 20 shared ingredients
+    
+    # Build recipe groups
+    groups = []
+    seen_recipe_pairs = set()
+    
+    for ing_name, recipe_list in sorted_shared:
+        recipe_ids = tuple(sorted([r['id'] for r in recipe_list]))
+        if recipe_ids not in seen_recipe_pairs:
+            seen_recipe_pairs.add(recipe_ids)
+            groups.append({
+                'shared_ingredient': ing_name.title(),
+                'recipes': recipe_list,
+                'count': len(recipe_list)
+            })
+    
+    return {
+        "groups": groups[:10],  # Top 10 groups
+        "total_recipes": len(recipes),
+        "message": f"Found {len(groups)} ingredient groups across {len(recipes)} recipes"
+    }
+
 # ---- Recipe Routes ----
 
 @api_router.post("/recipes", response_model=Recipe)
