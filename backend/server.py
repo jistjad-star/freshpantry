@@ -1932,31 +1932,33 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
         meal_context = meal_contexts.get(meal_type, "")
     
     try:
+        system_msg = """You are a creative chef that generates delicious recipes.
+Given a list of available ingredients, create a complete recipe that uses primarily those ingredients.
+You can suggest 1-2 common pantry staples that might be missing.
+""" + meal_context + """
+
+Return as JSON with format:
+{
+    "name": "Recipe Name",
+    "description": "Brief appetizing description",
+    "servings": 4,
+    "prep_time": "15 min",
+    "cook_time": "30 min",
+    "ingredients": [
+        {"name": "ingredient", "quantity": "2", "unit": "cups", "category": "produce", "from_pantry": true}
+    ],
+    "instructions": ["Step 1", "Step 2", ...],
+    "missing_ingredients": ["any item not in pantry but needed"],
+    "categories": ["vegan", "quick-easy"]
+}
+
+Categories can be: vegan, vegetarian, pescatarian, low-fat, quick-easy
+Return ONLY valid JSON, no markdown."""
+        
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"recipe-gen-{uuid.uuid4()}",
-            system_message=f"""You are a creative chef that generates delicious recipes.
-            Given a list of available ingredients, create a complete recipe that uses primarily those ingredients.
-            You can suggest 1-2 common pantry staples that might be missing.
-            {meal_context}
-            
-            Return as JSON with format:
-            {{
-                "name": "Recipe Name",
-                "description": "Brief appetizing description",
-                "servings": 4,
-                "prep_time": "15 min",
-                "cook_time": "30 min",
-                "ingredients": [
-                    {"name": "ingredient", "quantity": "2", "unit": "cups", "category": "produce", "from_pantry": true}
-                ],
-                "instructions": ["Step 1", "Step 2", ...],
-                "missing_ingredients": ["any item not in pantry but needed"],
-                "categories": ["vegan", "quick-easy"]
-            }
-            
-            Categories can be: vegan, vegetarian, pescatarian, low-fat, quick-easy
-            Return ONLY valid JSON, no markdown."""
+            system_message=system_msg
         ).with_model("openai", "gpt-5.2")
         
         # Format pantry items
