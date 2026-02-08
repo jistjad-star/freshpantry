@@ -9,6 +9,7 @@ import RecipeDetail from "@/pages/RecipeDetail";
 import WeeklyPlanner from "@/pages/WeeklyPlanner";
 import ShoppingList from "@/pages/ShoppingList";
 import Pantry from "@/pages/Pantry";
+import MealSuggestions from "@/pages/MealSuggestions";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
 import Layout from "@/components/Layout";
@@ -30,9 +31,11 @@ function AppRouter() {
         <Route path="add-recipe" element={<AddRecipe />} />
         <Route path="recipes" element={<RecipeLibrary />} />
         <Route path="recipes/:id" element={<RecipeDetail />} />
+        <Route path="planner" element={<WeeklyPlanner />} />
         <Route path="weekly-planner" element={<WeeklyPlanner />} />
         <Route path="shopping-list" element={<ShoppingList />} />
         <Route path="pantry" element={<Pantry />} />
+        <Route path="suggestions" element={<MealSuggestions />} />
       </Route>
     </Routes>
   );
