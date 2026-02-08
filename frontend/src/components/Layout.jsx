@@ -5,8 +5,20 @@ import {
   Calendar, 
   ShoppingCart, 
   PlusCircle,
-  Home
+  Home,
+  LogIn,
+  LogOut,
+  User
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/AuthContext";
 
 const navItems = [
   { path: "/", icon: Home, label: "Dashboard" },
@@ -18,6 +30,7 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation();
+  const { user, loading, login, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col">
@@ -57,13 +70,65 @@ export default function Layout() {
                   >
                     <item.icon className="w-4 h-4" />
                     <span>{item.label}</span>
-                    {isActive && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#39ff14]" />
-                    )}
                   </NavLink>
                 );
               })}
             </nav>
+
+            {/* User Menu */}
+            <div className="flex items-center gap-3">
+              {!loading && (
+                user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="flex items-center gap-2 text-zinc-400 hover:text-white"
+                        data-testid="user-menu-btn"
+                      >
+                        {user.picture ? (
+                          <img 
+                            src={user.picture} 
+                            alt={user.name} 
+                            className="w-8 h-8 rounded-full"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#39ff14]/20 flex items-center justify-center">
+                            <User className="w-4 h-4 text-[#39ff14]" />
+                          </div>
+                        )}
+                        <span className="hidden sm:inline text-sm">{user.name?.split(' ')[0]}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-zinc-900 border-zinc-800" align="end">
+                      <div className="px-3 py-2">
+                        <p className="text-sm font-medium text-white">{user.name}</p>
+                        <p className="text-xs text-zinc-500">{user.email}</p>
+                      </div>
+                      <DropdownMenuSeparator className="bg-zinc-800" />
+                      <DropdownMenuItem 
+                        onClick={logout}
+                        className="text-red-400 hover:text-red-300 hover:bg-zinc-800 cursor-pointer"
+                        data-testid="logout-btn"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    onClick={login}
+                    variant="outline"
+                    className="border-[#39ff14]/50 text-[#39ff14] hover:bg-[#39ff14]/10"
+                    data-testid="login-btn"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
+                )
+              )}
+            </div>
           </div>
         </div>
       </header>
