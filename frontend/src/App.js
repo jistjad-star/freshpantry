@@ -8,6 +8,7 @@ import RecipeLibrary from "@/pages/RecipeLibrary";
 import RecipeDetail from "@/pages/RecipeDetail";
 import WeeklyPlanner from "@/pages/WeeklyPlanner";
 import ShoppingList from "@/pages/ShoppingList";
+import Pantry from "@/pages/Pantry";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
 import Layout from "@/components/Layout";
@@ -31,6 +32,7 @@ function AppRouter() {
         <Route path="recipes/:id" element={<RecipeDetail />} />
         <Route path="weekly-planner" element={<WeeklyPlanner />} />
         <Route path="shopping-list" element={<ShoppingList />} />
+        <Route path="pantry" element={<Pantry />} />
       </Route>
     </Routes>
   );
@@ -38,13 +40,13 @@ function AppRouter() {
 
 function App() {
   return (
-    <div className="App min-h-screen bg-[#050505] noise-overlay">
+    <div className="App min-h-screen bg-[#FAFAF9]">
       <AuthProvider>
         <BrowserRouter>
           <AppRouter />
         </BrowserRouter>
       </AuthProvider>
-      <Toaster position="bottom-right" theme="dark" />
+      <Toaster position="bottom-right" />
     </div>
   );
 }
