@@ -50,7 +50,7 @@ export default function WeeklyPlanner() {
       for (const recipeId of suggestedIds) {
         const day = DAYS[dayIndex % 7];
         if (!newPlan[day]) newPlan[day] = [];
-        newPlan[day].push({ recipeId, servings: 2 });
+        newPlan[day].push(recipeId);
         dayIndex++;
       }
       
