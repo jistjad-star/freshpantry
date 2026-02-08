@@ -778,7 +778,7 @@ export default function AddRecipe() {
                 <div>
                   <p className="text-sm font-medium text-[#1A2E1A]">URL Import</p>
                   <p className="text-sm text-stone-500 mt-1">
-                    Works with public recipe pages. For Green Chef, use Paste instead.
+                    Works with public recipe pages. For private recipes, use Screenshot or Paste instead.
                   </p>
                 </div>
               </div>
