@@ -69,10 +69,10 @@ export default function RecipeLibrary() {
   return (
     <div className="min-h-screen py-8" data-testid="recipe-library-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Recipes</h1>
-            <p className="text-stone-500">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
+            <p className="text-stone-500">{filteredRecipes.length} of {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -81,7 +81,7 @@ export default function RecipeLibrary() {
               className={viewMode === "grouped" ? "btn-secondary" : "border-stone-200"}
             >
               <Layers className="w-4 h-4 mr-2" />
-              {viewMode === "grouped" ? "Show All" : "Group by Ingredients"}
+              {viewMode === "grouped" ? "Show All" : "By Ingredient"}
             </Button>
             <Link to="/add-recipe">
               <Button className="btn-primary" data-testid="add-new-recipe-btn">
@@ -91,7 +91,37 @@ export default function RecipeLibrary() {
           </div>
         </div>
 
-        <div className="relative mb-8">
+        {/* Category Filters */}
+        {allCategories.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                !selectedCategory ? 'bg-[#4A7C59] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              All
+            </button>
+            {allCategories.map(cat => {
+              const config = CATEGORY_CONFIG[cat] || { label: cat, color: 'bg-stone-100 text-stone-600' };
+              const Icon = config.icon;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    selectedCategory === cat ? config.color + ' ring-2 ring-offset-1' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  {Icon && <Icon className="w-3.5 h-3.5" />}
+                  {config.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
           <Input placeholder="Search recipes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 fresh-input h-12" data-testid="search-recipes-input" />
         </div>
