@@ -64,9 +64,10 @@ export default function MealSuggestions() {
     setGeneratingRecipe(true);
     setGeneratedRecipe(null);
     try {
-      const response = await api.generateAIRecipe();
+      const response = await api.generateAIRecipe(mealTypeFilter !== "all" ? mealTypeFilter : null);
       setGeneratedRecipe(response.data.recipe);
-      toast.success("Recipe generated from your pantry!");
+      const mealLabel = mealTypeFilter !== "all" ? `${mealTypeFilter} ` : "";
+      toast.success(`${mealLabel.charAt(0).toUpperCase() + mealLabel.slice(1)}recipe generated from your pantry!`);
     } catch (error) {
       console.error("Error generating recipe:", error);
       if (error.response?.data?.detail?.includes("pantry")) {
