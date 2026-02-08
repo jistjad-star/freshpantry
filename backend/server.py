@@ -125,6 +125,47 @@ class WeeklyPlanCreate(BaseModel):
     week_start: str
     days: List[WeeklyPlanDay]
 
+# ============== PANTRY/INVENTORY MODELS ==============
+
+class PantryItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    quantity: float
+    unit: str
+    category: str = "other"
+    min_threshold: float = 0  # Alert when below this
+    typical_purchase: float = 0  # Suggested buy amount
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expiry_date: Optional[str] = None
+
+class Pantry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
+    items: List[PantryItem] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PantryItemCreate(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+    category: str = "other"
+    min_threshold: float = 0
+    typical_purchase: float = 0
+    expiry_date: Optional[str] = None
+
+class PantryItemUpdate(BaseModel):
+    quantity: Optional[float] = None
+    min_threshold: Optional[float] = None
+    typical_purchase: Optional[float] = None
+    expiry_date: Optional[str] = None
+
+class CookRecipeRequest(BaseModel):
+    recipe_id: str
+    servings_multiplier: float = 1.0
+
 class ParseIngredientsRequest(BaseModel):
     recipe_name: str
     ingredients_text: str
