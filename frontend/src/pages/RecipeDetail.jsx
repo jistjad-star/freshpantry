@@ -29,6 +29,60 @@ export default function RecipeDetail() {
   const [editingCategories, setEditingCategories] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [savingCategories, setSavingCategories] = useState(false);
+  const [addingToPlanner, setAddingToPlanner] = useState(false);
+
+  // Get current week start (Monday)
+  const getWeekStart = () => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff)).toISOString().split('T')[0];
+  };
+
+  const handleAddToPlanner = async (day) => {
+    setAddingToPlanner(true);
+    try {
+      const weekStart = getWeekStart();
+      // Get current plan
+      const planRes = await api.getWeeklyPlan(weekStart);
+      const currentPlan = planRes.data?.days || [];
+      
+      // Build updated plan
+      const planMap = {};
+      currentPlan.forEach(d => { planMap[d.day] = d.recipe_ids || []; });
+      
+      // Add recipe to selected day
+      if (!planMap[day]) planMap[day] = [];
+      
+      // Check if already added
+      if (planMap[day].includes(id)) {
+        toast.info(`Recipe already on ${day}`);
+        setAddingToPlanner(false);
+        return;
+      }
+      
+      // Check total meals (max 7)
+      const totalMeals = Object.values(planMap).flat().length;
+      if (totalMeals >= 7) {
+        toast.error("Weekly plan is full (max 7 meals). Remove one first.");
+        setAddingToPlanner(false);
+        return;
+      }
+      
+      planMap[day].push(id);
+      
+      // Save plan
+      const days = DAYS.map(d => ({ day: d, recipe_ids: planMap[d] || [] }));
+      await api.saveWeeklyPlan({ week_start: weekStart, days });
+      
+      toast.success(`Added to ${day}!`);
+    } catch (error) {
+      console.error("Error adding to planner:", error);
+      toast.error("Failed to add to planner");
+    } finally {
+      setAddingToPlanner(false);
+    }
+  };
 
   useEffect(() => {
     const fetchRecipe = async () => {
