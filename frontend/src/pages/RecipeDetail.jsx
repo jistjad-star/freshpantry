@@ -205,8 +205,47 @@ export default function RecipeDetail() {
               <div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold text-[#1A2E1A] mb-3">{recipe.name}</h1>
                 {recipe.description && <p className="text-stone-600 mb-4 max-w-2xl">{recipe.description}</p>}
+                
+                {/* Category badges */}
+                {recipe.categories?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {recipe.categories.map(cat => (
+                      <span key={cat} className="px-3 py-1 rounded-full text-xs font-medium bg-[#4A7C59]/10 text-[#4A7C59]">
+                        {cat.replace('-', ' ')}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                
                 <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2 text-stone-500"><Users className="w-4 h-4" /><span>{recipe.servings} servings</span></div>
+                  {/* Servings Adjuster */}
+                  <div className="flex items-center gap-2 bg-stone-50 rounded-lg px-3 py-1.5 border border-stone-200">
+                    <Users className="w-4 h-4 text-stone-500" />
+                    <button 
+                      onClick={() => setServings(Math.max(1, servings - 1))}
+                      className="w-6 h-6 rounded-full bg-stone-200 hover:bg-stone-300 flex items-center justify-center text-stone-600 transition-colors"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="font-medium text-[#1A2E1A] min-w-[60px] text-center">
+                      {servings} {servings === 1 ? 'serving' : 'servings'}
+                    </span>
+                    <button 
+                      onClick={() => setServings(Math.min(20, servings + 1))}
+                      className="w-6 h-6 rounded-full bg-[#4A7C59] hover:bg-[#3A6C49] flex items-center justify-center text-white transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    {servings !== originalServings && (
+                      <button 
+                        onClick={() => setServings(originalServings)}
+                        className="text-xs text-[#4A7C59] hover:underline ml-1"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  
                   {recipe.prep_time && <div className="flex items-center gap-2 text-stone-500"><Clock className="w-4 h-4" /><span>Prep: {recipe.prep_time}</span></div>}
                   {recipe.cook_time && <div className="flex items-center gap-2 text-stone-500"><Clock className="w-4 h-4" /><span>Cook: {recipe.cook_time}</span></div>}
                   {recipe.source_url && <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#4A7C59] hover:underline"><ExternalLink className="w-4 h-4" /><span>Source</span></a>}
