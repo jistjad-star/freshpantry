@@ -19,6 +19,7 @@ export const api = {
   createRecipe: (data) => axios.post(`${API}/recipes`, data),
   importRecipe: (url) => axios.post(`${API}/recipes/import`, { url }),
   deleteRecipe: (id) => axios.delete(`${API}/recipes/${id}`),
+  generateRecipeImage: (id) => axios.post(`${API}/recipes/${id}/generate-image`),
   
   // Parse ingredients
   parseIngredients: (recipeName, ingredientsText, instructionsText = "") => 
