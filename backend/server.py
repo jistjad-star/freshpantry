@@ -345,14 +345,24 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         raw_text = data.get("raw_text", "")
         ingredients_data = data.get("ingredients", [])
         
-        # Ensure all required fields exist
+        # Ensure all required fields exist and handle null values
         ingredients = []
         for ing in ingredients_data:
+            # Handle null/None values by converting to empty strings
+            name = ing.get("name") or "Unknown"
+            quantity = ing.get("quantity")
+            unit = ing.get("unit")
+            category = ing.get("category") or "other"
+            
+            # Convert None to empty string for quantity and unit
+            quantity_str = str(quantity) if quantity is not None else ""
+            unit_str = str(unit) if unit is not None else ""
+            
             ingredients.append(Ingredient(
-                name=ing.get("name", "Unknown"),
-                quantity=str(ing.get("quantity", "")),
-                unit=ing.get("unit", ""),
-                category=ing.get("category", "other")
+                name=name,
+                quantity=quantity_str,
+                unit=unit_str,
+                category=category
             ))
         
         logger.info(f"Extracted {len(ingredients)} ingredients from image")
