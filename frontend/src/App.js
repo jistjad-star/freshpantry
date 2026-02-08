@@ -1,52 +1,30 @@
-import { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import { Toaster } from "@/components/ui/sonner";
+import Dashboard from "@/pages/Dashboard";
+import AddRecipe from "@/pages/AddRecipe";
+import RecipeLibrary from "@/pages/RecipeLibrary";
+import RecipeDetail from "@/pages/RecipeDetail";
+import WeeklyPlanner from "@/pages/WeeklyPlanner";
+import ShoppingList from "@/pages/ShoppingList";
+import Layout from "@/components/Layout";
 
 function App() {
   return (
-    <div className="App">
+    <div className="App min-h-screen bg-[#050505] noise-overlay">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="add-recipe" element={<AddRecipe />} />
+            <Route path="recipes" element={<RecipeLibrary />} />
+            <Route path="recipes/:id" element={<RecipeDetail />} />
+            <Route path="weekly-planner" element={<WeeklyPlanner />} />
+            <Route path="shopping-list" element={<ShoppingList />} />
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster position="bottom-right" theme="dark" />
     </div>
   );
 }
