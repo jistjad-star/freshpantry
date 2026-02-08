@@ -3,15 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { 
   PlusCircle, 
   Link as LinkIcon, 
-  Sparkles,
   Loader2,
   Trash2,
   Plus,
   ClipboardPaste,
-  Wand2,
   Camera,
   Upload,
-  Image as ImageIcon
+  Sparkles,
+  Leaf
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,10 +103,15 @@ export default function AddRecipe() {
       setImageRawText(response.data.ingredients_text || "");
       setImageIngredients(response.data.ingredients || []);
       setIsImageParsed(true);
-      toast.success(`Extracted ${response.data.ingredients?.length || 0} ingredients!`);
+      
+      if (response.data.ingredients?.length > 0) {
+        toast.success(`Extracted ${response.data.ingredients.length} ingredients!`);
+      } else {
+        toast.warning("No ingredients found. Try a clearer image or use paste instead.");
+      }
     } catch (error) {
       console.error("Image parse error:", error);
-      toast.error("Failed to extract ingredients from image. Try a clearer photo.");
+      toast.error("Failed to extract ingredients. Try paste instead.");
     } finally {
       setLoading(false);
     }
@@ -133,7 +137,7 @@ export default function AddRecipe() {
       };
       
       const response = await api.createRecipe(recipeData);
-      toast.success("Recipe saved successfully!");
+      toast.success("Recipe saved!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error("Save error:", error);
@@ -156,17 +160,16 @@ export default function AddRecipe() {
     setLoading(true);
     try {
       const response = await api.importRecipe(importUrl);
-      toast.success("Recipe imported successfully!");
+      toast.success("Recipe imported!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error("Import error:", error);
-      toast.error(error.response?.data?.detail || "Failed to import recipe. Try paste or manual entry.");
+      toast.error("Failed to import. Try paste instead.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Parse pasted ingredients with AI
   const handleParseIngredients = async () => {
     if (!pasteName.trim()) {
       toast.error("Please enter a recipe name");
@@ -186,13 +189,12 @@ export default function AddRecipe() {
       toast.success(`Parsed ${response.data.ingredients?.length || 0} ingredients!`);
     } catch (error) {
       console.error("Parse error:", error);
-      toast.error("Failed to parse ingredients. Please try again.");
+      toast.error("Failed to parse ingredients");
     } finally {
       setLoading(false);
     }
   };
 
-  // Save parsed recipe
   const handleSaveParsedRecipe = async () => {
     if (!pasteName.trim()) {
       toast.error("Recipe name is required");
@@ -213,7 +215,7 @@ export default function AddRecipe() {
       };
       
       const response = await api.createRecipe(recipeData);
-      toast.success("Recipe saved successfully!");
+      toast.success("Recipe saved!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error("Save error:", error);
@@ -223,12 +225,10 @@ export default function AddRecipe() {
     }
   };
 
-  // Remove parsed ingredient
   const removeParsedIngredient = (index) => {
     setParsedIngredients(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Remove parsed instruction
   const removeParsedInstruction = (index) => {
     setParsedInstructions(prev => prev.filter((_, i) => i !== index));
   };
@@ -281,7 +281,7 @@ export default function AddRecipe() {
     setLoading(true);
     try {
       const response = await api.createRecipe(recipe);
-      toast.success("Recipe created successfully!");
+      toast.success("Recipe created!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error("Create error:", error);
@@ -307,20 +307,20 @@ export default function AddRecipe() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-white mb-2">
-            Add New Recipe
+          <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">
+            Add Recipe
           </h1>
-          <p className="text-zinc-500">
-            Upload a screenshot, paste ingredients, or create manually
+          <p className="text-stone-500">
+            Screenshot, paste, or enter manually
           </p>
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="image" className="space-y-8">
-          <TabsList className="glass-card p-1 w-full grid grid-cols-2 md:grid-cols-4">
+        <Tabs defaultValue="paste" className="space-y-8">
+          <TabsList className="fresh-card-static p-1 w-full grid grid-cols-2 md:grid-cols-4 h-auto">
             <TabsTrigger 
-              value="image" 
-              className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
+              value="screenshot" 
+              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
               data-testid="tab-image"
             >
               <Camera className="w-4 h-4 mr-2" />
@@ -328,23 +328,23 @@ export default function AddRecipe() {
             </TabsTrigger>
             <TabsTrigger 
               value="paste" 
-              className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
+              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
               data-testid="tab-paste"
             >
               <ClipboardPaste className="w-4 h-4 mr-2" />
-              Paste Text
+              Paste
             </TabsTrigger>
             <TabsTrigger 
               value="import" 
-              className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
+              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
               data-testid="tab-import"
             >
               <LinkIcon className="w-4 h-4 mr-2" />
-              Import URL
+              URL
             </TabsTrigger>
             <TabsTrigger 
               value="manual"
-              className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
+              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
               data-testid="tab-manual"
             >
               <PlusCircle className="w-4 h-4 mr-2" />
@@ -352,16 +352,15 @@ export default function AddRecipe() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Image/Screenshot Tab - NEW */}
-          <TabsContent value="image" className="animate-fade-in-up">
-            <div className="glass-card p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#FFB7E3]/5 border border-[#FFB7E3]/20">
-                <Camera className="w-5 h-5 text-[#FFB7E3] mt-0.5" />
+          {/* Screenshot Tab */}
+          <TabsContent value="screenshot" className="animate-fade-in-up">
+            <div className="fresh-card-static p-8 space-y-6">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
+                <Camera className="w-5 h-5 text-[#4A7C59] mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-white">Screenshot Magic</p>
-                  <p className="text-sm text-zinc-400 mt-1">
-                    Take a screenshot of your Green Chef recipe ingredients and upload it here.
-                    Our AI will extract and categorize everything automatically!
+                  <p className="text-sm font-medium text-[#1A2E1A]">Screenshot Upload</p>
+                  <p className="text-sm text-stone-500 mt-1">
+                    Take a screenshot of your recipe ingredients and our AI will extract them.
                   </p>
                 </div>
               </div>
@@ -369,156 +368,108 @@ export default function AddRecipe() {
               {!isImageParsed ? (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="image-name" className="text-white">Recipe Name *</Label>
+                    <Label className="text-[#1A2E1A]">Recipe Name *</Label>
                     <Input
-                      id="image-name"
                       placeholder="e.g., Honey Garlic Chicken"
                       value={imageName}
                       onChange={(e) => setImageName(e.target.value)}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
+                      className="fresh-input"
                       data-testid="image-recipe-name"
                     />
                   </div>
 
-                  {/* Image Upload Area */}
-                  <div className="space-y-2">
-                    <Label className="text-white">Upload Screenshot *</Label>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageSelect}
-                      accept="image/*"
-                      className="hidden"
-                      data-testid="image-file-input"
-                    />
-                    
-                    {!imagePreview ? (
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-zinc-700 rounded-xl p-12 text-center cursor-pointer hover:border-[#39ff14]/50 transition-colors"
-                        data-testid="image-upload-area"
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  
+                  {!imagePreview ? (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-stone-300 rounded-2xl p-12 text-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
+                      data-testid="image-upload-area"
+                    >
+                      <Upload className="w-12 h-12 text-stone-400 mx-auto mb-4" />
+                      <p className="text-stone-600 mb-2">Click to upload screenshot</p>
+                      <p className="text-sm text-stone-400">PNG, JPG up to 10MB</p>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <img 
+                        src={imagePreview} 
+                        alt="Recipe screenshot" 
+                        className="w-full max-h-80 object-contain rounded-xl bg-stone-100"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        className="absolute top-2 right-2 bg-white"
                       >
-                        <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                        <p className="text-zinc-400 mb-2">Click to upload or drag and drop</p>
-                        <p className="text-sm text-zinc-600">PNG, JPG, WEBP up to 10MB</p>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <img 
-                          src={imagePreview} 
-                          alt="Recipe screenshot" 
-                          className="w-full max-h-80 object-contain rounded-xl bg-zinc-900"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                          }}
-                          className="absolute top-2 right-2 bg-black/50 border-zinc-700 text-white hover:bg-black/70"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
 
                   <Button
                     onClick={handleImageParse}
                     disabled={loading || !imageFile}
-                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
+                    className="btn-primary w-full py-6"
                     data-testid="parse-image-btn"
                   >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Wand2 className="w-5 h-5 mr-2" />
-                        Extract Ingredients with AI
-                      </>
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                      <><Sparkles className="w-5 h-5 mr-2" />Extract Ingredients</>
                     )}
                   </Button>
                 </div>
               ) : (
-                // Parsed Image Results
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-xl font-bold text-white">
-                      {imageName}
-                    </h3>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsImageParsed(false);
-                        setImageIngredients([]);
-                      }}
-                      className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
-                    >
+                    <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{imageName}</h3>
+                    <Button variant="outline" onClick={() => { setIsImageParsed(false); setImageIngredients([]); }}>
                       Try Again
                     </Button>
                   </div>
 
                   {imageRawText && (
-                    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
-                      <p className="text-xs text-zinc-500 mb-2">Extracted text:</p>
-                      <p className="text-sm text-zinc-400 whitespace-pre-wrap">{imageRawText}</p>
+                    <div className="p-4 rounded-xl bg-stone-50 border border-stone-200">
+                      <p className="text-xs text-stone-500 mb-2">Extracted text:</p>
+                      <p className="text-sm text-stone-600 whitespace-pre-wrap">{imageRawText}</p>
                     </div>
                   )}
 
-                  {/* Parsed Ingredients */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+                    <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">
                       Ingredients ({imageIngredients.length})
                     </h4>
                     {imageIngredients.length > 0 ? (
                       <div className="space-y-2">
                         {imageIngredients.map((ing, index) => (
-                          <div 
-                            key={index}
-                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
-                          >
+                          <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
                             <div className="flex items-center gap-3">
                               <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>
                                 {ing.category}
                               </span>
-                              <span className="text-white">
-                                <span className="text-[#39ff14] font-medium">
-                                  {ing.quantity} {ing.unit}
-                                </span>
-                                {" "}{ing.name}
+                              <span className="text-[#1A2E1A]">
+                                <span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
                               </span>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeImageIngredient(index)}
-                              className="text-zinc-500 hover:text-red-500"
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => removeImageIngredient(index)} className="text-stone-400 hover:text-[#E07A5F]">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-zinc-500 text-sm">No ingredients extracted. Try a clearer image.</p>
+                      <p className="text-stone-500 text-sm">No ingredients extracted. Try a clearer image.</p>
                     )}
                   </div>
 
-                  <Button
-                    onClick={handleSaveImageRecipe}
-                    disabled={loading || imageIngredients.length === 0}
-                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
-                    data-testid="save-image-recipe-btn"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Save Recipe
-                      </>
-                    )}
+                  <Button onClick={handleSaveImageRecipe} disabled={loading || imageIngredients.length === 0} className="btn-primary w-full py-6" data-testid="save-image-recipe-btn">
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Leaf className="w-5 h-5 mr-2" />Save Recipe</>)}
                   </Button>
                 </div>
               )}
@@ -527,236 +478,132 @@ export default function AddRecipe() {
 
           {/* Paste Tab */}
           <TabsContent value="paste" className="animate-fade-in-up">
-            <div className="glass-card p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#39ff14]/5 border border-[#39ff14]/20">
-                <Wand2 className="w-5 h-5 text-[#39ff14] mt-0.5" />
+            <div className="fresh-card-static p-8 space-y-6">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
+                <ClipboardPaste className="w-5 h-5 text-[#4A7C59] mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-white">Copy & Paste from Green Chef</p>
-                  <p className="text-sm text-zinc-400 mt-1">
-                    1. Log into your Green Chef account<br/>
-                    2. Open any recipe and copy the ingredient list<br/>
-                    3. Paste it below and our AI will parse & categorize everything!
+                  <p className="text-sm font-medium text-[#1A2E1A]">Paste from Green Chef</p>
+                  <p className="text-sm text-stone-500 mt-1">
+                    Copy ingredients from your Green Chef recipe and paste them here.
                   </p>
                 </div>
               </div>
 
               {!isParsed ? (
-                // Input Form
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="paste-name" className="text-white">Recipe Name *</Label>
+                    <Label className="text-[#1A2E1A]">Recipe Name *</Label>
                     <Input
-                      id="paste-name"
                       placeholder="e.g., Honey Garlic Chicken"
                       value={pasteName}
                       onChange={(e) => setPasteName(e.target.value)}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
+                      className="fresh-input"
                       data-testid="paste-recipe-name"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="paste-ingredients" className="text-white">
-                      Paste Ingredients *
-                    </Label>
+                    <Label className="text-[#1A2E1A]">Paste Ingredients *</Label>
                     <Textarea
-                      id="paste-ingredients"
-                      placeholder="Paste your ingredient list here...
-
-Example:
-2 Chicken Breasts
+                      placeholder="2 Chicken Breasts
 1 tbsp Olive Oil
-3 cloves Garlic, minced
-2 tbsp Honey
-1/4 cup Soy Sauce
-1 cup Jasmine Rice"
+3 cloves Garlic
+2 tbsp Honey..."
                       value={pasteIngredients}
                       onChange={(e) => setPasteIngredients(e.target.value)}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white min-h-[200px] font-mono text-sm"
+                      className="fresh-input min-h-[200px] font-mono text-sm"
                       data-testid="paste-ingredients-input"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="paste-instructions" className="text-white">
-                      Paste Instructions (optional)
-                    </Label>
+                    <Label className="text-[#1A2E1A]">Instructions (optional)</Label>
                     <Textarea
-                      id="paste-instructions"
-                      placeholder="Paste cooking instructions here (optional)..."
+                      placeholder="Paste cooking instructions..."
                       value={pasteInstructions}
                       onChange={(e) => setPasteInstructions(e.target.value)}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white min-h-[120px] font-mono text-sm"
-                      data-testid="paste-instructions-input"
+                      className="fresh-input min-h-[120px] font-mono text-sm"
                     />
                   </div>
 
-                  <Button
-                    onClick={handleParseIngredients}
-                    disabled={loading}
-                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
-                    data-testid="parse-btn"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Parse with AI Magic
-                      </>
-                    )}
+                  <Button onClick={handleParseIngredients} disabled={loading} className="btn-primary w-full py-6" data-testid="parse-btn">
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Sparkles className="w-5 h-5 mr-2" />Parse Ingredients</>)}
                   </Button>
                 </div>
               ) : (
-                // Parsed Results
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-xl font-bold text-white">
-                      {pasteName}
-                    </h3>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsParsed(false);
-                        setParsedIngredients([]);
-                        setParsedInstructions([]);
-                      }}
-                      className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
-                      data-testid="edit-paste-btn"
-                    >
+                    <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{pasteName}</h3>
+                    <Button variant="outline" onClick={() => { setIsParsed(false); setParsedIngredients([]); setParsedInstructions([]); }}>
                       Edit
                     </Button>
                   </div>
 
-                  {/* Parsed Ingredients */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
-                      Ingredients ({parsedIngredients.length})
-                    </h4>
-                    {parsedIngredients.length > 0 ? (
-                      <div className="space-y-2">
-                        {parsedIngredients.map((ing, index) => (
-                          <div 
-                            key={index}
-                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
-                            data-testid={`parsed-ingredient-${index}`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>
-                                {ing.category}
-                              </span>
-                              <span className="text-white">
-                                <span className="text-[#39ff14] font-medium">
-                                  {ing.quantity} {ing.unit}
-                                </span>
-                                {" "}{ing.name}
-                              </span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeParsedIngredient(index)}
-                              className="text-zinc-500 hover:text-red-500"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
+                    <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">Ingredients ({parsedIngredients.length})</h4>
+                    {parsedIngredients.map((ing, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
+                        <div className="flex items-center gap-3">
+                          <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>{ing.category}</span>
+                          <span className="text-[#1A2E1A]">
+                            <span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
+                          </span>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => removeParsedIngredient(index)} className="text-stone-400 hover:text-[#E07A5F]">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                    ) : (
-                      <p className="text-zinc-500 text-sm">No ingredients parsed</p>
-                    )}
+                    ))}
                   </div>
 
-                  {/* Parsed Instructions */}
                   {parsedInstructions.length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
-                        Instructions ({parsedInstructions.length} steps)
-                      </h4>
-                      <div className="space-y-2">
-                        {parsedInstructions.map((step, index) => (
-                          <div 
-                            key={index}
-                            className="flex items-start gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
-                          >
-                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#39ff14]/10 text-[#39ff14] flex items-center justify-center text-sm font-bold">
-                              {index + 1}
-                            </span>
-                            <p className="text-white flex-1 pt-0.5">{step}</p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeParsedInstruction(index)}
-                              className="text-zinc-500 hover:text-red-500"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                      <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">Instructions ({parsedInstructions.length})</h4>
+                      {parsedInstructions.map((step, index) => (
+                        <div key={index} className="flex items-start gap-4 p-3 rounded-xl bg-stone-50 border border-stone-200">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-sm font-bold">{index + 1}</span>
+                          <p className="text-[#1A2E1A] flex-1 pt-0.5">{step}</p>
+                          <Button variant="ghost" size="sm" onClick={() => removeParsedInstruction(index)} className="text-stone-400 hover:text-[#E07A5F]">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  <Button
-                    onClick={handleSaveParsedRecipe}
-                    disabled={loading || parsedIngredients.length === 0}
-                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
-                    data-testid="save-parsed-recipe-btn"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Save Recipe
-                      </>
-                    )}
+                  <Button onClick={handleSaveParsedRecipe} disabled={loading || parsedIngredients.length === 0} className="btn-primary w-full py-6">
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Leaf className="w-5 h-5 mr-2" />Save Recipe</>)}
                   </Button>
                 </div>
               )}
             </div>
           </TabsContent>
 
-          {/* Import Tab */}
+          {/* Import URL Tab */}
           <TabsContent value="import" className="animate-fade-in-up">
-            <div className="glass-card p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#9D00FF]/5 border border-[#9D00FF]/20">
-                <LinkIcon className="w-5 h-5 text-[#9D00FF] mt-0.5" />
+            <div className="fresh-card-static p-8 space-y-6">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-stone-100 border border-stone-200">
+                <LinkIcon className="w-5 h-5 text-stone-600 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-white">URL Import</p>
-                  <p className="text-sm text-zinc-400 mt-1">
-                    Paste a public recipe URL. Works best with sites that have 
-                    structured recipe data. For Green Chef, use Screenshot or Paste tabs.
+                  <p className="text-sm font-medium text-[#1A2E1A]">URL Import</p>
+                  <p className="text-sm text-stone-500 mt-1">
+                    Works with public recipe pages. For Green Chef, use Paste instead.
                   </p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <Label htmlFor="import-url" className="text-white">Recipe URL</Label>
+                <Label className="text-[#1A2E1A]">Recipe URL</Label>
                 <div className="flex gap-3">
                   <Input
-                    id="import-url"
-                    placeholder="https://www.example.com/recipe/..."
+                    placeholder="https://example.com/recipe/..."
                     value={importUrl}
                     onChange={(e) => setImportUrl(e.target.value)}
-                    className="flex-1 bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
+                    className="flex-1 fresh-input"
                     data-testid="import-url-input"
                   />
-                  <Button
-                    onClick={handleImportUrl}
-                    disabled={loading}
-                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712]"
-                    data-testid="import-btn"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        Import
-                      </>
-                    )}
+                  <Button onClick={handleImportUrl} disabled={loading} className="btn-primary" data-testid="import-btn">
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Sparkles className="w-4 h-4 mr-2" />Import</>)}
                   </Button>
                 </div>
               </div>
@@ -766,161 +613,85 @@ Example:
           {/* Manual Entry Tab */}
           <TabsContent value="manual" className="animate-fade-in-up">
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Basic Info */}
-              <div className="glass-card p-8 space-y-6">
-                <h2 className="font-display text-xl font-bold text-white">Basic Information</h2>
+              <div className="fresh-card-static p-8 space-y-6">
+                <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">Basic Info</h2>
                 
                 <div className="grid gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-white">Recipe Name *</Label>
+                    <Label className="text-[#1A2E1A]">Recipe Name *</Label>
                     <Input
-                      id="name"
                       placeholder="e.g., Honey Garlic Chicken"
                       value={recipe.name}
                       onChange={(e) => setRecipe(prev => ({ ...prev, name: e.target.value }))}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
+                      className="fresh-input"
                       data-testid="recipe-name-input"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-white">Description</Label>
+                    <Label className="text-[#1A2E1A]">Description</Label>
                     <Textarea
-                      id="description"
-                      placeholder="A brief description of your recipe..."
+                      placeholder="Brief description..."
                       value={recipe.description}
                       onChange={(e) => setRecipe(prev => ({ ...prev, description: e.target.value }))}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white min-h-[100px]"
-                      data-testid="recipe-description-input"
+                      className="fresh-input min-h-[100px]"
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="servings" className="text-white">Servings</Label>
-                      <Input
-                        id="servings"
-                        type="number"
-                        min="1"
-                        value={recipe.servings}
-                        onChange={(e) => setRecipe(prev => ({ ...prev, servings: parseInt(e.target.value) || 2 }))}
-                        className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                        data-testid="recipe-servings-input"
-                      />
+                      <Label className="text-[#1A2E1A]">Servings</Label>
+                      <Input type="number" min="1" value={recipe.servings} onChange={(e) => setRecipe(prev => ({ ...prev, servings: parseInt(e.target.value) || 2 }))} className="fresh-input" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="prep_time" className="text-white">Prep Time</Label>
-                      <Input
-                        id="prep_time"
-                        placeholder="15 min"
-                        value={recipe.prep_time}
-                        onChange={(e) => setRecipe(prev => ({ ...prev, prep_time: e.target.value }))}
-                        className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                        data-testid="recipe-prep-time-input"
-                      />
+                      <Label className="text-[#1A2E1A]">Prep Time</Label>
+                      <Input placeholder="15 min" value={recipe.prep_time} onChange={(e) => setRecipe(prev => ({ ...prev, prep_time: e.target.value }))} className="fresh-input" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cook_time" className="text-white">Cook Time</Label>
-                      <Input
-                        id="cook_time"
-                        placeholder="30 min"
-                        value={recipe.cook_time}
-                        onChange={(e) => setRecipe(prev => ({ ...prev, cook_time: e.target.value }))}
-                        className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                        data-testid="recipe-cook-time-input"
-                      />
+                      <Label className="text-[#1A2E1A]">Cook Time</Label>
+                      <Input placeholder="30 min" value={recipe.cook_time} onChange={(e) => setRecipe(prev => ({ ...prev, cook_time: e.target.value }))} className="fresh-input" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Ingredients */}
-              <div className="glass-card p-8 space-y-6">
-                <h2 className="font-display text-xl font-bold text-white">Ingredients</h2>
+              <div className="fresh-card-static p-8 space-y-6">
+                <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">Ingredients</h2>
                 
-                {/* Add Ingredient Form */}
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3">
-                    <Input
-                      placeholder="Qty"
-                      value={newIngredient.quantity}
-                      onChange={(e) => setNewIngredient(prev => ({ ...prev, quantity: e.target.value }))}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                      data-testid="ingredient-qty-input"
-                    />
+                    <Input placeholder="Qty" value={newIngredient.quantity} onChange={(e) => setNewIngredient(prev => ({ ...prev, quantity: e.target.value }))} className="fresh-input" />
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      placeholder="Unit"
-                      value={newIngredient.unit}
-                      onChange={(e) => setNewIngredient(prev => ({ ...prev, unit: e.target.value }))}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                      data-testid="ingredient-unit-input"
-                    />
+                    <Input placeholder="Unit" value={newIngredient.unit} onChange={(e) => setNewIngredient(prev => ({ ...prev, unit: e.target.value }))} className="fresh-input" />
                   </div>
                   <div className="col-span-3">
-                    <Input
-                      placeholder="Ingredient name"
-                      value={newIngredient.name}
-                      onChange={(e) => setNewIngredient(prev => ({ ...prev, name: e.target.value }))}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                      data-testid="ingredient-name-input"
-                    />
+                    <Input placeholder="Ingredient" value={newIngredient.name} onChange={(e) => setNewIngredient(prev => ({ ...prev, name: e.target.value }))} className="fresh-input" />
                   </div>
                   <div className="col-span-3">
-                    <Select
-                      value={newIngredient.category}
-                      onValueChange={(value) => setNewIngredient(prev => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger className="bg-zinc-900 border-zinc-800 text-white" data-testid="ingredient-category-select">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800">
-                        {CATEGORIES.map(cat => (
-                          <SelectItem key={cat.value} value={cat.value} className="text-white hover:bg-zinc-800">
-                            {cat.label}
-                          </SelectItem>
-                        ))}
+                    <Select value={newIngredient.category} onValueChange={(value) => setNewIngredient(prev => ({ ...prev, category: value }))}>
+                      <SelectTrigger className="fresh-input"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-white">
+                        {CATEGORIES.map(cat => (<SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="col-span-1">
-                    <Button
-                      type="button"
-                      onClick={addIngredient}
-                      className="w-full bg-[#39ff14]/10 text-[#39ff14] hover:bg-[#39ff14]/20 border-0"
-                      data-testid="add-ingredient-btn"
-                    >
+                    <Button type="button" onClick={addIngredient} className="w-full h-full btn-secondary">
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Ingredients List */}
                 {recipe.ingredients.length > 0 && (
                   <div className="space-y-2">
                     {recipe.ingredients.map((ing, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
-                        data-testid={`ingredient-item-${index}`}
-                      >
+                      <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
                         <div className="flex items-center gap-3">
-                          <span className={`category-badge category-${ing.category}`}>
-                            {ing.category}
-                          </span>
-                          <span className="text-white">
-                            {ing.quantity} {ing.unit} {ing.name}
-                          </span>
+                          <span className={`category-badge category-${ing.category}`}>{ing.category}</span>
+                          <span className="text-[#1A2E1A]">{ing.quantity} {ing.unit} {ing.name}</span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeIngredient(index)}
-                          className="text-zinc-500 hover:text-red-500"
-                          data-testid={`remove-ingredient-${index}`}
-                        >
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeIngredient(index)} className="text-stone-400 hover:text-[#E07A5F]">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -929,50 +700,23 @@ Example:
                 )}
               </div>
 
-              {/* Instructions */}
-              <div className="glass-card p-8 space-y-6">
-                <h2 className="font-display text-xl font-bold text-white">Instructions</h2>
+              <div className="fresh-card-static p-8 space-y-6">
+                <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">Instructions</h2>
                 
-                {/* Add Instruction */}
                 <div className="flex gap-3">
-                  <Textarea
-                    placeholder="Add a step..."
-                    value={newInstruction}
-                    onChange={(e) => setNewInstruction(e.target.value)}
-                    className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white min-h-[80px]"
-                    data-testid="instruction-input"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addInstruction}
-                    className="bg-[#39ff14]/10 text-[#39ff14] hover:bg-[#39ff14]/20 border-0 self-end"
-                    data-testid="add-instruction-btn"
-                  >
+                  <Textarea placeholder="Add a step..." value={newInstruction} onChange={(e) => setNewInstruction(e.target.value)} className="fresh-input min-h-[80px]" />
+                  <Button type="button" onClick={addInstruction} className="btn-secondary self-end">
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
 
-                {/* Instructions List */}
                 {recipe.instructions.length > 0 && (
                   <div className="space-y-3">
                     {recipe.instructions.map((step, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-start gap-4 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800"
-                        data-testid={`instruction-item-${index}`}
-                      >
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#39ff14]/10 text-[#39ff14] flex items-center justify-center text-sm font-bold">
-                          {index + 1}
-                        </span>
-                        <p className="text-white flex-1">{step}</p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeInstruction(index)}
-                          className="text-zinc-500 hover:text-red-500"
-                          data-testid={`remove-instruction-${index}`}
-                        >
+                      <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-stone-50 border border-stone-200">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-sm font-bold">{index + 1}</span>
+                        <p className="text-[#1A2E1A] flex-1">{step}</p>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeInstruction(index)} className="text-stone-400 hover:text-[#E07A5F]">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -981,31 +725,10 @@ Example:
                 )}
               </div>
 
-              {/* Submit */}
               <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/recipes")}
-                  className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
-                  data-testid="cancel-btn"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] px-8"
-                  data-testid="save-recipe-btn"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Save Recipe
-                    </>
-                  )}
+                <Button type="button" variant="outline" onClick={() => navigate("/recipes")}>Cancel</Button>
+                <Button type="submit" disabled={loading} className="btn-primary px-8">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Leaf className="w-4 h-4 mr-2" />Save Recipe</>)}
                 </Button>
               </div>
             </form>
