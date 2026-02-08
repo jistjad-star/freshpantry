@@ -595,10 +595,43 @@ export default function AddRecipe() {
                           <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">
                             Instructions ({imageInstructions.length})
                           </h4>
-                          <Button variant="ghost" size="sm" onClick={() => { setIsInstructionsParsed(false); setImageInstructions([]); setInstructionsImageFile(null); setInstructionsImagePreview(null); }}>
+                          <Button variant="ghost" size="sm" onClick={() => { setIsInstructionsParsed(false); setImageInstructions([]); setInstructionsImageFile(null); setInstructionsImagePreview(null); setImagePrepTime(""); setImageCookTime(""); }}>
                             Re-upload
                           </Button>
                         </div>
+
+                        {/* Cooking Times Display */}
+                        {(imagePrepTime || imageCookTime) && (
+                          <div className="flex gap-4 p-3 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
+                            {imagePrepTime && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-stone-500">Prep:</span>
+                                <span className="text-sm font-medium text-[#4A7C59]">{imagePrepTime}</span>
+                              </div>
+                            )}
+                            {imageCookTime && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-stone-500">Cook:</span>
+                                <span className="text-sm font-medium text-[#4A7C59]">{imageCookTime}</span>
+                              </div>
+                            )}
+                            {imagePrepTime && imageCookTime && (
+                              <div className="flex items-center gap-2 ml-auto">
+                                <span className="text-xs text-stone-500">Total:</span>
+                                <span className="text-sm font-bold text-[#1A2E1A]">
+                                  {(() => {
+                                    const parseTime = (t) => {
+                                      const match = t.match(/(\d+)/);
+                                      return match ? parseInt(match[1]) : 0;
+                                    };
+                                    const total = parseTime(imagePrepTime) + parseTime(imageCookTime);
+                                    return `${total} min`;
+                                  })()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {instructionsRawText && (
                           <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
