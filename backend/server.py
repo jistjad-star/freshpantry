@@ -788,9 +788,40 @@ async def parse_instructions_image(file: UploadFile = File(...)):
     contents = await file.read()
     image_base64 = base64.b64encode(contents).decode('utf-8')
     
-    raw_text, instructions = await extract_instructions_from_image(image_base64)
+    raw_text, instructions, prep_time, cook_time = await extract_instructions_from_image(image_base64)
     
-    return {"instructions_text": raw_text, "instructions": instructions}
+    return {
+        "instructions_text": raw_text, 
+        "instructions": instructions,
+        "prep_time": prep_time,
+        "cook_time": cook_time
+    }
+
+# ---- Meal Suggestions Route ----
+
+@api_router.get("/suggestions/meals")
+async def get_meal_suggestions(request: Request):
+    """Get meal suggestions based on pantry inventory"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get pantry items
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry or not pantry.get('items'):
+        return {"suggestions": [], "message": "Add items to your pantry first!"}
+    
+    # Get recipes
+    recipe_query = {"user_id": user_id} if user_id else {}
+    recipes = await db.recipes.find(recipe_query, {"_id": 0}).to_list(100)
+    
+    if not recipes:
+        return {"suggestions": [], "message": "Add some recipes first!"}
+    
+    # Get AI suggestions
+    suggestions = await suggest_meals_from_pantry(pantry['items'], recipes)
+    
+    return {"suggestions": suggestions, "message": f"Found {len(suggestions)} recipes you can make!"}
 
 # ---- Recipe Routes ----
 
