@@ -215,6 +215,10 @@ export default function WeeklyPlanner() {
                         <div className="max-h-64 overflow-y-auto">
                           {getSuggestedRecipes().length > 0 ? (
                             <div className="p-2 space-y-1">
+                              <p className="text-xs text-[#4A7C59] font-medium px-2 py-1 flex items-center gap-1 bg-[#4A7C59]/5 rounded-lg mb-2">
+                                <Sparkles className="w-3 h-3" />
+                                Suggested based on pantry
+                              </p>
                               {getSuggestedRecipes().map((recipe) => (
                                 <button
                                   key={recipe.id}
