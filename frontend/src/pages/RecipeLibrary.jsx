@@ -1,18 +1,29 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, Leaf, Fish, Salad, Zap, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
+const CATEGORY_CONFIG = {
+  'vegan': { label: 'Vegan', color: 'bg-green-100 text-green-700', icon: Leaf },
+  'vegetarian': { label: 'Veggie', color: 'bg-emerald-100 text-emerald-700', icon: Salad },
+  'pescatarian': { label: 'Pescatarian', color: 'bg-blue-100 text-blue-700', icon: Fish },
+  'low-fat': { label: 'Low Fat', color: 'bg-pink-100 text-pink-700', icon: Heart },
+  'quick-easy': { label: 'Quick & Easy', color: 'bg-amber-100 text-amber-700', icon: Zap },
+  'healthy': { label: 'Healthy', color: 'bg-teal-100 text-teal-700', icon: Heart },
+  'comfort-food': { label: 'Comfort', color: 'bg-orange-100 text-orange-700', icon: Heart },
+  'family-friendly': { label: 'Family', color: 'bg-purple-100 text-purple-700', icon: Users },
+};
+
 export default function RecipeLibrary() {
   const [recipes, setRecipes] = useState([]);
   const [recipeGroups, setRecipeGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showGroups, setShowGroups] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [viewMode, setViewMode] = useState("all"); // "all" or "grouped"
 
   useEffect(() => { fetchRecipes(); }, []);
@@ -42,9 +53,14 @@ export default function RecipeLibrary() {
     }
   };
 
-  const filteredRecipes = recipes.filter(recipe =>
-    recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get all unique categories from recipes
+  const allCategories = [...new Set(recipes.flatMap(r => r.categories || []))];
+
+  const filteredRecipes = recipes.filter(recipe => {
+    const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || (recipe.categories || []).includes(selectedCategory);
+    return matchesSearch && matchesCategory;
+  });
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#4A7C59] animate-spin" /></div>;
