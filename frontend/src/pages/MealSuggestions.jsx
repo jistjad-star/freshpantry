@@ -64,9 +64,15 @@ export default function MealSuggestions() {
   };
 
   const getMatchColor = (percentage) => {
-    if (percentage >= 80) return "text-green-600 bg-green-50";
-    if (percentage >= 60) return "text-amber-600 bg-amber-50";
-    return "text-orange-600 bg-orange-50";
+    if (percentage >= 80) return "text-green-600 bg-green-50 border-green-200";
+    if (percentage >= 50) return "text-amber-600 bg-amber-50 border-amber-200";
+    return "text-orange-600 bg-orange-50 border-orange-200";
+  };
+
+  const getMatchLabel = (percentage, missingCount) => {
+    if (percentage >= 80) return "Ready to cook!";
+    if (percentage >= 50) return `Missing ${missingCount} item${missingCount !== 1 ? 's' : ''}`;
+    return `Need ${missingCount} more items`;
   };
 
   return (
