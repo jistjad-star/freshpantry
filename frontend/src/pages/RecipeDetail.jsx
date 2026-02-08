@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [cooking, setCooking] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   useEffect(() => {
     const fetchRecipe = async () => {
@@ -49,6 +50,20 @@ export default function RecipeDetail() {
       toast.error("Failed to generate list");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    setGeneratingImage(true);
+    toast.info("Generating AI image... This may take a minute.");
+    try {
+      const response = await api.generateRecipeImage(id);
+      setRecipe(prev => ({ ...prev, image_url: response.data.image_url }));
+      toast.success("Image generated!");
+    } catch (error) {
+      toast.error("Failed to generate image");
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
@@ -93,10 +108,33 @@ export default function RecipeDetail() {
 
         <div className="fresh-card-static overflow-hidden mb-8 animate-fade-in-up">
           {recipe.image_url ? (
-            <div className="h-64 md:h-80 bg-cover bg-center" style={{ backgroundImage: `url(${recipe.image_url})` }} />
+            <div className="h-64 md:h-80 bg-cover bg-center relative" style={{ backgroundImage: `url(${recipe.image_url})` }}>
+              <Button 
+                onClick={handleGenerateImage} 
+                disabled={generatingImage}
+                variant="outline"
+                size="sm"
+                className="absolute bottom-4 right-4 bg-white/90 hover:bg-white"
+              >
+                {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-1" />Regenerate</>}
+              </Button>
+            </div>
           ) : (
-            <div className="h-64 md:h-80 bg-stone-100 flex items-center justify-center">
+            <div className="h-64 md:h-80 bg-stone-100 flex flex-col items-center justify-center gap-4">
               <ChefHat className="w-24 h-24 text-stone-300" />
+              <Button 
+                onClick={handleGenerateImage} 
+                disabled={generatingImage}
+                className="btn-primary"
+                data-testid="generate-image-btn"
+              >
+                {generatingImage ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating...</>
+                ) : (
+                  <><ImagePlus className="w-4 h-4 mr-2" />Generate AI Image</>
+                )}
+              </Button>
+              <p className="text-sm text-stone-400">Creates an appetizing photo using AI</p>
             </div>
           )}
           
