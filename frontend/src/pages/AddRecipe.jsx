@@ -96,6 +96,48 @@ export default function AddRecipe() {
     }
   };
 
+  // Instructions image handlers
+  const handleInstructionsImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInstructionsImageFile(file);
+      setInstructionsImagePreview(URL.createObjectURL(file));
+      setIsInstructionsParsed(false);
+      setImageInstructions([]);
+      setInstructionsRawText("");
+    }
+  };
+
+  const handleInstructionsParse = async () => {
+    if (!instructionsImageFile) {
+      toast.error("Please select an instructions image first");
+      return;
+    }
+
+    setInstructionsLoading(true);
+    try {
+      const response = await api.parseInstructionsImage(instructionsImageFile);
+      setInstructionsRawText(response.data.instructions_text || "");
+      setImageInstructions(response.data.instructions || []);
+      setIsInstructionsParsed(true);
+      
+      if (response.data.instructions?.length > 0) {
+        toast.success(`Extracted ${response.data.instructions.length} steps!`);
+      } else {
+        toast.warning("No instructions found. Try a clearer image.");
+      }
+    } catch (error) {
+      console.error("Instructions parse error:", error);
+      toast.error("Failed to extract instructions.");
+    } finally {
+      setInstructionsLoading(false);
+    }
+  };
+
+  const removeImageInstruction = (index) => {
+    setImageInstructions(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleImageParse = async () => {
     if (!imageFile) {
       toast.error("Please select an image first");
@@ -141,7 +183,7 @@ export default function AddRecipe() {
         prep_time: "",
         cook_time: "",
         ingredients: imageIngredients,
-        instructions: [],
+        instructions: imageInstructions,
         image_url: ""
       };
       
