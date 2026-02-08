@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, ChefHat, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Plus, X, AlertCircle } from "lucide-react";
+import { Calendar, ChefHat, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Plus, X, AlertCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -13,12 +13,13 @@ export default function WeeklyPlanner() {
   const navigate = useNavigate();
   const location = useLocation();
   const [recipes, setRecipes] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [weeklyPlan, setWeeklyPlan] = useState({});
   const [currentWeek, setCurrentWeek] = useState(getWeekStart(new Date()));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [selectedRecipeId, setSelectedRecipeId] = useState("");
+  const [openDay, setOpenDay] = useState(null);
 
   function getWeekStart(date) {
     const d = new Date(date);
@@ -41,7 +42,6 @@ export default function WeeklyPlanner() {
   useEffect(() => {
     if (location.state?.suggestedMeals && recipes.length > 0) {
       const suggestedIds = location.state.suggestedMeals;
-      // Distribute suggested meals across the week
       const newPlan = { ...weeklyPlan };
       let dayIndex = 0;
       
@@ -54,7 +54,6 @@ export default function WeeklyPlanner() {
       
       setWeeklyPlan(newPlan);
       toast.success(`Added ${suggestedIds.length} suggested meals to your plan!`);
-      // Clear the state so it doesn't re-trigger
       window.history.replaceState({}, document.title);
     }
   }, [location.state, recipes]);
@@ -62,8 +61,13 @@ export default function WeeklyPlanner() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [recipesRes, planRes] = await Promise.all([api.getRecipes(), api.getWeeklyPlan(currentWeek)]);
+        const [recipesRes, planRes, suggestionsRes] = await Promise.all([
+          api.getRecipes(), 
+          api.getWeeklyPlan(currentWeek),
+          api.getMealSuggestions().catch(() => ({ data: { suggestions: [] } }))
+        ]);
         setRecipes(recipesRes.data || []);
+        setSuggestions(suggestionsRes.data?.suggestions || []);
         const plan = {};
         if (planRes.data?.days) { planRes.data.days.forEach(day => { plan[day.day] = day.recipe_ids; }); }
         setWeeklyPlan(plan);
@@ -74,17 +78,15 @@ export default function WeeklyPlanner() {
 
   const getTotalMeals = () => DAYS.reduce((sum, day) => sum + (weeklyPlan[day]?.length || 0), 0);
 
-  const addRecipeToDay = (day) => {
-    if (!selectedRecipeId) { toast.error("Select a recipe first"); return; }
-    
-    // Check if we've reached the max meals limit
+  const addRecipeToDay = (day, recipeId) => {
     if (getTotalMeals() >= MAX_MEALS_PER_WEEK) {
       toast.error(`Maximum ${MAX_MEALS_PER_WEEK} meals per week. Remove one to add another.`);
       return;
     }
     
-    setWeeklyPlan(prev => ({ ...prev, [day]: [...(prev[day] || []), selectedRecipeId] }));
-    setSelectedRecipeId("");
+    setWeeklyPlan(prev => ({ ...prev, [day]: [...(prev[day] || []), recipeId] }));
+    setOpenDay(null);
+    toast.success("Meal added!");
   };
 
   const removeRecipeFromDay = (day, recipeId) => {
@@ -114,6 +116,20 @@ export default function WeeklyPlanner() {
 
   const getRecipeById = (id) => recipes.find(r => r.id === id);
   const totalMeals = getTotalMeals();
+  const canAddMore = totalMeals < MAX_MEALS_PER_WEEK;
+
+  // Get suggested recipes for the popover
+  const getSuggestedRecipes = () => {
+    return suggestions
+      .filter(s => s.match_percentage >= 50)
+      .slice(0, 3)
+      .map(s => ({
+        id: s.recipe_id,
+        name: s.recipe_name,
+        match: s.match_percentage,
+        isSuggested: true
+      }));
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#4A7C59] animate-spin" /></div>;
 
@@ -134,9 +150,6 @@ export default function WeeklyPlanner() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button onClick={() => navigate("/suggestions")} variant="outline" className="border-[#4A7C59]/30 text-[#4A7C59] hover:bg-[#4A7C59]/10">
-              Get Suggestions
-            </Button>
             <Button onClick={savePlan} disabled={saving} variant="outline" className="border-stone-200">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Plan"}</Button>
             <Button onClick={generateShoppingList} disabled={generating || totalMeals === 0} className="btn-primary">
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShoppingCart className="w-4 h-4 mr-2" />Generate List</>}
@@ -153,18 +166,6 @@ export default function WeeklyPlanner() {
           <Button variant="ghost" onClick={() => setCurrentWeek(getWeekStart(addDays(currentWeek, 7)))} className="text-stone-500 hover:text-[#4A7C59]">Next<ChevronRight className="w-5 h-5 ml-1" /></Button>
         </div>
 
-        {recipes.length > 0 && (
-          <div className="fresh-card-static p-4 mb-8">
-            <div className="flex items-center gap-4">
-              <span className="text-[#1A2E1A] font-medium">Add recipe:</span>
-              <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
-                <SelectTrigger className="w-64 fresh-input"><SelectValue placeholder="Select a recipe" /></SelectTrigger>
-                <SelectContent className="bg-white">{recipes.map(recipe => <SelectItem key={recipe.id} value={recipe.id}>{recipe.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
           {DAYS.map((day, index) => (
             <div key={day} className="fresh-card-static p-4 min-h-[200px] animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }} data-testid={`day-${day.toLowerCase()}`}>
@@ -173,8 +174,86 @@ export default function WeeklyPlanner() {
                   <h3 className="font-semibold text-[#1A2E1A]">{day}</h3>
                   <p className="text-xs text-stone-500">{formatDate(currentWeek, index)}</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => addRecipeToDay(day)} disabled={!selectedRecipeId} className="text-[#4A7C59] hover:bg-[#4A7C59]/10 h-8 w-8 p-0"><Plus className="w-4 h-4" /></Button>
+                
+                {/* Add Recipe Popover */}
+                <Popover open={openDay === day} onOpenChange={(open) => setOpenDay(open ? day : null)}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      disabled={!canAddMore}
+                      className="text-[#4A7C59] hover:bg-[#4A7C59]/10 h-8 w-8 p-0"
+                      data-testid={`add-meal-${day.toLowerCase()}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0 bg-white shadow-xl border-stone-200" align="end">
+                    <div className="p-3 border-b border-stone-100">
+                      <h4 className="font-semibold text-[#1A2E1A] text-sm">Add meal to {day}</h4>
+                    </div>
+                    
+                    {/* AI Suggestions Section */}
+                    {getSuggestedRecipes().length > 0 && (
+                      <div className="p-2 border-b border-stone-100 bg-[#4A7C59]/5">
+                        <p className="text-xs text-[#4A7C59] font-medium px-2 py-1 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          Suggested based on pantry
+                        </p>
+                        <div className="space-y-1 mt-1">
+                          {getSuggestedRecipes().map((recipe) => (
+                            <button
+                              key={recipe.id}
+                              onClick={() => addRecipeToDay(day, recipe.id)}
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors flex items-center justify-between"
+                            >
+                              <span className="text-sm text-[#1A2E1A] truncate">{recipe.name}</span>
+                              <span className="text-xs text-[#4A7C59] font-medium">{recipe.match}%</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* All Recipes Section */}
+                    <div className="max-h-64 overflow-y-auto">
+                      <p className="text-xs text-stone-500 font-medium px-4 py-2 sticky top-0 bg-white">All recipes</p>
+                      <div className="px-2 pb-2 space-y-1">
+                        {recipes.length > 0 ? recipes.map((recipe) => (
+                          <button
+                            key={recipe.id}
+                            onClick={() => addRecipeToDay(day, recipe.id)}
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-3"
+                          >
+                            {recipe.image_url ? (
+                              <div className="w-8 h-8 rounded bg-cover bg-center flex-shrink-0" style={{ backgroundImage: `url(${recipe.image_url})` }} />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-stone-100 flex items-center justify-center flex-shrink-0">
+                                <ChefHat className="w-4 h-4 text-stone-400" />
+                              </div>
+                            )}
+                            <span className="text-sm text-[#1A2E1A] truncate">{recipe.name}</span>
+                          </button>
+                        )) : (
+                          <p className="text-sm text-stone-400 px-3 py-4 text-center">No recipes yet</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* More Suggestions Link */}
+                    <div className="p-2 border-t border-stone-100">
+                      <button
+                        onClick={() => { setOpenDay(null); navigate("/suggestions"); }}
+                        className="w-full text-center px-3 py-2 rounded-lg text-sm text-[#4A7C59] hover:bg-[#4A7C59]/10 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Get more AI suggestions
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
+              
               <div className="space-y-2">
                 {(weeklyPlan[day] || []).map((recipeId, i) => {
                   const recipe = getRecipeById(recipeId);
