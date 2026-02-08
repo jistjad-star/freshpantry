@@ -1234,10 +1234,11 @@ async def delete_recipe(recipe_id: str, request: Request):
 
 @api_router.post("/shopping-list/generate", response_model=ShoppingList)
 async def generate_shopping_list(data: ShoppingListGenerate, request: Request):
-    """Generate a shopping list from selected recipes"""
+    """Generate a smart shopping list from selected recipes, subtracting pantry inventory"""
     user_id = await get_user_id_or_none(request)
     items = []
     
+    # Collect all ingredients from recipes
     for recipe_id in data.recipe_ids:
         recipe = await db.recipes.find_one({"id": recipe_id}, {"_id": 0})
         if recipe:
@@ -1251,10 +1252,58 @@ async def generate_shopping_list(data: ShoppingListGenerate, request: Request):
                 )
                 items.append(item)
     
+    # Consolidate duplicate ingredients
     if items:
         items = await consolidate_ingredients_with_ai(items)
     
-    shopping_list = ShoppingList(items=items, user_id=user_id)
+    # Get pantry inventory to subtract from shopping list
+    pantry_query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(pantry_query, {"_id": 0})
+    pantry_items = pantry.get('items', []) if pantry else []
+    
+    # Build a lookup of pantry items by normalized name
+    pantry_lookup = {}
+    for pi in pantry_items:
+        norm_name = normalize_ingredient_name(pi.get('name', ''))
+        if norm_name:
+            pantry_lookup[norm_name] = {
+                'quantity': pi.get('quantity', 0),
+                'unit': pi.get('unit', '')
+            }
+    
+    # Smart subtraction: reduce needed quantities based on pantry stock
+    smart_items = []
+    for item in items:
+        norm_name = normalize_ingredient_name(item.name)
+        pantry_match = pantry_lookup.get(norm_name)
+        
+        if pantry_match and pantry_match['quantity'] > 0:
+            needed_qty = parse_quantity(item.quantity)
+            pantry_qty = pantry_match['quantity']
+            
+            # Calculate how much more we need to buy
+            remaining_need = needed_qty - pantry_qty
+            
+            if remaining_need > 0:
+                # Still need to buy some
+                if remaining_need == int(remaining_need):
+                    qty_str = str(int(remaining_need))
+                else:
+                    qty_str = f"{remaining_need:.1f}".rstrip('0').rstrip('.')
+                
+                smart_items.append(ShoppingListItem(
+                    name=item.name,
+                    quantity=qty_str,
+                    unit=item.unit,
+                    category=item.category,
+                    recipe_source=f"{item.recipe_source} (have {pantry_qty} {pantry_match['unit']})" if item.recipe_source else f"Have {pantry_qty} in pantry"
+                ))
+            # else: we have enough in pantry, skip this item
+        else:
+            # Not in pantry, add full amount
+            smart_items.append(item)
+    
+    shopping_list = ShoppingList(items=smart_items, user_id=user_id)
     doc = shopping_list.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
