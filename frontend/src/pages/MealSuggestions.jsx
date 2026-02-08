@@ -149,7 +149,7 @@ export default function MealSuggestions() {
     <div className="min-h-screen py-8" data-testid="meal-suggestions-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2 flex items-center gap-3">
@@ -163,7 +163,7 @@ export default function MealSuggestions() {
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
-                onClick={fetchSuggestions}
+                onClick={() => fetchSuggestions(mealTypeFilter)}
                 disabled={loading}
                 className="flex items-center gap-2"
               >
@@ -172,6 +172,29 @@ export default function MealSuggestions() {
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Meal Type Filters */}
+        <div className="flex flex-wrap gap-2 mb-6" data-testid="meal-type-filters">
+          {MEAL_TYPES.map(type => {
+            const Icon = type.icon;
+            const isActive = mealTypeFilter === type.value;
+            return (
+              <button
+                key={type.value}
+                onClick={() => setMealTypeFilter(type.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  isActive 
+                    ? 'bg-[#4A7C59] text-white shadow-md' 
+                    : 'bg-white border border-stone-200 text-stone-600 hover:border-[#4A7C59] hover:text-[#4A7C59]'
+                }`}
+                data-testid={`filter-${type.value}`}
+              >
+                <Icon className="w-4 h-4" />
+                {type.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* AI Recipe Generator Card */}
