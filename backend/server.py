@@ -112,6 +112,15 @@ class WeeklyPlanCreate(BaseModel):
     week_start: str
     days: List[WeeklyPlanDay]
 
+class ParseIngredientsRequest(BaseModel):
+    recipe_name: str
+    ingredients_text: str
+    instructions_text: Optional[str] = ""
+
+class ParseIngredientsResponse(BaseModel):
+    ingredients: List[Ingredient]
+    instructions: List[str]
+
 # ============== HELPER FUNCTIONS ==============
 
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
