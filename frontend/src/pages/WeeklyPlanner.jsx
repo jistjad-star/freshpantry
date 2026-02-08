@@ -50,7 +50,7 @@ export default function WeeklyPlanner() {
       for (const recipeId of suggestedIds) {
         const day = DAYS[dayIndex % 7];
         if (!newPlan[day]) newPlan[day] = [];
-        newPlan[day].push(recipeId);
+        newPlan[day].push({ recipeId, servings: 2 });
         dayIndex++;
       }
       
@@ -58,6 +58,22 @@ export default function WeeklyPlanner() {
       toast.success(`Added ${suggestedIds.length} suggested meals to your plan!`);
       window.history.replaceState({}, document.title);
     }
+  }, [location.state?.suggestedMeals, recipes.length]);
+
+  // Handle add single recipe from RecipeDetail page
+  useEffect(() => {
+    if (location.state?.addRecipeId && recipes.length > 0) {
+      const recipeId = location.state.addRecipeId;
+      const recipe = recipes.find(r => r.id === recipeId);
+      if (recipe) {
+        // Find first day without a meal or use Monday
+        const emptyDay = DAYS.find(day => !weeklyPlan[day]?.length) || "Monday";
+        setOpenDay(emptyDay);
+        toast.info(`Select a day to add "${recipe.name}" to your plan`);
+      }
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state?.addRecipeId, recipes.length]);
   }, [location.state, recipes]);
 
   useEffect(() => {
