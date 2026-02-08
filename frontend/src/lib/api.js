@@ -36,6 +36,15 @@ export const api = {
     });
   },
 
+  // Parse instructions image
+  parseInstructionsImage: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axios.post(`${API}/parse-instructions-image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
   // Shopping List
   getShoppingList: () => axios.get(`${API}/shopping-list`),
   generateShoppingList: (recipeIds) => axios.post(`${API}/shopping-list/generate`, { recipe_ids: recipeIds }),
