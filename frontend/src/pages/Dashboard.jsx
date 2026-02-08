@@ -188,7 +188,7 @@ export default function Dashboard() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="font-display text-2xl font-semibold text-[#1A2E1A] mb-6">Quick Actions</h2>
         
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-4 gap-6">
           {quickActions.map((action, i) => (
             <Link 
               key={action.path} 
@@ -199,13 +199,15 @@ export default function Dashboard() {
               <div className="fresh-card p-6 h-full group cursor-pointer">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${
                   action.color === 'primary' ? 'bg-[#4A7C59]/10 group-hover:bg-[#4A7C59]/20' :
-                  action.color === 'secondary' ? 'bg-[#E8E4D9] group-hover:bg-[#D8D4C9]' :
-                  'bg-[#E07A5F]/10 group-hover:bg-[#E07A5F]/20'
+                  action.color === 'shop' ? 'bg-[#E07A5F]/10 group-hover:bg-[#E07A5F]/20' :
+                  action.color === 'secondary' ? 'bg-blue-50 group-hover:bg-blue-100' :
+                  'bg-amber-50 group-hover:bg-amber-100'
                 }`}>
                   <action.icon className={`w-6 h-6 ${
                     action.color === 'primary' ? 'text-[#4A7C59]' :
-                    action.color === 'secondary' ? 'text-[#576B57]' :
-                    'text-[#E07A5F]'
+                    action.color === 'shop' ? 'text-[#E07A5F]' :
+                    action.color === 'secondary' ? 'text-blue-500' :
+                    'text-amber-600'
                   }`} />
                 </div>
                 
