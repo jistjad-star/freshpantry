@@ -121,10 +121,15 @@ export default function AddRecipe() {
       const response = await api.parseInstructionsImage(instructionsImageFile);
       setInstructionsRawText(response.data.instructions_text || "");
       setImageInstructions(response.data.instructions || []);
+      setImagePrepTime(response.data.prep_time || "");
+      setImageCookTime(response.data.cook_time || "");
       setIsInstructionsParsed(true);
       
       if (response.data.instructions?.length > 0) {
-        toast.success(`Extracted ${response.data.instructions.length} steps!`);
+        const timeInfo = response.data.prep_time || response.data.cook_time 
+          ? ` (Prep: ${response.data.prep_time || 'N/A'}, Cook: ${response.data.cook_time || 'N/A'})`
+          : '';
+        toast.success(`Extracted ${response.data.instructions.length} steps!${timeInfo}`);
       } else {
         toast.warning("No instructions found. Try a clearer image.");
       }
