@@ -123,9 +123,20 @@ export default function WeeklyPlanner() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Weekly Plan</h1>
-            <p className="text-stone-500">{totalMeals} meal{totalMeals !== 1 ? 's' : ''} planned</p>
+            <div className="flex items-center gap-3">
+              <p className="text-stone-500">{totalMeals} of {MAX_MEALS_PER_WEEK} meals planned</p>
+              {totalMeals >= MAX_MEALS_PER_WEEK && (
+                <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  <AlertCircle className="w-3 h-3" />
+                  Week full
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3">
+            <Button onClick={() => navigate("/suggestions")} variant="outline" className="border-[#4A7C59]/30 text-[#4A7C59] hover:bg-[#4A7C59]/10">
+              Get Suggestions
+            </Button>
             <Button onClick={savePlan} disabled={saving} variant="outline" className="border-stone-200">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Plan"}</Button>
             <Button onClick={generateShoppingList} disabled={generating || totalMeals === 0} className="btn-primary">
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShoppingCart className="w-4 h-4 mr-2" />Generate List</>}
