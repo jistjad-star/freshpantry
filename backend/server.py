@@ -1173,6 +1173,26 @@ async def get_recipe(recipe_id: str):
         recipe['created_at'] = datetime.fromisoformat(recipe['created_at'])
     return recipe
 
+class UpdateCategoriesRequest(BaseModel):
+    categories: List[str]
+
+@api_router.put("/recipes/{recipe_id}/categories")
+async def update_recipe_categories(recipe_id: str, request_data: UpdateCategoriesRequest):
+    """Update recipe categories"""
+    recipe = await db.recipes.find_one({"id": recipe_id}, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Validate categories
+    valid_categories = [cat for cat in request_data.categories if cat in RECIPE_CATEGORIES]
+    
+    await db.recipes.update_one(
+        {"id": recipe_id},
+        {"$set": {"categories": valid_categories}}
+    )
+    
+    return {"categories": valid_categories, "message": "Categories updated!"}
+
 @api_router.post("/recipes/{recipe_id}/generate-image")
 async def generate_image_for_recipe(recipe_id: str):
     """Generate an AI image for an existing recipe"""
