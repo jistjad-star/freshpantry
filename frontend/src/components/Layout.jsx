@@ -9,7 +9,8 @@ import {
   LogIn,
   LogOut,
   User,
-  Package
+  Package,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,8 @@ const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/add-recipe", icon: PlusCircle, label: "Add Recipe" },
   { path: "/recipes", icon: BookOpen, label: "Recipes" },
-  { path: "/weekly-planner", icon: Calendar, label: "Planner" },
+  { path: "/suggestions", icon: Sparkles, label: "Suggest" },
+  { path: "/planner", icon: Calendar, label: "Planner" },
   { path: "/pantry", icon: Package, label: "Pantry" },
   { path: "/shopping-list", icon: ShoppingCart, label: "Shop" },
 ];
