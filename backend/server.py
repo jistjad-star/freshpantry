@@ -241,51 +241,80 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         return "", []
     
     try:
+        # Use GPT-4o for vision (gpt-5.2 may not support vision)
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"image-parse-{uuid.uuid4()}",
             system_message="""You are a helpful assistant that extracts recipe ingredients from images.
-            When given an image of a recipe or ingredient list, extract all the ingredients you can see.
-            First, list all the raw text you see for ingredients.
-            Then parse each ingredient into structured format with:
-            - name: the ingredient name
-            - quantity: the amount
-            - unit: the unit of measurement
-            - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
+            Look carefully at the image and extract ALL text related to ingredients.
+            Parse each ingredient into structured format.
             
             Return as JSON with format:
             {
-                "raw_text": "the raw ingredient text you extracted",
-                "ingredients": [{"name": "...", "quantity": "...", "unit": "...", "category": "..."}]
+                "raw_text": "all the ingredient text you can see",
+                "ingredients": [
+                    {"name": "ingredient name", "quantity": "amount", "unit": "unit", "category": "category"}
+                ]
             }
             
-            Return ONLY valid JSON, no markdown."""
-        ).with_model("openai", "gpt-5.2")
+            Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
+            
+            Return ONLY valid JSON, no markdown code blocks."""
+        ).with_model("openai", "gpt-4o")
         
-        # Create message with image
+        # Create message with image using proper format
         user_message = UserMessage(
-            text="Extract all ingredients from this image. Include quantities and units where visible.",
-            image_url=f"data:image/jpeg;base64,{image_base64}"
+            text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units.",
+            image_url=f"data:image/png;base64,{image_base64}"
         )
         
         response = await chat.send_message(user_message)
+        logger.info(f"Vision API response: {response[:500] if response else 'Empty'}")
         
         # Parse response
         import json
         clean_response = response.strip()
-        if clean_response.startswith("```"):
-            clean_response = clean_response.split("```")[1]
-            if clean_response.startswith("json"):
-                clean_response = clean_response[4:]
+        
+        # Remove markdown code blocks if present
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
         clean_response = clean_response.strip()
         
-        data = json.loads(clean_response)
-        raw_text = data.get("raw_text", "")
-        ingredients = [Ingredient(**ing) for ing in data.get("ingredients", [])]
+        # Try to parse JSON
+        try:
+            data = json.loads(clean_response)
+        except json.JSONDecodeError:
+            # Try to find JSON object in response
+            start = clean_response.find("{")
+            end = clean_response.rfind("}") + 1
+            if start >= 0 and end > start:
+                data = json.loads(clean_response[start:end])
+            else:
+                logger.error(f"Could not parse JSON from response: {clean_response}")
+                return "", []
         
+        raw_text = data.get("raw_text", "")
+        ingredients_data = data.get("ingredients", [])
+        
+        # Ensure all required fields exist
+        ingredients = []
+        for ing in ingredients_data:
+            ingredients.append(Ingredient(
+                name=ing.get("name", "Unknown"),
+                quantity=str(ing.get("quantity", "")),
+                unit=ing.get("unit", ""),
+                category=ing.get("category", "other")
+            ))
+        
+        logger.info(f"Extracted {len(ingredients)} ingredients from image")
         return raw_text, ingredients
     except Exception as e:
-        logger.error(f"Error extracting from image: {e}")
+        logger.error(f"Error extracting from image: {e}", exc_info=True)
         return "", []
 
 async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
