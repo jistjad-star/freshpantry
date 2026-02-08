@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2 } from "lucide-react";
+import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -9,15 +9,22 @@ import api from "@/lib/api";
 
 export default function RecipeLibrary() {
   const [recipes, setRecipes] = useState([]);
+  const [recipeGroups, setRecipeGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showGroups, setShowGroups] = useState(false);
+  const [viewMode, setViewMode] = useState("all"); // "all" or "grouped"
 
   useEffect(() => { fetchRecipes(); }, []);
 
   const fetchRecipes = async () => {
     try {
-      const response = await api.getRecipes();
-      setRecipes(response.data || []);
+      const [recipesRes, groupsRes] = await Promise.all([
+        api.getRecipes(),
+        api.getRecipesGrouped()
+      ]);
+      setRecipes(recipesRes.data || []);
+      setRecipeGroups(groupsRes.data?.groups || []);
     } catch (error) {
       console.error("Error fetching recipes:", error);
     } finally {
@@ -51,11 +58,21 @@ export default function RecipeLibrary() {
             <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Recipes</h1>
             <p className="text-stone-500">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
           </div>
-          <Link to="/add-recipe">
-            <Button className="btn-primary" data-testid="add-new-recipe-btn">
-              <PlusCircle className="w-4 h-4 mr-2" />Add Recipe
+          <div className="flex items-center gap-3">
+            <Button 
+              variant={viewMode === "grouped" ? "default" : "outline"} 
+              onClick={() => setViewMode(viewMode === "grouped" ? "all" : "grouped")}
+              className={viewMode === "grouped" ? "btn-secondary" : "border-stone-200"}
+            >
+              <Layers className="w-4 h-4 mr-2" />
+              {viewMode === "grouped" ? "Show All" : "Group by Ingredients"}
             </Button>
-          </Link>
+            <Link to="/add-recipe">
+              <Button className="btn-primary" data-testid="add-new-recipe-btn">
+                <PlusCircle className="w-4 h-4 mr-2" />Add Recipe
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="relative mb-8">
@@ -63,7 +80,41 @@ export default function RecipeLibrary() {
           <Input placeholder="Search recipes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 fresh-input h-12" data-testid="search-recipes-input" />
         </div>
 
-        {filteredRecipes.length > 0 ? (
+        {/* Grouped View */}
+        {viewMode === "grouped" && recipeGroups.length > 0 && (
+          <div className="mb-8 space-y-4">
+            <h2 className="font-display text-xl font-semibold text-[#1A2E1A] flex items-center gap-2">
+              <Layers className="w-5 h-5 text-[#4A7C59]" />
+              Recipes by Shared Ingredients
+            </h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recipeGroups.map((group, index) => (
+                <div key={index} className="fresh-card-static p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] text-sm font-medium">
+                      {group.shared_ingredient}
+                    </span>
+                    <span className="text-xs text-stone-400">{group.count} recipes</span>
+                  </div>
+                  <div className="space-y-2">
+                    {group.recipes.map((recipe) => (
+                      <Link 
+                        key={recipe.id} 
+                        to={`/recipes/${recipe.id}`}
+                        className="block p-2 rounded-lg hover:bg-stone-50 transition-colors text-sm text-[#1A2E1A] hover:text-[#4A7C59]"
+                      >
+                        {recipe.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All Recipes View */}
+        {(viewMode === "all" || recipeGroups.length === 0) && filteredRecipes.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRecipes.map((recipe) => (
               <div key={recipe.id} className="fresh-card overflow-hidden group" data-testid={`recipe-card-${recipe.id}`}>
@@ -109,7 +160,7 @@ export default function RecipeLibrary() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : viewMode === "all" && (
           <div className="fresh-card-static p-12 text-center">
             <ChefHat className="w-16 h-16 text-stone-300 mx-auto mb-4" />
             <h3 className="font-display text-xl font-semibold text-[#1A2E1A] mb-2">{searchQuery ? "No recipes found" : "No recipes yet"}</h3>
