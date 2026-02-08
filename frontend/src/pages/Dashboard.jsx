@@ -50,10 +50,17 @@ export default function Dashboard() {
       color: "primary"
     },
     {
+      icon: ShoppingCart,
+      label: "Shopping List",
+      description: "View & edit your list",
+      path: "/shopping-list",
+      color: "shop"
+    },
+    {
       icon: Calendar,
       label: "Plan Meals",
       description: "Organize your week",
-      path: "/weekly-planner",
+      path: "/planner",
       color: "secondary"
     },
     {
