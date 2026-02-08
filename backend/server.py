@@ -178,6 +178,8 @@ class ParseIngredientsResponse(BaseModel):
 class ImageParseResponse(BaseModel):
     ingredients_text: str
     ingredients: List[Ingredient]
+    instructions_text: str = ""
+    instructions: List[str] = []
 
 # ============== AUTH HELPER FUNCTIONS ==============
 
