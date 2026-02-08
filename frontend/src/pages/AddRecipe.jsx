@@ -639,40 +639,59 @@ export default function AddRecipe() {
                       ref={instructionsFileInputRef}
                       onChange={handleInstructionsImageSelect}
                       accept="image/*"
+                      multiple
                       className="hidden"
                     />
 
                     {!isInstructionsParsed ? (
                       <div className="space-y-4">
-                        {!instructionsImagePreview ? (
+                        {/* Instructions image previews grid */}
+                        {instructionsImagePreviews.length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {instructionsImagePreviews.map((preview, index) => (
+                              <div key={index} className="relative group">
+                                <img 
+                                  src={preview} 
+                                  alt={`Instructions image ${index + 1}`} 
+                                  className="w-full h-24 object-cover rounded-lg bg-stone-100"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeInstructionsImage(index)}
+                                  className="absolute top-1 right-1 bg-white h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                                <span className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                  {index + 1}
+                                </span>
+                              </div>
+                            ))}
+                            {/* Add more button */}
+                            <div 
+                              onClick={() => instructionsFileInputRef.current?.click()}
+                              className="border-2 border-dashed border-stone-300 rounded-lg h-24 flex flex-col items-center justify-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-stone-400" />
+                              <span className="text-xs text-stone-400">Add</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {instructionsImagePreviews.length === 0 && (
                           <div 
                             onClick={() => instructionsFileInputRef.current?.click()}
                             className="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
                             data-testid="instructions-upload-area"
                           >
                             <Upload className="w-10 h-10 text-stone-400 mx-auto mb-3" />
-                            <p className="text-stone-600 mb-1">Click to upload instructions screenshot</p>
-                            <p className="text-xs text-stone-400">PNG, JPG up to 10MB</p>
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <img 
-                              src={instructionsImagePreview} 
-                              alt="Instructions screenshot" 
-                              className="w-full max-h-60 object-contain rounded-xl bg-stone-100"
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => { setInstructionsImageFile(null); setInstructionsImagePreview(null); }}
-                              className="absolute top-2 right-2 bg-white"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <p className="text-stone-600 mb-1">Click to upload instructions screenshots</p>
+                            <p className="text-xs text-stone-400">Upload multiple images - PNG, JPG up to 10MB each</p>
                           </div>
                         )}
 
-                        {instructionsImagePreview && (
+                        {instructionsImagePreviews.length > 0 && (
                           <Button
                             onClick={handleInstructionsParse}
                             disabled={instructionsLoading}
@@ -680,7 +699,7 @@ export default function AddRecipe() {
                             data-testid="parse-instructions-btn"
                           >
                             {instructionsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                              <><Sparkles className="w-5 h-5 mr-2" />Extract Instructions</>
+                              <><Sparkles className="w-5 h-5 mr-2" />Extract Instructions ({instructionsImageFiles.length} image{instructionsImageFiles.length > 1 ? 's' : ''})</>
                             )}
                           </Button>
                         )}
@@ -691,7 +710,7 @@ export default function AddRecipe() {
                           <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">
                             Instructions ({imageInstructions.length})
                           </h4>
-                          <Button variant="ghost" size="sm" onClick={() => { setIsInstructionsParsed(false); setImageInstructions([]); setInstructionsImageFile(null); setInstructionsImagePreview(null); setImagePrepTime(""); setImageCookTime(""); }}>
+                          <Button variant="ghost" size="sm" onClick={() => { setIsInstructionsParsed(false); setImageInstructions([]); setInstructionsImageFiles([]); setInstructionsImagePreviews([]); setImagePrepTime(""); setImageCookTime(""); }}>
                             Re-upload
                           </Button>
                         </div>
