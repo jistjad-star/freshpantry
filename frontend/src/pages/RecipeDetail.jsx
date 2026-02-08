@@ -358,6 +358,22 @@ export default function RecipeDetail() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
+                <Button 
+                  onClick={() => navigate('/planner', { state: { addRecipeId: id } })} 
+                  variant="outline" 
+                  className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10"
+                  data-testid="add-to-planner-btn"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />Add to Planner
+                </Button>
+                <Button 
+                  onClick={() => navigate(`/recipes/${id}/edit`)} 
+                  variant="outline" 
+                  className="border-stone-200"
+                  data-testid="edit-recipe-btn"
+                >
+                  <Edit className="w-4 h-4 mr-2" />Edit
+                </Button>
                 <Button onClick={handleCook} disabled={cooking} className="btn-secondary" data-testid="cook-recipe-btn">
                   {cooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UtensilsCrossed className="w-4 h-4 mr-2" />I Cooked This</>}
                 </Button>
