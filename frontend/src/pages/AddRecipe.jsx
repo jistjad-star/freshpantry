@@ -101,28 +101,42 @@ export default function AddRecipe() {
 
   const [newInstruction, setNewInstruction] = useState("");
 
-  // Image upload handlers
+  // Multiple image upload handlers for ingredients
   const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const newFiles = [...imageFiles, ...files];
+      const newPreviews = [...imagePreviews, ...files.map(f => URL.createObjectURL(f))];
+      setImageFiles(newFiles);
+      setImagePreviews(newPreviews);
       setIsImageParsed(false);
-      setImageIngredients([]);
-      setImageRawText("");
+      // Don't clear existing ingredients - we'll merge them
     }
   };
 
-  // Instructions image handlers
-  const handleInstructionsImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setInstructionsImageFile(file);
-      setInstructionsImagePreview(URL.createObjectURL(file));
-      setIsInstructionsParsed(false);
-      setImageInstructions([]);
-      setInstructionsRawText("");
+  const removeIngredientImage = (index) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    if (currentImageIndex >= index && currentImageIndex > 0) {
+      setCurrentImageIndex(prev => prev - 1);
     }
+  };
+
+  // Multiple instructions image handlers
+  const handleInstructionsImageSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const newFiles = [...instructionsImageFiles, ...files];
+      const newPreviews = [...instructionsImagePreviews, ...files.map(f => URL.createObjectURL(f))];
+      setInstructionsImageFiles(newFiles);
+      setInstructionsImagePreviews(newPreviews);
+      setIsInstructionsParsed(false);
+    }
+  };
+
+  const removeInstructionsImage = (index) => {
+    setInstructionsImageFiles(prev => prev.filter((_, i) => i !== index));
+    setInstructionsImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleInstructionsParse = async () => {
