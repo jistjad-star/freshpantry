@@ -220,18 +220,6 @@ export default function MealSuggestions() {
                           </div>
                         </div>
                       )}
-                      
-                      {suggestion.missing_ingredients?.length > 0 && (
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5" />
-                          <div>
-                            <p className="text-xs text-stone-500 mb-1">Missing:</p>
-                            <p className="text-sm text-stone-700">
-                              {suggestion.missing_ingredients.join(", ")}
-                            </p>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                   
@@ -248,6 +236,7 @@ export default function MealSuggestions() {
                   </Button>
                 </div>
               </div>
+              );
             ))}
           </div>
         )}
