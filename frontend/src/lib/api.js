@@ -15,6 +15,7 @@ export const api = {
   // Recipes
   getRecipes: () => axios.get(`${API}/recipes`),
   getRecipe: (id) => axios.get(`${API}/recipes/${id}`),
+  getRecipesGrouped: () => axios.get(`${API}/recipes/grouped`),
   createRecipe: (data) => axios.post(`${API}/recipes`, data),
   importRecipe: (url) => axios.post(`${API}/recipes/import`, { url }),
   deleteRecipe: (id) => axios.delete(`${API}/recipes/${id}`),
