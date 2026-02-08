@@ -598,6 +598,100 @@ export default function RecipeDetail() {
               </ol>
             ) : <p className="text-stone-500">No instructions listed</p>}
           </div>
+
+          {/* Reviews Section */}
+          <div className="fresh-card-static p-8 animate-fade-in-up stagger-3" data-testid="reviews-section">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-display text-xl font-semibold text-[#1A2E1A] flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Reviews
+                </h2>
+                {recipe.review_count > 0 && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <StarRating rating={recipe.average_rating || 0} size="sm" />
+                    <span className="text-sm text-stone-500">
+                      {recipe.average_rating?.toFixed(1)} ({recipe.review_count} review{recipe.review_count !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                )}
+              </div>
+              <Button 
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                variant="outline"
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                data-testid="write-review-btn"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Write a Review
+              </Button>
+            </div>
+
+            {/* Review Form */}
+            {showReviewForm && (
+              <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200" data-testid="review-form">
+                <p className="text-sm font-medium text-stone-700 mb-3">Your Rating</p>
+                <StarRating rating={newRating} onRate={setNewRating} size="lg" interactive />
+                <Textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Share your thoughts about this recipe... (optional)"
+                  className="mt-4 fresh-input"
+                  rows={3}
+                />
+                <div className="flex items-center gap-2 mt-4">
+                  <Button 
+                    onClick={handleSubmitReview}
+                    disabled={submittingReview || newRating === 0}
+                    className="bg-amber-500 hover:bg-amber-600 text-white"
+                    data-testid="submit-review-btn"
+                  >
+                    {submittingReview ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Submit Review
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    onClick={() => { setShowReviewForm(false); setNewRating(0); setNewComment(""); }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Reviews List */}
+            {loadingReviews ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+              </div>
+            ) : reviews.length > 0 ? (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <div key={review.id} className="p-4 rounded-xl bg-stone-50 border border-stone-100" data-testid={`review-${review.id}`}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-[#1A2E1A]">{review.user_name || 'Anonymous'}</span>
+                          <StarRating rating={review.rating} size="sm" />
+                        </div>
+                        {review.comment && (
+                          <p className="text-stone-600 text-sm mt-2">{review.comment}</p>
+                        )}
+                        <p className="text-xs text-stone-400 mt-2">
+                          {new Date(review.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Star className="w-10 h-10 text-stone-200 mx-auto mb-3" />
+                <p className="text-stone-500">No reviews yet. Be the first to review!</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
