@@ -1902,10 +1902,14 @@ async def import_recipes_batch(data: RecipeImportBatchRequest, request: Request)
 
 # ============== AI RECIPE GENERATION FROM PANTRY ==============
 
+class GenerateRecipeRequest(BaseModel):
+    meal_type: Optional[str] = None
+
 @api_router.post("/suggestions/generate-recipe")
-async def generate_ai_recipe_from_pantry(request: Request):
+async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeRequest = None):
     """Generate a new AI recipe based solely on pantry ingredients"""
     user_id = await get_user_id_or_none(request)
+    meal_type = data.meal_type if data else None
     
     # Get pantry
     query = {"user_id": user_id} if user_id else {"user_id": None}
@@ -1917,16 +1921,27 @@ async def generate_ai_recipe_from_pantry(request: Request):
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
+    meal_context = ""
+    if meal_type:
+        meal_contexts = {
+            "breakfast": "Create a breakfast recipe - something suitable for morning, like eggs, pancakes, smoothies, or toast-based dishes.",
+            "lunch": "Create a lunch recipe - something light to moderate like sandwiches, salads, soups, or wraps.",
+            "dinner": "Create a dinner recipe - something hearty and satisfying like a main course with sides.",
+            "snack": "Create a snack recipe - something small and quick like dips, energy balls, or finger foods."
+        }
+        meal_context = meal_contexts.get(meal_type, "")
+    
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"recipe-gen-{uuid.uuid4()}",
-            system_message="""You are a creative chef that generates delicious recipes.
+            system_message=f"""You are a creative chef that generates delicious recipes.
             Given a list of available ingredients, create a complete recipe that uses primarily those ingredients.
             You can suggest 1-2 common pantry staples that might be missing.
+            {meal_context}
             
             Return as JSON with format:
-            {
+            {{
                 "name": "Recipe Name",
                 "description": "Brief appetizing description",
                 "servings": 4,
