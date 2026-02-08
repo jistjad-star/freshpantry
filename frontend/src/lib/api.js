@@ -65,6 +65,9 @@ export const api = {
   cookRecipe: (recipeId, servingsMultiplier = 1) => axios.post(`${API}/pantry/cook`, { recipe_id: recipeId, servings_multiplier: servingsMultiplier }),
   getLowStockItems: () => axios.get(`${API}/pantry/low-stock`),
   addFromShopping: () => axios.post(`${API}/pantry/add-from-shopping`),
+
+  // Meal Suggestions
+  getMealSuggestions: () => axios.get(`${API}/suggestions/meals`),
 };
 
 export default api;
