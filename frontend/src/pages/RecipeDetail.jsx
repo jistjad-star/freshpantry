@@ -281,12 +281,19 @@ export default function RecipeDetail() {
 
         <div className="grid md:grid-cols-2 gap-8">
           <div className="fresh-card-static p-8 animate-fade-in-up stagger-1">
-            <h2 className="font-display text-xl font-semibold text-[#1A2E1A] mb-6">
-              Ingredients <span className="text-sm text-stone-500 font-normal">({recipe.ingredients?.length || 0})</span>
-            </h2>
-            {recipe.ingredients && recipe.ingredients.length > 0 ? (
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">
+                Ingredients <span className="text-sm text-stone-500 font-normal">({recipe.ingredients?.length || 0})</span>
+              </h2>
+              {servings !== originalServings && (
+                <span className="text-xs text-[#4A7C59] bg-[#4A7C59]/10 px-2 py-1 rounded-full">
+                  Adjusted for {servings}
+                </span>
+              )}
+            </div>
+            {scaledIngredients.length > 0 ? (
               <ul className="space-y-3">
-                {recipe.ingredients.map((ing, index) => (
+                {scaledIngredients.map((ing, index) => (
                   <li key={index} className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100" data-testid={`ingredient-${index}`}>
                     <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>{ing.category}</span>
                     <span className="text-[#1A2E1A]"><span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}</span>
