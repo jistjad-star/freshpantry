@@ -36,7 +36,7 @@ export default function RecipeLibrary() {
   const fetchRecipes = async () => {
     try {
       const [recipesRes, groupsRes] = await Promise.all([
-        api.getRecipes(),
+        api.getRecipes(sortBy),
         api.getRecipesGrouped()
       ]);
       setRecipes(recipesRes.data || []);
