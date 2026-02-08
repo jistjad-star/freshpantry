@@ -452,6 +452,11 @@ class GreenChefAPITester:
         # Test weekly plan operations
         self.test_weekly_plan_operations()
         
+        # Test pantry operations
+        self.test_pantry_operations()
+        self.test_cook_recipe_pantry_deduction()
+        self.test_add_from_shopping_to_pantry()
+        
         # Test import (might fail)
         self.test_recipe_import()
         
