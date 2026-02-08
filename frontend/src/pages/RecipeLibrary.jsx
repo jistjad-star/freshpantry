@@ -166,10 +166,37 @@ export default function RecipeLibrary() {
               <div key={recipe.id} className="fresh-card overflow-hidden group" data-testid={`recipe-card-${recipe.id}`}>
                 <Link to={`/recipes/${recipe.id}`}>
                   {recipe.image_url ? (
-                    <div className="h-48 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style={{ backgroundImage: `url(${recipe.image_url})` }} />
+                    <div className="h-48 bg-cover bg-center transition-transform duration-300 group-hover:scale-105 relative" style={{ backgroundImage: `url(${recipe.image_url})` }}>
+                      {/* Category badges on image */}
+                      {recipe.categories?.length > 0 && (
+                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                          {recipe.categories.slice(0, 2).map(cat => {
+                            const config = CATEGORY_CONFIG[cat] || { label: cat, color: 'bg-stone-100 text-stone-600' };
+                            return (
+                              <span key={cat} className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} shadow-sm`}>
+                                {config.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div className="h-48 bg-stone-100 flex items-center justify-center">
+                    <div className="h-48 bg-stone-100 flex items-center justify-center relative">
                       <ChefHat className="w-16 h-16 text-stone-300" />
+                      {/* Category badges */}
+                      {recipe.categories?.length > 0 && (
+                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                          {recipe.categories.slice(0, 2).map(cat => {
+                            const config = CATEGORY_CONFIG[cat] || { label: cat, color: 'bg-stone-100 text-stone-600' };
+                            return (
+                              <span key={cat} className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+                                {config.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </Link>
