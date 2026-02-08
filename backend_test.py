@@ -316,6 +316,97 @@ class GreenChefAPITester:
         
         return True  # Don't count this as a failure
 
+    def test_pantry_operations(self):
+        """Test pantry/inventory operations"""
+        # Test get pantry (should create empty one if doesn't exist)
+        success1, response1 = self.run_test(
+            "Get Pantry",
+            "GET",
+            "pantry",
+            200
+        )
+        
+        if success1:
+            items_count = len(response1.get('items', []))
+            print(f"   Pantry has {items_count} items")
+        
+        # Test add pantry item
+        pantry_item = {
+            "name": "Test Cheese",
+            "quantity": 250.0,
+            "unit": "g",
+            "category": "dairy",
+            "min_threshold": 50.0,
+            "typical_purchase": 500.0
+        }
+        
+        success2, response2 = self.run_test(
+            "Add Pantry Item",
+            "POST",
+            "pantry/items",
+            200,
+            data=pantry_item
+        )
+        
+        if success2:
+            print(f"   Added item: {response2.get('item', {}).get('name', 'Unknown')}")
+        
+        # Test get low stock items
+        success3, response3 = self.run_test(
+            "Get Low Stock Items",
+            "GET",
+            "pantry/low-stock",
+            200
+        )
+        
+        if success3:
+            low_stock_count = len(response3.get('low_stock_items', []))
+            suggested_count = len(response3.get('suggested_shopping', []))
+            print(f"   Found {low_stock_count} low stock items, {suggested_count} suggestions")
+        
+        return success1 and success2 and success3
+
+    def test_cook_recipe_pantry_deduction(self):
+        """Test cooking a recipe and deducting from pantry"""
+        if not self.created_recipe_id:
+            print("⚠️  Skipping cook recipe test - no recipe ID available")
+            return True
+        
+        cook_data = {
+            "recipe_id": self.created_recipe_id,
+            "servings_multiplier": 1.0
+        }
+        
+        success, response = self.run_test(
+            "Cook Recipe (Pantry Deduction)",
+            "POST",
+            "pantry/cook",
+            200,
+            data=cook_data
+        )
+        
+        if success:
+            deducted_count = len(response.get('deducted', []))
+            missing_count = len(response.get('missing_ingredients', []))
+            print(f"   Deducted {deducted_count} ingredients, {missing_count} missing")
+        
+        return success
+
+    def test_add_from_shopping_to_pantry(self):
+        """Test adding checked shopping items to pantry"""
+        success, response = self.run_test(
+            "Add From Shopping to Pantry",
+            "POST",
+            "pantry/add-from-shopping",
+            200
+        )
+        
+        if success:
+            added_count = response.get('added', 0)
+            print(f"   Added {added_count} items from shopping list to pantry")
+        
+        return success
+
     def test_delete_recipe(self):
         """Test deleting a recipe"""
         if not self.created_recipe_id:
