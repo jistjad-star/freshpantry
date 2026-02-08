@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   PlusCircle, 
@@ -8,7 +8,10 @@ import {
   Trash2,
   Plus,
   ClipboardPaste,
-  Wand2
+  Wand2,
+  Camera,
+  Upload,
+  Image as ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +37,15 @@ export default function AddRecipe() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [importUrl, setImportUrl] = useState("");
+  const fileInputRef = useRef(null);
+  
+  // Image upload state
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageName, setImageName] = useState("");
+  const [imageIngredients, setImageIngredients] = useState([]);
+  const [imageRawText, setImageRawText] = useState("");
+  const [isImageParsed, setIsImageParsed] = useState(false);
   
   // Paste form state
   const [pasteName, setPasteName] = useState("");
@@ -63,6 +75,77 @@ export default function AddRecipe() {
   });
 
   const [newInstruction, setNewInstruction] = useState("");
+
+  // Image upload handlers
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      setIsImageParsed(false);
+      setImageIngredients([]);
+      setImageRawText("");
+    }
+  };
+
+  const handleImageParse = async () => {
+    if (!imageFile) {
+      toast.error("Please select an image first");
+      return;
+    }
+    if (!imageName.trim()) {
+      toast.error("Please enter a recipe name");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.parseImage(imageFile);
+      setImageRawText(response.data.ingredients_text || "");
+      setImageIngredients(response.data.ingredients || []);
+      setIsImageParsed(true);
+      toast.success(`Extracted ${response.data.ingredients?.length || 0} ingredients!`);
+    } catch (error) {
+      console.error("Image parse error:", error);
+      toast.error("Failed to extract ingredients from image. Try a clearer photo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveImageRecipe = async () => {
+    if (!imageName.trim()) {
+      toast.error("Recipe name is required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const recipeData = {
+        name: imageName,
+        description: "",
+        servings: 2,
+        prep_time: "",
+        cook_time: "",
+        ingredients: imageIngredients,
+        instructions: [],
+        image_url: ""
+      };
+      
+      const response = await api.createRecipe(recipeData);
+      toast.success("Recipe saved successfully!");
+      navigate(`/recipes/${response.data.id}`);
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save recipe");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeImageIngredient = (index) => {
+    setImageIngredients(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleImportUrl = async () => {
     if (!importUrl.trim()) {
@@ -228,20 +311,28 @@ export default function AddRecipe() {
             Add New Recipe
           </h1>
           <p className="text-zinc-500">
-            Paste from Green Chef, import from URL, or create manually
+            Upload a screenshot, paste ingredients, or create manually
           </p>
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="paste" className="space-y-8">
-          <TabsList className="glass-card p-1 w-full md:w-auto grid grid-cols-3 md:flex">
+        <Tabs defaultValue="image" className="space-y-8">
+          <TabsList className="glass-card p-1 w-full grid grid-cols-2 md:grid-cols-4">
+            <TabsTrigger 
+              value="image" 
+              className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
+              data-testid="tab-image"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Screenshot
+            </TabsTrigger>
             <TabsTrigger 
               value="paste" 
               className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
               data-testid="tab-paste"
             >
               <ClipboardPaste className="w-4 h-4 mr-2" />
-              Paste from Green Chef
+              Paste Text
             </TabsTrigger>
             <TabsTrigger 
               value="import" 
@@ -257,11 +348,184 @@ export default function AddRecipe() {
               data-testid="tab-manual"
             >
               <PlusCircle className="w-4 h-4 mr-2" />
-              Manual Entry
+              Manual
             </TabsTrigger>
           </TabsList>
 
-          {/* Paste Tab - NEW */}
+          {/* Image/Screenshot Tab - NEW */}
+          <TabsContent value="image" className="animate-fade-in-up">
+            <div className="glass-card p-8 space-y-6">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#FFB7E3]/5 border border-[#FFB7E3]/20">
+                <Camera className="w-5 h-5 text-[#FFB7E3] mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-white">Screenshot Magic</p>
+                  <p className="text-sm text-zinc-400 mt-1">
+                    Take a screenshot of your Green Chef recipe ingredients and upload it here.
+                    Our AI will extract and categorize everything automatically!
+                  </p>
+                </div>
+              </div>
+
+              {!isImageParsed ? (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="image-name" className="text-white">Recipe Name *</Label>
+                    <Input
+                      id="image-name"
+                      placeholder="e.g., Honey Garlic Chicken"
+                      value={imageName}
+                      onChange={(e) => setImageName(e.target.value)}
+                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
+                      data-testid="image-recipe-name"
+                    />
+                  </div>
+
+                  {/* Image Upload Area */}
+                  <div className="space-y-2">
+                    <Label className="text-white">Upload Screenshot *</Label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageSelect}
+                      accept="image/*"
+                      className="hidden"
+                      data-testid="image-file-input"
+                    />
+                    
+                    {!imagePreview ? (
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-zinc-700 rounded-xl p-12 text-center cursor-pointer hover:border-[#39ff14]/50 transition-colors"
+                        data-testid="image-upload-area"
+                      >
+                        <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                        <p className="text-zinc-400 mb-2">Click to upload or drag and drop</p>
+                        <p className="text-sm text-zinc-600">PNG, JPG, WEBP up to 10MB</p>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <img 
+                          src={imagePreview} 
+                          alt="Recipe screenshot" 
+                          className="w-full max-h-80 object-contain rounded-xl bg-zinc-900"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview(null);
+                          }}
+                          className="absolute top-2 right-2 bg-black/50 border-zinc-700 text-white hover:bg-black/70"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handleImageParse}
+                    disabled={loading || !imageFile}
+                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
+                    data-testid="parse-image-btn"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Wand2 className="w-5 h-5 mr-2" />
+                        Extract Ingredients with AI
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                // Parsed Image Results
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-xl font-bold text-white">
+                      {imageName}
+                    </h3>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsImageParsed(false);
+                        setImageIngredients([]);
+                      }}
+                      className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+
+                  {imageRawText && (
+                    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                      <p className="text-xs text-zinc-500 mb-2">Extracted text:</p>
+                      <p className="text-sm text-zinc-400 whitespace-pre-wrap">{imageRawText}</p>
+                    </div>
+                  )}
+
+                  {/* Parsed Ingredients */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+                      Ingredients ({imageIngredients.length})
+                    </h4>
+                    {imageIngredients.length > 0 ? (
+                      <div className="space-y-2">
+                        {imageIngredients.map((ing, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>
+                                {ing.category}
+                              </span>
+                              <span className="text-white">
+                                <span className="text-[#39ff14] font-medium">
+                                  {ing.quantity} {ing.unit}
+                                </span>
+                                {" "}{ing.name}
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeImageIngredient(index)}
+                              className="text-zinc-500 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500 text-sm">No ingredients extracted. Try a clearer image.</p>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handleSaveImageRecipe}
+                    disabled={loading || imageIngredients.length === 0}
+                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
+                    data-testid="save-image-recipe-btn"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Save Recipe
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Paste Tab */}
           <TabsContent value="paste" className="animate-fade-in-up">
             <div className="glass-card p-8 space-y-6">
               <div className="flex items-start gap-4 p-4 rounded-lg bg-[#39ff14]/5 border border-[#39ff14]/20">
@@ -457,13 +721,13 @@ Example:
           {/* Import Tab */}
           <TabsContent value="import" className="animate-fade-in-up">
             <div className="glass-card p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#FFB7E3]/5 border border-[#FFB7E3]/20">
-                <LinkIcon className="w-5 h-5 text-[#FFB7E3] mt-0.5" />
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#9D00FF]/5 border border-[#9D00FF]/20">
+                <LinkIcon className="w-5 h-5 text-[#9D00FF] mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-white">URL Import</p>
                   <p className="text-sm text-zinc-400 mt-1">
                     Paste a public recipe URL. Works best with sites that have 
-                    structured recipe data. For Green Chef, use the "Paste" tab instead.
+                    structured recipe data. For Green Chef, use Screenshot or Paste tabs.
                   </p>
                 </div>
               </div>
@@ -566,18 +830,6 @@ Example:
                         data-testid="recipe-cook-time-input"
                       />
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="image_url" className="text-white">Image URL (optional)</Label>
-                    <Input
-                      id="image_url"
-                      placeholder="https://..."
-                      value={recipe.image_url}
-                      onChange={(e) => setRecipe(prev => ({ ...prev, image_url: e.target.value }))}
-                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
-                      data-testid="recipe-image-url-input"
-                    />
                   </div>
                 </div>
               </div>
