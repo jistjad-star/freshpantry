@@ -209,8 +209,21 @@ export default function WeeklyPlanner() {
                               onClick={() => addRecipeToDay(day, recipe.id)}
                               className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors"
                             >
-                              <span className="text-sm text-[#1A2E1A] truncate">{recipe.name}</span>
-                              <span className="text-xs text-[#4A7C59] font-medium">{recipe.match}%</span>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-[#1A2E1A] truncate flex-1">{recipe.name}</span>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                  recipe.match >= 80 ? 'text-green-600 bg-green-50' : 
+                                  recipe.match >= 50 ? 'text-amber-600 bg-amber-50' : 
+                                  'text-orange-600 bg-orange-50'
+                                }`}>
+                                  {recipe.match}%
+                                </span>
+                              </div>
+                              {recipe.missing > 0 && (
+                                <p className="text-xs text-orange-600 mt-1 truncate">
+                                  Missing: {recipe.missingItems.slice(0, 2).join(", ")}{recipe.missingItems.length > 2 ? '...' : ''}
+                                </p>
+                              )}
                             </button>
                           ))}
                         </div>
