@@ -141,6 +141,36 @@ export default function RecipeLibrary() {
             <p className="text-stone-500">{filteredRecipes.length} of {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Export/Import buttons */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileImport}
+              accept=".json"
+              className="hidden"
+            />
+            <Button 
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="border-stone-200"
+              data-testid="import-recipes-btn"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+              Import
+            </Button>
+            {selectedForExport.length > 0 && (
+              <Button 
+                variant="outline"
+                onClick={exportRecipes}
+                disabled={exporting}
+                className="border-[#4A7C59] text-[#4A7C59]"
+                data-testid="export-recipes-btn"
+              >
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+                Export ({selectedForExport.length})
+              </Button>
+            )}
             <Button 
               variant={viewMode === "grouped" ? "default" : "outline"} 
               onClick={() => setViewMode(viewMode === "grouped" ? "all" : "grouped")}
