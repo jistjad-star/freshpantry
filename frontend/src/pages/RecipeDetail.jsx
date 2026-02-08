@@ -415,14 +415,37 @@ export default function RecipeDetail() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button 
-                  onClick={() => navigate('/planner', { state: { addRecipeId: id } })} 
-                  variant="outline" 
-                  className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10"
-                  data-testid="add-to-planner-btn"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />Add to Planner
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10"
+                      disabled={addingToPlanner}
+                      data-testid="add-to-planner-btn"
+                    >
+                      {addingToPlanner ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Calendar className="w-4 h-4 mr-2" />
+                      )}
+                      Add to Planner
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-white w-48" align="start">
+                    {DAYS.map(day => (
+                      <DropdownMenuItem 
+                        key={day}
+                        onClick={() => handleAddToPlanner(day)}
+                        className="cursor-pointer hover:bg-[#4A7C59]/10"
+                        data-testid={`add-to-${day.toLowerCase()}`}
+                      >
+                        <Calendar className="w-4 h-4 mr-2 text-[#4A7C59]" />
+                        {day}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button 
                   onClick={() => navigate(`/recipes/${id}/edit`)} 
                   variant="outline" 
