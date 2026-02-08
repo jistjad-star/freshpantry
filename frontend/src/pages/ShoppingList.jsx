@@ -219,6 +219,11 @@ export default function ShoppingList() {
                     <div>
                       <p className="font-semibold text-green-800">
                         Best Value: {costEstimate.cheapest_store.name}
+                        {costEstimate.cheapest_store.has_loyalty && (
+                          <span className="ml-2 text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">
+                            With Loyalty Card
+                          </span>
+                        )}
                       </p>
                       <p className="text-sm text-green-700">
                         Estimated total: <span className="font-bold">£{costEstimate.cheapest_store.total.toFixed(2)}</span>
@@ -232,17 +237,72 @@ export default function ShoppingList() {
                   </div>
                 </div>
 
-                {/* Store Comparison Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.entries(costEstimate.totals)
-                    .sort((a, b) => a[1] - b[1])
-                    .map(([store, total], index) => (
-                      <div 
-                        key={store} 
-                        className={`p-3 rounded-lg border ${
-                          index === 0 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-white border-stone-200'
+                {/* Standard Prices */}
+                <div>
+                  <p className="text-xs font-medium text-stone-500 uppercase mb-2">Standard Prices</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {Object.entries(costEstimate.totals)
+                      .sort((a, b) => a[1] - b[1])
+                      .map(([store, total], index) => {
+                        const displayNames = {
+                          tesco: "Tesco", sainsburys: "Sainsbury's", aldi: "Aldi",
+                          lidl: "Lidl", asda: "Asda", morrisons: "Morrisons"
+                        };
+                        return (
+                          <div 
+                            key={store} 
+                            className={`p-3 rounded-lg border ${
+                              index === 0 && !costEstimate.cheapest_store.has_loyalty
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-white border-stone-200'
+                            }`}
+                          >
+                            <p className="text-xs text-stone-500">{displayNames[store] || store}</p>
+                            <p className={`font-semibold ${index === 0 && !costEstimate.cheapest_store.has_loyalty ? 'text-green-700' : 'text-stone-700'}`}>
+                              £{total.toFixed(2)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Loyalty Card Prices */}
+                {costEstimate.loyalty_totals && (
+                  <div>
+                    <p className="text-xs font-medium text-stone-500 uppercase mb-2">With Loyalty Cards 💳</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {[
+                        { key: 'tesco_clubcard', name: 'Tesco Clubcard', color: 'blue' },
+                        { key: 'sainsburys_nectar', name: "Sainsbury's Nectar", color: 'orange' },
+                        { key: 'morrisons_more', name: 'Morrisons More', color: 'yellow' },
+                      ].map(({ key, name, color }) => {
+                        const total = costEstimate.loyalty_totals[key];
+                        const isCheapest = costEstimate.cheapest_store.key === key;
+                        return (
+                          <div 
+                            key={key} 
+                            className={`p-3 rounded-lg border ${
+                              isCheapest 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-white border-stone-200'
+                            }`}
+                          >
+                            <p className="text-xs text-stone-500">{name}</p>
+                            <p className={`font-semibold ${isCheapest ? 'text-green-700' : 'text-stone-700'}`}>
+                              £{total?.toFixed(2) || '0.00'}
+                            </p>
+                            {costEstimate.totals[key.split('_')[0]] && (
+                              <p className="text-xs text-green-600 mt-0.5">
+                                Save £{(costEstimate.totals[key.split('_')[0]] - total).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                         }`}
                       >
                         <p className="text-xs text-stone-500 capitalize">{store}</p>
