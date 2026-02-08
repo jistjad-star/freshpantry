@@ -583,7 +583,7 @@ async def logout(request: Request, response: Response):
 
 @api_router.get("/")
 async def root():
-    return {"message": "The Emerald Pantry API - Wicked good shopping lists!"}
+    return {"message": "Fresh Pantry API - Your kitchen companion!"}
 
 # ---- Parse Ingredients Routes ----
 
