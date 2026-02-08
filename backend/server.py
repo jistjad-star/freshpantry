@@ -525,35 +525,131 @@ Which recipes can I make with what I have? Suggest the best matches."""
         logger.error(f"Error suggesting meals: {e}", exc_info=True)
         return []
 
+def normalize_ingredient_name(name: str) -> str:
+    """Normalize ingredient name for matching"""
+    # Remove common variations and plurals
+    name = name.lower().strip()
+    # Remove common prefixes/suffixes
+    for word in ['fresh ', 'dried ', 'chopped ', 'diced ', 'minced ', 'sliced ', 'whole ', 'ground ']:
+        name = name.replace(word, '')
+    # Simple plural handling
+    if name.endswith('es') and len(name) > 3:
+        name = name[:-2]
+    elif name.endswith('s') and len(name) > 2:
+        name = name[:-1]
+    return name.strip()
+
+def parse_quantity(qty_str: str) -> float:
+    """Parse quantity string to float"""
+    if not qty_str:
+        return 1.0
+    qty_str = qty_str.strip().lower()
+    # Handle fractions
+    fractions = {'1/4': 0.25, '1/3': 0.33, '1/2': 0.5, '2/3': 0.67, '3/4': 0.75}
+    for frac, val in fractions.items():
+        if frac in qty_str:
+            qty_str = qty_str.replace(frac, str(val))
+    # Handle mixed numbers like "1 1/2"
+    try:
+        parts = qty_str.split()
+        total = 0
+        for part in parts:
+            if '/' in part:
+                num, denom = part.split('/')
+                total += float(num) / float(denom)
+            else:
+                total += float(part)
+        return total if total > 0 else 1.0
+    except:
+        return 1.0
+
+def consolidate_items_locally(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
+    """Consolidate shopping list items without AI"""
+    # Group by normalized name and unit
+    grouped = {}
+    for item in items:
+        key = (normalize_ingredient_name(item.name), item.unit.lower().strip())
+        if key not in grouped:
+            grouped[key] = {
+                'name': item.name,
+                'quantity': 0,
+                'unit': item.unit,
+                'category': item.category,
+                'sources': []
+            }
+        grouped[key]['quantity'] += parse_quantity(item.quantity)
+        if item.recipe_source and item.recipe_source not in grouped[key]['sources']:
+            grouped[key]['sources'].append(item.recipe_source)
+    
+    # Convert back to list
+    consolidated = []
+    for (norm_name, unit), data in grouped.items():
+        # Format quantity nicely
+        qty = data['quantity']
+        if qty == int(qty):
+            qty_str = str(int(qty))
+        else:
+            qty_str = f"{qty:.1f}".rstrip('0').rstrip('.')
+        
+        consolidated.append(ShoppingListItem(
+            name=data['name'],
+            quantity=qty_str,
+            unit=data['unit'],
+            category=data['category'],
+            recipe_source=', '.join(data['sources']) if data['sources'] else None
+        ))
+    
+    # Sort by category
+    category_order = ['produce', 'protein', 'dairy', 'grains', 'pantry', 'spices', 'frozen', 'other']
+    consolidated.sort(key=lambda x: (category_order.index(x.category) if x.category in category_order else 99, x.name))
+    
+    return consolidated
+
 async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
-    """Use AI to consolidate similar ingredients"""
-    if not EMERGENT_LLM_KEY or len(items) < 2:
+    """Use AI to consolidate similar ingredients, with local fallback"""
+    if len(items) < 2:
         return items
+    
+    # First try local consolidation (faster and more reliable)
+    consolidated = consolidate_items_locally(items)
+    
+    # If we reduced the list significantly, use local results
+    if len(consolidated) < len(items) * 0.8:
+        logger.info(f"Local consolidation: {len(items)} -> {len(consolidated)} items")
+        return consolidated
+    
+    # Otherwise try AI for smarter consolidation
+    if not EMERGENT_LLM_KEY:
+        return consolidated
     
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"consolidate-{uuid.uuid4()}",
             system_message="""You are a helpful assistant that consolidates shopping list items.
-            Combine similar ingredients (e.g., "2 cups chicken broth" + "1 cup chicken broth" = "3 cups chicken broth").
+            Combine similar ingredients and ADD their quantities together.
+            Example: "2 cups flour" + "1 cup flour" = "3 cups flour"
+            Example: "1 onion" + "2 onions" = "3 onions"
+            
+            IMPORTANT: Add quantities together, don't just list them separately!
             Keep items organized by category.
             
             Return ONLY a valid JSON array with these fields for each item:
             - id: string (generate new UUID)
-            - name: string
-            - quantity: string
+            - name: string (the ingredient name)
+            - quantity: string (the TOTAL combined quantity)
             - unit: string
             - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
-            - checked: boolean (always false)
-            - recipe_source: string or null
+            - checked: false
+            - recipe_source: string (list all source recipes) or null
             
             No markdown or explanation, just the JSON array."""
         ).with_model("openai", "gpt-5.2")
         
-        items_text = "\n".join([f"- {item.quantity} {item.unit} {item.name} (category: {item.category})" for item in items])
+        items_text = "\n".join([f"- {item.quantity} {item.unit} {item.name} (from: {item.recipe_source or 'manual'})" for item in items])
         
         user_message = UserMessage(
-            text=f"Consolidate these shopping list items:\n\n{items_text}"
+            text=f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}"
         )
         
         response = await chat.send_message(user_message)
@@ -567,10 +663,12 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
         clean_response = clean_response.strip()
         
         consolidated_data = json.loads(clean_response)
-        return [ShoppingListItem(**item) for item in consolidated_data]
+        ai_consolidated = [ShoppingListItem(**item) for item in consolidated_data]
+        logger.info(f"AI consolidation: {len(items)} -> {len(ai_consolidated)} items")
+        return ai_consolidated
     except Exception as e:
-        logger.error(f"Error consolidating ingredients: {e}")
-        return items
+        logger.error(f"Error consolidating ingredients with AI: {e}")
+        return consolidated  # Fall back to local consolidation
 
 async def scrape_recipe_from_url(url: str) -> dict:
     """Scrape recipe data from Green Chef or similar recipe URLs"""
