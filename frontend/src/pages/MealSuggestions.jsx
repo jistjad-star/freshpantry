@@ -11,12 +11,25 @@ import {
   Calendar,
   Wand2,
   Plus,
-  Save
+  Save,
+  Coffee,
+  Sun,
+  Moon,
+  Cookie,
+  UtensilsCrossed
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import api from "@/lib/api";
+
+const MEAL_TYPES = [
+  { value: "all", label: "All", icon: UtensilsCrossed },
+  { value: "breakfast", label: "Breakfast", icon: Coffee },
+  { value: "lunch", label: "Lunch", icon: Sun },
+  { value: "dinner", label: "Dinner", icon: Moon },
+  { value: "snack", label: "Snack", icon: Cookie },
+];
 
 export default function MealSuggestions() {
   const navigate = useNavigate();
@@ -27,11 +40,12 @@ export default function MealSuggestions() {
   const [generatingRecipe, setGeneratingRecipe] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [savingRecipe, setSavingRecipe] = useState(false);
+  const [mealTypeFilter, setMealTypeFilter] = useState("all");
 
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = async (mealType = "all") => {
     setLoading(true);
     try {
-      const response = await api.getMealSuggestions();
+      const response = await api.getMealSuggestions(mealType !== "all" ? mealType : null);
       setSuggestions(response.data.suggestions || []);
       setMessage(response.data.message || "");
     } catch (error) {
@@ -43,8 +57,8 @@ export default function MealSuggestions() {
   };
 
   useEffect(() => {
-    fetchSuggestions();
-  }, []);
+    fetchSuggestions(mealTypeFilter);
+  }, [mealTypeFilter]);
 
   const generateAIRecipe = async () => {
     setGeneratingRecipe(true);
