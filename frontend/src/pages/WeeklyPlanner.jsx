@@ -195,80 +195,113 @@ export default function WeeklyPlanner() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-0 bg-white shadow-xl border-stone-200" align="end">
-                    <div className="p-3 border-b border-stone-100">
-                      <h4 className="font-semibold text-[#1A2E1A] text-sm">Add meal to {day}</h4>
-                    </div>
-                    
-                    {/* AI Suggestions Section */}
-                    {getSuggestedRecipes().length > 0 && (
-                      <div className="p-2 border-b border-stone-100 bg-[#4A7C59]/5">
-                        <p className="text-xs text-[#4A7C59] font-medium px-2 py-1 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          Suggested based on pantry
-                        </p>
-                        <div className="space-y-1 mt-1">
-                          {getSuggestedRecipes().map((recipe) => (
-                            <button
-                              key={recipe.id}
-                              onClick={() => addRecipeToDay(day, recipe.id)}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-[#1A2E1A] truncate flex-1">{recipe.name}</span>
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                  recipe.match >= 80 ? 'text-green-600 bg-green-50' : 
-                                  recipe.match >= 50 ? 'text-amber-600 bg-amber-50' : 
-                                  'text-orange-600 bg-orange-50'
-                                }`}>
-                                  {recipe.match}%
-                                </span>
-                              </div>
-                              {recipe.missing > 0 && (
-                                <p className="text-xs text-orange-600 mt-1 truncate">
-                                  Missing: {recipe.missingItems.slice(0, 2).join(", ")}{recipe.missingItems.length > 2 ? '...' : ''}
-                                </p>
-                              )}
-                            </button>
-                          ))}
+                    <Tabs defaultValue="suggested" className="w-full">
+                      <div className="p-2 border-b border-stone-100">
+                        <TabsList className="w-full grid grid-cols-3 h-8">
+                          <TabsTrigger value="suggested" className="text-xs data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59]">
+                            <Sparkles className="w-3 h-3 mr-1" />Suggested
+                          </TabsTrigger>
+                          <TabsTrigger value="ingredient" className="text-xs data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59]">
+                            <Layers className="w-3 h-3 mr-1" />By Ingredient
+                          </TabsTrigger>
+                          <TabsTrigger value="all" className="text-xs data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59]">
+                            All
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
+                      
+                      {/* Suggested Tab */}
+                      <TabsContent value="suggested" className="m-0">
+                        <div className="max-h-64 overflow-y-auto">
+                          {getSuggestedRecipes().length > 0 ? (
+                            <div className="p-2 space-y-1">
+                              {getSuggestedRecipes().map((recipe) => (
+                                <button
+                                  key={recipe.id}
+                                  onClick={() => addRecipeToDay(day, recipe.id)}
+                                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-[#1A2E1A] truncate flex-1">{recipe.name}</span>
+                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                      recipe.match >= 80 ? 'text-green-600 bg-green-50' : 
+                                      recipe.match >= 50 ? 'text-amber-600 bg-amber-50' : 
+                                      'text-orange-600 bg-orange-50'
+                                    }`}>
+                                      {recipe.match}%
+                                    </span>
+                                  </div>
+                                  {recipe.missing > 0 && (
+                                    <p className="text-xs text-orange-600 mt-1 truncate">
+                                      Missing: {recipe.missingItems.slice(0, 2).join(", ")}{recipe.missingItems.length > 2 ? '...' : ''}
+                                    </p>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-stone-400 px-4 py-8 text-center">Add items to your pantry for suggestions</p>
+                          )}
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* All Recipes Section */}
-                    <div className="max-h-64 overflow-y-auto">
-                      <p className="text-xs text-stone-500 font-medium px-4 py-2 sticky top-0 bg-white">All recipes</p>
-                      <div className="px-2 pb-2 space-y-1">
-                        {recipes.length > 0 ? recipes.map((recipe) => (
-                          <button
-                            key={recipe.id}
-                            onClick={() => addRecipeToDay(day, recipe.id)}
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-3"
-                          >
-                            {recipe.image_url ? (
-                              <div className="w-8 h-8 rounded bg-cover bg-center flex-shrink-0" style={{ backgroundImage: `url(${recipe.image_url})` }} />
-                            ) : (
-                              <div className="w-8 h-8 rounded bg-stone-100 flex items-center justify-center flex-shrink-0">
-                                <ChefHat className="w-4 h-4 text-stone-400" />
-                              </div>
+                      </TabsContent>
+                      
+                      {/* By Ingredient Tab */}
+                      <TabsContent value="ingredient" className="m-0">
+                        <div className="max-h-64 overflow-y-auto">
+                          {recipeGroups.length > 0 ? (
+                            <div className="p-2 space-y-3">
+                              {recipeGroups.slice(0, 6).map((group, idx) => (
+                                <div key={idx}>
+                                  <p className="text-xs text-[#4A7C59] font-medium px-2 mb-1 flex items-center gap-1">
+                                    <span className="px-2 py-0.5 rounded bg-[#4A7C59]/10">{group.shared_ingredient}</span>
+                                    <span className="text-stone-400">({group.count})</span>
+                                  </p>
+                                  <div className="space-y-1">
+                                    {group.recipes.map((recipe) => (
+                                      <button
+                                        key={recipe.id}
+                                        onClick={() => addRecipeToDay(day, recipe.id)}
+                                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors text-sm text-[#1A2E1A]"
+                                      >
+                                        {recipe.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-stone-400 px-4 py-8 text-center">Add more recipes to see groups</p>
+                          )}
+                        </div>
+                      </TabsContent>
+                      
+                      {/* All Recipes Tab */}
+                      <TabsContent value="all" className="m-0">
+                        <div className="max-h-64 overflow-y-auto">
+                          <div className="p-2 space-y-1">
+                            {recipes.length > 0 ? recipes.map((recipe) => (
+                              <button
+                                key={recipe.id}
+                                onClick={() => addRecipeToDay(day, recipe.id)}
+                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-3"
+                              >
+                                {recipe.image_url ? (
+                                  <div className="w-8 h-8 rounded bg-cover bg-center flex-shrink-0" style={{ backgroundImage: `url(${recipe.image_url})` }} />
+                                ) : (
+                                  <div className="w-8 h-8 rounded bg-stone-100 flex items-center justify-center flex-shrink-0">
+                                    <ChefHat className="w-4 h-4 text-stone-400" />
+                                  </div>
+                                )}
+                                <span className="text-sm text-[#1A2E1A] truncate">{recipe.name}</span>
+                              </button>
+                            )) : (
+                              <p className="text-sm text-stone-400 px-3 py-4 text-center">No recipes yet</p>
                             )}
-                            <span className="text-sm text-[#1A2E1A] truncate">{recipe.name}</span>
-                          </button>
-                        )) : (
-                          <p className="text-sm text-stone-400 px-3 py-4 text-center">No recipes yet</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* More Suggestions Link */}
-                    <div className="p-2 border-t border-stone-100">
-                      <button
-                        onClick={() => { setOpenDay(null); navigate("/suggestions"); }}
-                        className="w-full text-center px-3 py-2 rounded-lg text-sm text-[#4A7C59] hover:bg-[#4A7C59]/10 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Get more AI suggestions
-                      </button>
-                    </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
                   </PopoverContent>
                 </Popover>
               </div>
