@@ -13,7 +13,7 @@ export const api = {
   logout: () => axios.post(`${API}/auth/logout`),
 
   // Recipes
-  getRecipes: () => axios.get(`${API}/recipes`),
+  getRecipes: (sortBy = null) => axios.get(`${API}/recipes`, { params: sortBy ? { sort_by: sortBy } : {} }),
   getRecipe: (id) => axios.get(`${API}/recipes/${id}`),
   getRecipesGrouped: () => axios.get(`${API}/recipes/grouped`),
   createRecipe: (data) => axios.post(`${API}/recipes`, data),
@@ -24,6 +24,11 @@ export const api = {
   updateRecipeCategories: (id, categories) => axios.put(`${API}/recipes/${id}/categories`, { categories }),
   exportRecipes: (recipeIds) => axios.post(`${API}/recipes/export`, { recipe_ids: recipeIds }),
   importRecipes: (recipes) => axios.post(`${API}/recipes/import-batch`, { recipes }),
+  
+  // Reviews
+  getReviews: (recipeId) => axios.get(`${API}/recipes/${recipeId}/reviews`),
+  addReview: (recipeId, rating, comment) => axios.post(`${API}/recipes/${recipeId}/reviews`, { rating, comment }),
+  deleteReview: (recipeId, reviewId) => axios.delete(`${API}/recipes/${recipeId}/reviews/${reviewId}`),
   
   // Parse ingredients
   parseIngredients: (recipeName, ingredientsText, instructionsText = "") => 
