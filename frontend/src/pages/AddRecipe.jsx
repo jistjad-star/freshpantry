@@ -480,14 +480,14 @@ export default function AddRecipe() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{imageName}</h3>
-                    <Button variant="outline" onClick={() => { setIsImageParsed(false); setImageIngredients([]); }}>
-                      Try Again
+                    <Button variant="outline" onClick={() => { setIsImageParsed(false); setImageIngredients([]); setIsInstructionsParsed(false); setImageInstructions([]); }}>
+                      Start Over
                     </Button>
                   </div>
 
                   {imageRawText && (
                     <div className="p-4 rounded-xl bg-stone-50 border border-stone-200">
-                      <p className="text-xs text-stone-500 mb-2">Extracted text:</p>
+                      <p className="text-xs text-stone-500 mb-2">Extracted ingredients text:</p>
                       <p className="text-sm text-stone-600 whitespace-pre-wrap">{imageRawText}</p>
                     </div>
                   )}
@@ -516,6 +516,106 @@ export default function AddRecipe() {
                       </div>
                     ) : (
                       <p className="text-stone-500 text-sm">No ingredients extracted. Try a clearer image.</p>
+                    )}
+                  </div>
+
+                  {/* Instructions Image Upload Section */}
+                  <div className="border-t border-stone-200 pt-6 space-y-4">
+                    <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
+                      <Camera className="w-5 h-5 text-[#4A7C59] mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-[#1A2E1A]">Instructions Screenshot (Optional)</p>
+                        <p className="text-sm text-stone-500 mt-1">
+                          Upload a screenshot of cooking instructions to extract steps.
+                        </p>
+                      </div>
+                    </div>
+
+                    <input
+                      type="file"
+                      ref={instructionsFileInputRef}
+                      onChange={handleInstructionsImageSelect}
+                      accept="image/*"
+                      className="hidden"
+                    />
+
+                    {!isInstructionsParsed ? (
+                      <div className="space-y-4">
+                        {!instructionsImagePreview ? (
+                          <div 
+                            onClick={() => instructionsFileInputRef.current?.click()}
+                            className="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
+                            data-testid="instructions-upload-area"
+                          >
+                            <Upload className="w-10 h-10 text-stone-400 mx-auto mb-3" />
+                            <p className="text-stone-600 mb-1">Click to upload instructions screenshot</p>
+                            <p className="text-xs text-stone-400">PNG, JPG up to 10MB</p>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <img 
+                              src={instructionsImagePreview} 
+                              alt="Instructions screenshot" 
+                              className="w-full max-h-60 object-contain rounded-xl bg-stone-100"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setInstructionsImageFile(null); setInstructionsImagePreview(null); }}
+                              className="absolute top-2 right-2 bg-white"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+
+                        {instructionsImagePreview && (
+                          <Button
+                            onClick={handleInstructionsParse}
+                            disabled={instructionsLoading}
+                            className="btn-secondary w-full py-4"
+                            data-testid="parse-instructions-btn"
+                          >
+                            {instructionsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                              <><Sparkles className="w-5 h-5 mr-2" />Extract Instructions</>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">
+                            Instructions ({imageInstructions.length})
+                          </h4>
+                          <Button variant="ghost" size="sm" onClick={() => { setIsInstructionsParsed(false); setImageInstructions([]); setInstructionsImageFile(null); setInstructionsImagePreview(null); }}>
+                            Re-upload
+                          </Button>
+                        </div>
+
+                        {instructionsRawText && (
+                          <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                            <p className="text-xs text-stone-500 mb-1">Extracted text:</p>
+                            <p className="text-xs text-stone-600 whitespace-pre-wrap max-h-20 overflow-y-auto">{instructionsRawText}</p>
+                          </div>
+                        )}
+
+                        {imageInstructions.length > 0 ? (
+                          <div className="space-y-2">
+                            {imageInstructions.map((step, index) => (
+                              <div key={index} className="flex items-start gap-4 p-3 rounded-xl bg-stone-50 border border-stone-200">
+                                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-sm font-bold">{index + 1}</span>
+                                <p className="text-[#1A2E1A] flex-1 pt-0.5 text-sm">{step}</p>
+                                <Button variant="ghost" size="sm" onClick={() => removeImageInstruction(index)} className="text-stone-400 hover:text-[#E07A5F]">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-stone-500 text-sm">No instructions extracted.</p>
+                        )}
+                      </div>
                     )}
                   </div>
 
