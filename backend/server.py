@@ -2116,7 +2116,8 @@ async def estimate_shopping_costs(request: Request):
     item_estimates = []
     for item in items_to_estimate:
         qty = parse_quantity(item.get('quantity', '1'))
-        estimate = estimate_item_price(item['name'], qty)
+        unit = item.get('unit', '')
+        estimate = estimate_item_price(item['name'], qty, unit)
         
         item_estimates.append({
             "name": item['name'],
