@@ -190,7 +190,7 @@ export default function WeeklyPlanner() {
                       <Plus className="w-4 h-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 p-0 bg-white shadow-xl border-stone-200" align="end">
+                  <PopoverContent className="w-80 p-0 bg-white shadow-xl border-stone-200" align="end">
                     <div className="p-3 border-b border-stone-100">
                       <h4 className="font-semibold text-[#1A2E1A] text-sm">Add meal to {day}</h4>
                     </div>
@@ -207,7 +207,7 @@ export default function WeeklyPlanner() {
                             <button
                               key={recipe.id}
                               onClick={() => addRecipeToDay(day, recipe.id)}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors flex items-center justify-between"
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors"
                             >
                               <span className="text-sm text-[#1A2E1A] truncate">{recipe.name}</span>
                               <span className="text-xs text-[#4A7C59] font-medium">{recipe.match}%</span>
