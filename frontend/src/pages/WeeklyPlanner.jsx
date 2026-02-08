@@ -74,7 +74,6 @@ export default function WeeklyPlanner() {
       window.history.replaceState({}, document.title);
     }
   }, [location.state?.addRecipeId, recipes.length]);
-  }, [location.state, recipes]);
 
   useEffect(() => {
     const fetchData = async () => {
