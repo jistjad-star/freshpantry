@@ -9,6 +9,8 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 3. Added: Screenshot upload (AI vision extraction)
 4. Added: Google Sign-In (cross-device sync)
 5. Added: Pantry inventory tracking with auto-deduct
+6. Added: Recipe categories (Vegan, Veggie, etc.) with manual editing
+7. Added: Smart shopping lists that subtract pantry inventory
 
 ## Current Design
 - **Theme**: Fresh Greens - light, calm, foody, fun
@@ -30,9 +32,14 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Manual recipe entry with ingredients and instructions
 - [x] Paste ingredients - AI parses and categorizes ingredients
 - [x] Screenshot upload - AI vision extracts ingredients from images
+- [x] Instructions screenshot upload - AI extracts cooking steps and times
 - [x] URL import (limited - works with structured recipe pages)
-- [x] Recipe library with search
+- [x] Recipe library with search and category filters
 - [x] Recipe detail view with "I Cooked This" button
+- [x] AI-generated images for each recipe
+- [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy)
+- [x] Manual category editing with toggle UI
+- [x] Recipe grouping by shared ingredients
 
 ### Pantry/Inventory Tracking
 - [x] Track all ingredients with quantities and units
@@ -44,17 +51,20 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ### Shopping Lists
 - [x] Generate from selected recipes
-- [x] AI-powered ingredient consolidation
+- [x] AI-powered ingredient consolidation (combines quantities)
+- [x] **SMART SHOPPING**: Subtracts pantry inventory from needed items
 - [x] Categorized view (produce, dairy, protein, etc.)
 - [x] Check off items while shopping
 - [x] Add checked items to pantry
 - [x] Export to clipboard or print/PDF
 
 ### Weekly Planning
-- [x] Day-by-day meal planning
+- [x] Day-by-day meal planning (7 meals max per week)
 - [x] Navigate between weeks
 - [x] Generate shopping list from week plan
 - [x] Save plans per week
+- [x] Recipe selection popup with Suggested, By Ingredient, and All tabs
+- [x] Meal suggestions based on pantry inventory
 
 ### User Accounts
 - [x] Google Sign-In via Emergent OAuth
@@ -64,13 +74,17 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 ## API Endpoints
 
 ### Recipes
-- POST /api/recipes - Create recipe
+- POST /api/recipes - Create recipe (auto-generates image + categories)
 - GET /api/recipes - List recipes
 - GET /api/recipes/{id} - Get recipe
 - DELETE /api/recipes/{id} - Delete recipe
+- PUT /api/recipes/{id}/categories - Update recipe categories
+- POST /api/recipes/{id}/generate-image - Generate AI image
 - POST /api/recipes/import - Import from URL
 - POST /api/parse-ingredients - Parse pasted text
 - POST /api/parse-image - Extract from image
+- POST /api/parse-instructions-image - Extract instructions from image
+- GET /api/recipes/grouped - Get recipes grouped by shared ingredients
 
 ### Pantry
 - GET /api/pantry - Get pantry inventory
@@ -83,7 +97,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ### Shopping List
 - GET /api/shopping-list - Get current list
-- POST /api/shopping-list/generate - Generate from recipes
+- POST /api/shopping-list/generate - Generate smart list (subtracts pantry)
 - PUT /api/shopping-list - Update list
 - POST /api/shopping-list/add-item - Add custom item
 - DELETE /api/shopping-list/item/{id} - Remove item
@@ -92,6 +106,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - GET /api/weekly-plan - Get plan for week
 - POST /api/weekly-plan - Save week plan
 - GET /api/weekly-plan/all - Get all plans
+
+### Meal Suggestions
+- GET /api/suggestions/meals - AI-powered meal suggestions based on pantry
 
 ### Auth
 - POST /api/auth/session - Create session from OAuth
@@ -102,16 +119,16 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ### P1 (Important) - Future
 - [ ] Drag & drop in weekly planner
-- [ ] Recipe scaling (adjust servings)
+- [ ] Recipe scaling (adjust servings in planner context)
 - [ ] Expiry date tracking for pantry items
 - [ ] Smart shopping suggestions based on usage patterns
 
 ### P2 (Nice to Have)
-- [ ] Recipe tags/categories
 - [ ] Favorite recipes
 - [ ] Email shopping list
 - [ ] PWA support for mobile
 - [ ] Barcode scanning for pantry
+- [ ] Recipe sharing
 
 ## Tech Notes
 - Image parsing uses GPT-5.1 (vision model) via ImageContent class
@@ -121,17 +138,19 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ## Changelog
 
-### 2025-02-08
-- **Added**: AI-generated images for recipes - when you add a recipe, an appetizing food photo is automatically generated using OpenAI GPT Image 1
-- **Improved**: Meal suggestions now show ALL recipes, even with low match - clearly displays which ingredients are missing in an orange highlight box
-- **Improved**: Weekly planner popup shows more suggestions with missing ingredients listed (e.g., "Missing: flour, eggs")
-- **Added**: Group recipes by shared ingredients - "Group by Ingredients" button in Recipes page shows which recipes share common ingredients
-- **Improved**: Shopping list consolidation - same ingredients from multiple recipes now combine quantities automatically (e.g., "2 cups flour" + "1 cup flour" = "3 cups flour")
-- **Added**: Auto-calculate cooking time from instructions - AI extracts prep time and cook time when parsing instruction screenshots
-- **Added**: Meal Suggestions page - AI-powered recommendations based on pantry inventory, showing match percentage and missing ingredients
-- **Added**: 7 meals per week limit on Weekly Planner with visual indicator
-- **Added**: "Get Suggestions" button on Planner page to quickly get meal recommendations
-- **Added**: Instructions image upload - users can now upload a screenshot of cooking instructions and AI will extract the steps
-- **Fixed**: Screenshot upload feature - changed from deprecated `image_url` parameter to `file_contents=[ImageContent(image_base64=...)]` in emergentintegrations library
-- **Fixed**: Null value handling for ingredients without quantities
-- **Updated**: Vision model from GPT-4o to GPT-5.1 (recommended vision model)
+### 2025-02-08 (Session 2)
+- **Fixed**: Manual recipe re-categorization UI - Added edit button with pencil icon next to category badges, category toggle chips with icons, Save/Cancel functionality
+- **Fixed**: Screenshot upload UX confusion - Added helper text "Upload an image above to enable extraction" when no image selected
+- **Implemented**: Smart Shopping List - Now subtracts pantry inventory from generated shopping lists. Shows "have X in pantry" in the source field when adjusting quantities
+
+### 2025-02-08 (Session 1)
+- **Added**: AI-generated images for recipes
+- **Improved**: Meal suggestions show ALL recipes with missing ingredients highlighted
+- **Added**: Group recipes by shared ingredients
+- **Improved**: Shopping list consolidation (combines quantities)
+- **Added**: Auto-calculate cooking time from instructions
+- **Added**: 7 meals per week limit on Weekly Planner
+- **Added**: Instructions image upload with step extraction
+- **Fixed**: Screenshot upload feature
+- **Fixed**: Null value handling for ingredients
+- **Updated**: Vision model from GPT-4o to GPT-5.1
