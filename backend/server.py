@@ -373,6 +373,74 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         logger.error(f"Error extracting from image: {e}", exc_info=True)
         return "", []
 
+async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str]]:
+    """Use AI vision to extract cooking instructions from an image"""
+    if not EMERGENT_LLM_KEY:
+        logger.warning("No EMERGENT_LLM_KEY found")
+        return "", []
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"instructions-parse-{uuid.uuid4()}",
+            system_message="""You are a helpful assistant that extracts cooking instructions from images.
+            Look carefully at the image and extract ALL cooking steps/instructions.
+            
+            Return as JSON with format:
+            {
+                "raw_text": "all the instruction text you can see",
+                "instructions": ["Step 1 text", "Step 2 text", "Step 3 text", ...]
+            }
+            
+            Each instruction should be a complete step. Remove step numbers from the text.
+            Return ONLY valid JSON, no markdown code blocks."""
+        ).with_model("openai", "gpt-5.1")
+        
+        image_content = ImageContent(image_base64=image_base64)
+        
+        user_message = UserMessage(
+            text="Extract all cooking instructions from this recipe image. List every step in order.",
+            file_contents=[image_content]
+        )
+        
+        response = await chat.send_message(user_message)
+        logger.info(f"Instructions Vision API response: {response[:500] if response else 'Empty'}")
+        
+        import json
+        clean_response = response.strip()
+        
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
+        clean_response = clean_response.strip()
+        
+        try:
+            data = json.loads(clean_response)
+        except json.JSONDecodeError:
+            start = clean_response.find("{")
+            end = clean_response.rfind("}") + 1
+            if start >= 0 and end > start:
+                data = json.loads(clean_response[start:end])
+            else:
+                logger.error(f"Could not parse JSON from instructions response: {clean_response}")
+                return "", []
+        
+        raw_text = data.get("raw_text", "")
+        instructions = data.get("instructions", [])
+        
+        # Ensure all instructions are strings
+        instructions = [str(inst) for inst in instructions if inst]
+        
+        logger.info(f"Extracted {len(instructions)} instructions from image")
+        return raw_text, instructions
+    except Exception as e:
+        logger.error(f"Error extracting instructions from image: {e}", exc_info=True)
+        return "", []
+
 async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
     """Use AI to consolidate similar ingredients"""
     if not EMERGENT_LLM_KEY or len(items) < 2:
