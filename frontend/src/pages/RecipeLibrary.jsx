@@ -25,12 +25,13 @@ export default function RecipeLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [viewMode, setViewMode] = useState("all");
+  const [sortBy, setSortBy] = useState(null);
   const [selectedForExport, setSelectedForExport] = useState([]);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef(null);
 
-  useEffect(() => { fetchRecipes(); }, []);
+  useEffect(() => { fetchRecipes(); }, [sortBy]);
 
   const fetchRecipes = async () => {
     try {
