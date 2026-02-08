@@ -118,15 +118,17 @@ export default function WeeklyPlanner() {
   const totalMeals = getTotalMeals();
   const canAddMore = totalMeals < MAX_MEALS_PER_WEEK;
 
-  // Get suggested recipes for the popover
+  // Get suggested recipes for the popover - show more with lower threshold
   const getSuggestedRecipes = () => {
     return suggestions
-      .filter(s => s.match_percentage >= 50)
-      .slice(0, 3)
+      .filter(s => s.match_percentage >= 20) // Show recipes even with low match
+      .slice(0, 5) // Show up to 5 suggestions
       .map(s => ({
         id: s.recipe_id,
         name: s.recipe_name,
         match: s.match_percentage,
+        missing: s.missing_ingredients?.length || 0,
+        missingItems: s.missing_ingredients || [],
         isSuggested: true
       }));
   };
