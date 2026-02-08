@@ -200,7 +200,7 @@ export default function AddRecipe() {
       const recipeData = {
         name: imageName,
         description: "",
-        servings: 2,
+        servings: imageServings,
         prep_time: imagePrepTime,
         cook_time: imageCookTime,
         ingredients: imageIngredients,
