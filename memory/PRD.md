@@ -28,7 +28,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ### Recipe Management
 - [x] Manual recipe entry with ingredients and instructions
-- [x] Paste from Green Chef - AI parses and categorizes ingredients
+- [x] Paste ingredients - AI parses and categorizes ingredients
 - [x] Screenshot upload - AI vision extracts ingredients from images
 - [x] URL import (limited - works with structured recipe pages)
 - [x] Recipe library with search
