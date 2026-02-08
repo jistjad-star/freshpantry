@@ -187,8 +187,8 @@ export default function AddRecipe() {
         name: imageName,
         description: "",
         servings: 2,
-        prep_time: "",
-        cook_time: "",
+        prep_time: imagePrepTime,
+        cook_time: imageCookTime,
         ingredients: imageIngredients,
         instructions: imageInstructions,
         image_url: ""
