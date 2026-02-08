@@ -306,9 +306,22 @@ export default function RecipeLibrary() {
                     <span className="text-[#4A7C59]">{recipe.ingredients?.length || 0} ingredients</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <Link to={`/recipes/${recipe.id}`}>
-                      <Button variant="outline" size="sm" className="border-stone-200">View Recipe</Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.preventDefault(); toggleExportSelection(recipe.id); }}
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                          selectedForExport.includes(recipe.id)
+                            ? 'bg-[#4A7C59] border-[#4A7C59] text-white'
+                            : 'border-stone-300 hover:border-[#4A7C59]'
+                        }`}
+                        data-testid={`export-select-${recipe.id}`}
+                      >
+                        {selectedForExport.includes(recipe.id) && <Check className="w-4 h-4" />}
+                      </button>
+                      <Link to={`/recipes/${recipe.id}`}>
+                        <Button variant="outline" size="sm" className="border-stone-200" data-testid="view-recipe-btn">View Recipe</Button>
+                      </Link>
+                    </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="sm" className="text-stone-400 hover:text-[#E07A5F]"><Trash2 className="w-4 h-4" /></Button>
