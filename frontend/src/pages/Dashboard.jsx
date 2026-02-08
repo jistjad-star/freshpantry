@@ -86,7 +86,7 @@ export default function Dashboard() {
               </h1>
               
               <p className="text-lg text-stone-600 max-w-xl">
-                Import recipes from Green Chef, track your pantry, and create smart 
+                Add recipes from screenshots or text, track your pantry, and create smart 
                 shopping lists that know what you need.
               </p>
 
