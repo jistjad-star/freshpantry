@@ -880,10 +880,12 @@ async def get_pantry(request: Request):
     
     if not pantry:
         # Create empty pantry
-        pantry = Pantry(user_id=user_id).model_dump()
-        pantry['created_at'] = pantry['created_at'].isoformat()
-        pantry['updated_at'] = pantry['updated_at'].isoformat()
-        await db.pantry.insert_one(pantry)
+        new_pantry = Pantry(user_id=user_id).model_dump()
+        new_pantry['created_at'] = new_pantry['created_at'].isoformat()
+        new_pantry['updated_at'] = new_pantry['updated_at'].isoformat()
+        await db.pantry.insert_one(new_pantry)
+        # Re-fetch without _id
+        pantry = await db.pantry.find_one(query, {"_id": 0})
     
     # Convert dates
     if isinstance(pantry.get('created_at'), str):
