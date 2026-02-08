@@ -10,7 +10,11 @@ import {
   Camera,
   Upload,
   Sparkles,
-  Leaf
+  Leaf,
+  Fish,
+  Salad,
+  Zap,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import api from "@/lib/api";
 
-const CATEGORIES = [
+const INGREDIENT_CATEGORIES = [
   { value: "produce", label: "Produce" },
   { value: "dairy", label: "Dairy" },
   { value: "protein", label: "Protein" },
@@ -30,6 +34,14 @@ const CATEGORIES = [
   { value: "spices", label: "Spices" },
   { value: "frozen", label: "Frozen" },
   { value: "other", label: "Other" },
+];
+
+const RECIPE_CATEGORIES = [
+  { value: "vegan", label: "Vegan", icon: Leaf, color: "bg-green-100 text-green-700" },
+  { value: "vegetarian", label: "Veggie", icon: Salad, color: "bg-emerald-100 text-emerald-700" },
+  { value: "pescatarian", label: "Pescatarian", icon: Fish, color: "bg-blue-100 text-blue-700" },
+  { value: "low-fat", label: "Low Fat", icon: Heart, color: "bg-pink-100 text-pink-700" },
+  { value: "quick-easy", label: "Quick & Easy", icon: Zap, color: "bg-amber-100 text-amber-700" },
 ];
 
 export default function AddRecipe() {
