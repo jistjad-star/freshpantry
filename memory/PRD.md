@@ -1,11 +1,11 @@
 # Fresh Pantry - PRD
 
 ## Original Problem Statement
-Build an app that takes Green Chef recipes and turns them into weekly shopping lists.
+Build a recipe and meal planning app that creates weekly shopping lists from your recipes.
 
 ## User Requirements Evolution
 1. Initial: Recipe import + shopping list generation
-2. Added: Paste from Green Chef (AI parsing)
+2. Added: Paste ingredients (AI parsing)
 3. Added: Screenshot upload (AI vision extraction)
 4. Added: Google Sign-In (cross-device sync)
 5. Added: Pantry inventory tracking with auto-deduct
