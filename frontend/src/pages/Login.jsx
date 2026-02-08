@@ -1,4 +1,4 @@
-import { Sparkles, Wand2 } from 'lucide-react';
+import { Leaf, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -6,25 +6,25 @@ export default function Login() {
   const { login } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        <div className="glass-card p-8 text-center">
+        <div className="fresh-card-static p-8 text-center">
           {/* Logo */}
-          <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-[#39ff14]/10 flex items-center justify-center">
-            <Sparkles className="w-10 h-10 text-[#39ff14]" />
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#4A7C59]/10 flex items-center justify-center">
+            <Leaf className="w-10 h-10 text-[#4A7C59]" />
           </div>
           
-          <h1 className="font-display text-3xl font-bold text-white mb-2">
-            The Emerald Pantry
+          <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">
+            Fresh Pantry
           </h1>
-          <p className="text-zinc-500 mb-8">
-            Sign in to save your recipes across devices
+          <p className="text-stone-500 mb-8">
+            Sign in to save your recipes and pantry across devices
           </p>
 
           {/* Google Sign In Button */}
           <Button
             onClick={login}
-            className="w-full btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] py-6 text-base"
+            className="w-full btn-primary py-6 text-base"
             data-testid="google-login-btn"
           >
             <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -48,10 +48,10 @@ export default function Login() {
             Continue with Google
           </Button>
 
-          <div className="mt-8 pt-6 border-t border-zinc-800">
-            <p className="text-sm text-zinc-500">
-              <Wand2 className="w-4 h-4 inline mr-1" />
-              Your recipes will be magically synced across all your devices
+          <div className="mt-8 pt-6 border-t border-stone-200">
+            <p className="text-sm text-stone-500">
+              <Sparkles className="w-4 h-4 inline mr-1 text-[#4A7C59]" />
+              Your data syncs automatically across all your devices
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function Login() {
         <div className="mt-6 text-center">
           <a 
             href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-400 transition-colors"
+            className="text-sm text-stone-500 hover:text-[#4A7C59] transition-colors"
             data-testid="continue-without-account"
           >
             Continue without an account →
