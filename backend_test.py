@@ -341,6 +341,13 @@ class GreenChefAPITester:
             print("❌ Root endpoint failed - stopping tests")
             return False
         
+        # Test auth endpoints
+        self.test_auth_endpoints()
+        
+        # Test AI parsing endpoints
+        self.test_parse_ingredients()
+        self.test_parse_image_endpoint()
+        
         # Test recipe operations
         self.test_create_recipe()
         self.test_get_recipes()
