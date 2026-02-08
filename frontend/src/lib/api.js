@@ -19,7 +19,7 @@ export const api = {
   importRecipe: (url) => axios.post(`${API}/recipes/import`, { url }),
   deleteRecipe: (id) => axios.delete(`${API}/recipes/${id}`),
   
-  // Parse ingredients (for paste feature)
+  // Parse ingredients
   parseIngredients: (recipeName, ingredientsText, instructionsText = "") => 
     axios.post(`${API}/parse-ingredients`, { 
       recipe_name: recipeName, 
@@ -27,7 +27,7 @@ export const api = {
       instructions_text: instructionsText
     }),
   
-  // Parse image (for screenshot feature)
+  // Parse image
   parseImage: (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -47,6 +47,15 @@ export const api = {
   getWeeklyPlan: (weekStart) => axios.get(`${API}/weekly-plan`, { params: { week_start: weekStart } }),
   saveWeeklyPlan: (data) => axios.post(`${API}/weekly-plan`, data),
   getAllWeeklyPlans: () => axios.get(`${API}/weekly-plan/all`),
+
+  // Pantry/Inventory
+  getPantry: () => axios.get(`${API}/pantry`),
+  addPantryItem: (item) => axios.post(`${API}/pantry/items`, item),
+  updatePantryItem: (id, data) => axios.put(`${API}/pantry/items/${id}`, data),
+  deletePantryItem: (id) => axios.delete(`${API}/pantry/items/${id}`),
+  cookRecipe: (recipeId, servingsMultiplier = 1) => axios.post(`${API}/pantry/cook`, { recipe_id: recipeId, servings_multiplier: servingsMultiplier }),
+  getLowStockItems: () => axios.get(`${API}/pantry/low-stock`),
+  addFromShopping: () => axios.post(`${API}/pantry/add-from-shopping`),
 };
 
 export default api;
