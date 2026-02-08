@@ -153,7 +153,9 @@ export default function MealSuggestions() {
           <div className="space-y-4">
             <p className="text-stone-600 text-sm">{message}</p>
             
-            {suggestions.map((suggestion, index) => (
+            {suggestions.map((suggestion, index) => {
+              const missingCount = suggestion.missing_ingredients?.length || 0;
+              return (
               <div 
                 key={suggestion.recipe_id || index}
                 className={`fresh-card-static p-6 cursor-pointer transition-all ${
@@ -166,7 +168,7 @@ export default function MealSuggestions() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center flex-wrap gap-3 mb-2">
                       {selectedMeals.includes(suggestion.recipe_id) ? (
                         <CheckCircle2 className="w-6 h-6 text-[#4A7C59]" />
                       ) : (
@@ -175,8 +177,11 @@ export default function MealSuggestions() {
                       <h3 className="font-display text-lg font-semibold text-[#1A2E1A]">
                         {suggestion.recipe_name}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getMatchColor(suggestion.match_percentage)}`}>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getMatchColor(suggestion.match_percentage)}`}>
                         {suggestion.match_percentage}% match
+                      </span>
+                      <span className="text-xs text-stone-500">
+                        {getMatchLabel(suggestion.match_percentage, missingCount)}
                       </span>
                     </div>
                     
@@ -184,7 +189,25 @@ export default function MealSuggestions() {
                       {suggestion.recommendation}
                     </p>
                     
-                    <div className="ml-9 flex flex-wrap gap-4">
+                    <div className="ml-9 space-y-3">
+                      {/* Missing ingredients - shown prominently */}
+                      {suggestion.missing_ingredients?.length > 0 && (
+                        <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs text-orange-700 font-medium mb-1">
+                                Missing {missingCount} ingredient{missingCount !== 1 ? 's' : ''}:
+                              </p>
+                              <p className="text-sm text-orange-800 font-medium">
+                                {suggestion.missing_ingredients.join(", ")}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Available ingredients */}
                       {suggestion.available_ingredients?.length > 0 && (
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
