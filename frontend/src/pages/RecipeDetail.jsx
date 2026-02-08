@@ -81,6 +81,33 @@ export default function RecipeDetail() {
     }
   };
 
+  const toggleCategory = (categoryValue) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryValue)
+        ? prev.filter(c => c !== categoryValue)
+        : [...prev, categoryValue]
+    );
+  };
+
+  const saveCategories = async () => {
+    setSavingCategories(true);
+    try {
+      await api.updateRecipeCategories(id, selectedCategories);
+      setRecipe(prev => ({ ...prev, categories: selectedCategories }));
+      setEditingCategories(false);
+      toast.success("Categories updated!");
+    } catch (error) {
+      toast.error("Failed to update categories");
+    } finally {
+      setSavingCategories(false);
+    }
+  };
+
+  const cancelEditCategories = () => {
+    setSelectedCategories(recipe?.categories || []);
+    setEditingCategories(false);
+  };
+
   const handleCook = async () => {
     setCooking(true);
     try {
