@@ -26,6 +26,8 @@ export default function ShoppingList() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", quantity: "", unit: "", category: "other" });
+  const [costEstimate, setCostEstimate] = useState(null);
+  const [loadingCosts, setLoadingCosts] = useState(false);
 
   useEffect(() => { fetchShoppingList(); }, []);
 
