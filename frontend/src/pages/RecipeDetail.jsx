@@ -138,7 +138,43 @@ export default function RecipeDetail() {
       }
     };
     fetchRecipe();
+    fetchReviews();
   }, [id, navigate]);
+
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const response = await api.getReviews(id);
+      setReviews(response.data.reviews || []);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (newRating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await api.addReview(id, newRating, newComment);
+      toast.success("Review added!");
+      setNewRating(0);
+      setNewComment("");
+      setShowReviewForm(false);
+      fetchReviews();
+      // Refresh recipe to get updated average rating
+      const response = await api.getRecipe(id);
+      setRecipe(response.data);
+    } catch (error) {
+      toast.error("Failed to add review");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const handleDelete = async () => {
     try {
