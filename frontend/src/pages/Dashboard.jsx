@@ -163,20 +163,23 @@ export default function Dashboard() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Recipes", value: recipes.length, icon: BookOpen, color: "text-[#4A7C59]" },
-            { label: "To Shop", value: uncheckedItems, icon: ShoppingCart, color: "text-[#E07A5F]" },
-            { label: "Low Stock", value: lowStock.length, icon: AlertTriangle, color: "text-amber-500" },
-            { label: "This Week", value: "0", icon: Calendar, color: "text-blue-500" },
+            { label: "Recipes", value: recipes.length, icon: BookOpen, color: "text-[#4A7C59]", path: "/recipes" },
+            { label: "To Shop", value: uncheckedItems, icon: ShoppingCart, color: "text-[#E07A5F]", path: "/shopping-list" },
+            { label: "Low Stock", value: lowStock.length, icon: AlertTriangle, color: "text-amber-500", path: "/pantry" },
+            { label: "This Week", value: "0", icon: Calendar, color: "text-blue-500", path: "/planner" },
           ].map((stat, i) => (
-            <div 
+            <Link 
               key={stat.label}
-              className={`fresh-card-static p-5 animate-fade-in-up stagger-${i + 1}`}
+              to={stat.path}
+              className={`animate-fade-in-up stagger-${i + 1}`}
               data-testid={`stat-${stat.label.toLowerCase().replace(' ', '-')}`}
             >
-              <stat.icon className={`w-5 h-5 ${stat.color} mb-3`} />
-              <p className="text-3xl font-bold text-[#1A2E1A] font-display">{stat.value}</p>
-              <p className="text-sm text-stone-500">{stat.label}</p>
-            </div>
+              <div className="fresh-card p-5 h-full group cursor-pointer">
+                <stat.icon className={`w-5 h-5 ${stat.color} mb-3 group-hover:scale-110 transition-transform`} />
+                <p className="text-3xl font-bold text-[#1A2E1A] font-display group-hover:text-[#4A7C59] transition-colors">{stat.value}</p>
+                <p className="text-sm text-stone-500">{stat.label}</p>
+              </div>
+            </Link>
           ))}
         </div>
       </section>
