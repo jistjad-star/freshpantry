@@ -75,7 +75,23 @@ class Recipe(BaseModel):
     categories: List[str] = []  # vegan, vegetarian, pescatarian, low-fat, quick-easy
     source_url: Optional[str] = None
     image_url: Optional[str] = None
+    average_rating: float = 0.0
+    review_count: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    recipe_id: str
+    user_id: Optional[str] = None
+    user_name: Optional[str] = "Anonymous"
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReviewCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = ""
 
 class RecipeCreate(BaseModel):
     name: str
