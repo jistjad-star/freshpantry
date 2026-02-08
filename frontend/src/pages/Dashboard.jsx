@@ -66,6 +66,55 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // Generate Eat Now suggestion
+  const generateEatNow = async () => {
+    setLoadingEatNow(true);
+    setEatNowSuggestion(null);
+    try {
+      const response = await api.generateAIRecipe(mealTime.type);
+      setEatNowSuggestion(response.data.recipe);
+    } catch (error) {
+      console.error("Error generating suggestion:", error);
+      if (error.response?.data?.detail?.includes("pantry")) {
+        toast.error("Add items to your pantry first!");
+      } else {
+        toast.error("Couldn't generate a suggestion. Try adding more items to your pantry.");
+      }
+    } finally {
+      setLoadingEatNow(false);
+    }
+  };
+
+  // Save the Eat Now suggestion as a recipe
+  const saveEatNowRecipe = async () => {
+    if (!eatNowSuggestion) return;
+    setSavingRecipe(true);
+    try {
+      const recipeData = {
+        name: eatNowSuggestion.name,
+        description: eatNowSuggestion.description,
+        servings: eatNowSuggestion.servings || 2,
+        prep_time: eatNowSuggestion.prep_time,
+        cook_time: eatNowSuggestion.cook_time,
+        ingredients: eatNowSuggestion.ingredients?.map(ing => ({
+          name: ing.name,
+          quantity: String(ing.quantity),
+          unit: ing.unit || "",
+          category: ing.category || "other"
+        })) || [],
+        instructions: eatNowSuggestion.instructions || [],
+        categories: eatNowSuggestion.categories || []
+      };
+      const response = await api.createRecipe(recipeData);
+      toast.success("Recipe saved!");
+      navigate(`/recipes/${response.data.id}`);
+    } catch (error) {
+      toast.error("Failed to save recipe");
+    } finally {
+      setSavingRecipe(false);
+    }
+  };
+
   const quickActions = [
     {
       icon: PlusCircle,
