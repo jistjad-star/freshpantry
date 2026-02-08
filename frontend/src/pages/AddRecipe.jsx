@@ -6,7 +6,9 @@ import {
   Sparkles,
   Loader2,
   Trash2,
-  Plus
+  Plus,
+  ClipboardPaste,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,14 @@ export default function AddRecipe() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [importUrl, setImportUrl] = useState("");
+  
+  // Paste form state
+  const [pasteName, setPasteName] = useState("");
+  const [pasteIngredients, setPasteIngredients] = useState("");
+  const [pasteInstructions, setPasteInstructions] = useState("");
+  const [parsedIngredients, setParsedIngredients] = useState([]);
+  const [parsedInstructions, setParsedInstructions] = useState([]);
+  const [isParsed, setIsParsed] = useState(false);
   
   // Manual form state
   const [recipe, setRecipe] = useState({
@@ -67,10 +77,77 @@ export default function AddRecipe() {
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error("Import error:", error);
-      toast.error(error.response?.data?.detail || "Failed to import recipe. Try manual entry.");
+      toast.error(error.response?.data?.detail || "Failed to import recipe. Try paste or manual entry.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Parse pasted ingredients with AI
+  const handleParseIngredients = async () => {
+    if (!pasteName.trim()) {
+      toast.error("Please enter a recipe name");
+      return;
+    }
+    if (!pasteIngredients.trim()) {
+      toast.error("Please paste some ingredients");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.parseIngredients(pasteName, pasteIngredients, pasteInstructions);
+      setParsedIngredients(response.data.ingredients || []);
+      setParsedInstructions(response.data.instructions || []);
+      setIsParsed(true);
+      toast.success(`Parsed ${response.data.ingredients?.length || 0} ingredients!`);
+    } catch (error) {
+      console.error("Parse error:", error);
+      toast.error("Failed to parse ingredients. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save parsed recipe
+  const handleSaveParsedRecipe = async () => {
+    if (!pasteName.trim()) {
+      toast.error("Recipe name is required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const recipeData = {
+        name: pasteName,
+        description: "",
+        servings: 2,
+        prep_time: "",
+        cook_time: "",
+        ingredients: parsedIngredients,
+        instructions: parsedInstructions,
+        image_url: ""
+      };
+      
+      const response = await api.createRecipe(recipeData);
+      toast.success("Recipe saved successfully!");
+      navigate(`/recipes/${response.data.id}`);
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save recipe");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Remove parsed ingredient
+  const removeParsedIngredient = (index) => {
+    setParsedIngredients(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove parsed instruction
+  const removeParsedInstruction = (index) => {
+    setParsedInstructions(prev => prev.filter((_, i) => i !== index));
   };
 
   const addIngredient = () => {
@@ -131,6 +208,17 @@ export default function AddRecipe() {
     }
   };
 
+  const categoryColors = {
+    produce: "category-produce",
+    dairy: "category-dairy",
+    protein: "category-protein",
+    grains: "category-grains",
+    pantry: "category-pantry",
+    spices: "category-spices",
+    frozen: "category-frozen",
+    other: "category-other"
+  };
+
   return (
     <div className="min-h-screen py-8" data-testid="add-recipe-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,20 +228,28 @@ export default function AddRecipe() {
             Add New Recipe
           </h1>
           <p className="text-zinc-500">
-            Import from a URL or create manually
+            Paste from Green Chef, import from URL, or create manually
           </p>
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="import" className="space-y-8">
-          <TabsList className="glass-card p-1 w-full md:w-auto">
+        <Tabs defaultValue="paste" className="space-y-8">
+          <TabsList className="glass-card p-1 w-full md:w-auto grid grid-cols-3 md:flex">
+            <TabsTrigger 
+              value="paste" 
+              className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
+              data-testid="tab-paste"
+            >
+              <ClipboardPaste className="w-4 h-4 mr-2" />
+              Paste from Green Chef
+            </TabsTrigger>
             <TabsTrigger 
               value="import" 
               className="data-[state=active]:bg-[#39ff14]/10 data-[state=active]:text-[#39ff14]"
               data-testid="tab-import"
             >
               <LinkIcon className="w-4 h-4 mr-2" />
-              Import from URL
+              Import URL
             </TabsTrigger>
             <TabsTrigger 
               value="manual"
@@ -165,16 +261,209 @@ export default function AddRecipe() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Paste Tab - NEW */}
+          <TabsContent value="paste" className="animate-fade-in-up">
+            <div className="glass-card p-8 space-y-6">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#39ff14]/5 border border-[#39ff14]/20">
+                <Wand2 className="w-5 h-5 text-[#39ff14] mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-white">Copy & Paste from Green Chef</p>
+                  <p className="text-sm text-zinc-400 mt-1">
+                    1. Log into your Green Chef account<br/>
+                    2. Open any recipe and copy the ingredient list<br/>
+                    3. Paste it below and our AI will parse & categorize everything!
+                  </p>
+                </div>
+              </div>
+
+              {!isParsed ? (
+                // Input Form
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="paste-name" className="text-white">Recipe Name *</Label>
+                    <Input
+                      id="paste-name"
+                      placeholder="e.g., Honey Garlic Chicken"
+                      value={pasteName}
+                      onChange={(e) => setPasteName(e.target.value)}
+                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
+                      data-testid="paste-recipe-name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paste-ingredients" className="text-white">
+                      Paste Ingredients *
+                    </Label>
+                    <Textarea
+                      id="paste-ingredients"
+                      placeholder="Paste your ingredient list here...
+
+Example:
+2 Chicken Breasts
+1 tbsp Olive Oil
+3 cloves Garlic, minced
+2 tbsp Honey
+1/4 cup Soy Sauce
+1 cup Jasmine Rice"
+                      value={pasteIngredients}
+                      onChange={(e) => setPasteIngredients(e.target.value)}
+                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white min-h-[200px] font-mono text-sm"
+                      data-testid="paste-ingredients-input"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paste-instructions" className="text-white">
+                      Paste Instructions (optional)
+                    </Label>
+                    <Textarea
+                      id="paste-instructions"
+                      placeholder="Paste cooking instructions here (optional)..."
+                      value={pasteInstructions}
+                      onChange={(e) => setPasteInstructions(e.target.value)}
+                      className="bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white min-h-[120px] font-mono text-sm"
+                      data-testid="paste-instructions-input"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleParseIngredients}
+                    disabled={loading}
+                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
+                    data-testid="parse-btn"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Parse with AI Magic
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                // Parsed Results
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-xl font-bold text-white">
+                      {pasteName}
+                    </h3>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsParsed(false);
+                        setParsedIngredients([]);
+                        setParsedInstructions([]);
+                      }}
+                      className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                      data-testid="edit-paste-btn"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+
+                  {/* Parsed Ingredients */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+                      Ingredients ({parsedIngredients.length})
+                    </h4>
+                    {parsedIngredients.length > 0 ? (
+                      <div className="space-y-2">
+                        {parsedIngredients.map((ing, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
+                            data-testid={`parsed-ingredient-${index}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>
+                                {ing.category}
+                              </span>
+                              <span className="text-white">
+                                <span className="text-[#39ff14] font-medium">
+                                  {ing.quantity} {ing.unit}
+                                </span>
+                                {" "}{ing.name}
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeParsedIngredient(index)}
+                              className="text-zinc-500 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500 text-sm">No ingredients parsed</p>
+                    )}
+                  </div>
+
+                  {/* Parsed Instructions */}
+                  {parsedInstructions.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">
+                        Instructions ({parsedInstructions.length} steps)
+                      </h4>
+                      <div className="space-y-2">
+                        {parsedInstructions.map((step, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-start gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800"
+                          >
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#39ff14]/10 text-[#39ff14] flex items-center justify-center text-sm font-bold">
+                              {index + 1}
+                            </span>
+                            <p className="text-white flex-1 pt-0.5">{step}</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeParsedInstruction(index)}
+                              className="text-zinc-500 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleSaveParsedRecipe}
+                    disabled={loading || parsedIngredients.length === 0}
+                    className="btn-witch bg-[#39ff14] text-black hover:bg-[#32D712] w-full py-6"
+                    data-testid="save-parsed-recipe-btn"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Save Recipe
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
           {/* Import Tab */}
           <TabsContent value="import" className="animate-fade-in-up">
             <div className="glass-card p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#39ff14]/5 border border-[#39ff14]/20">
-                <Sparkles className="w-5 h-5 text-[#39ff14] mt-0.5" />
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#FFB7E3]/5 border border-[#FFB7E3]/20">
+                <LinkIcon className="w-5 h-5 text-[#FFB7E3] mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-white">AI-Powered Import</p>
+                  <p className="text-sm font-medium text-white">URL Import</p>
                   <p className="text-sm text-zinc-400 mt-1">
-                    Paste a Green Chef recipe URL and our AI will extract ingredients 
-                    and categorize them automatically.
+                    Paste a public recipe URL. Works best with sites that have 
+                    structured recipe data. For Green Chef, use the "Paste" tab instead.
                   </p>
                 </div>
               </div>
@@ -184,7 +473,7 @@ export default function AddRecipe() {
                 <div className="flex gap-3">
                   <Input
                     id="import-url"
-                    placeholder="https://www.greenchef.com/recipes/..."
+                    placeholder="https://www.example.com/recipe/..."
                     value={importUrl}
                     onChange={(e) => setImportUrl(e.target.value)}
                     className="flex-1 bg-zinc-900 border-zinc-800 focus:border-[#39ff14] text-white"
