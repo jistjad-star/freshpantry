@@ -1230,6 +1230,85 @@ async def update_recipe_categories(recipe_id: str, request_data: UpdateCategorie
     
     return {"categories": valid_categories, "message": "Categories updated!"}
 
+# ============== REVIEWS ENDPOINTS ==============
+
+@api_router.get("/recipes/{recipe_id}/reviews")
+async def get_recipe_reviews(recipe_id: str):
+    """Get all reviews for a recipe"""
+    reviews = await db.reviews.find({"recipe_id": recipe_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    for review in reviews:
+        if isinstance(review.get('created_at'), str):
+            review['created_at'] = datetime.fromisoformat(review['created_at'])
+    return {"reviews": reviews, "count": len(reviews)}
+
+@api_router.post("/recipes/{recipe_id}/reviews")
+async def add_recipe_review(recipe_id: str, review_data: ReviewCreate, request: Request):
+    """Add a review to a recipe"""
+    recipe = await db.recipes.find_one({"id": recipe_id}, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    user_id = await get_user_id_or_none(request)
+    user_name = "Anonymous"
+    if user_id:
+        user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+        if user:
+            user_name = user.get("name", "Anonymous")
+    
+    review = Review(
+        recipe_id=recipe_id,
+        user_id=user_id,
+        user_name=user_name,
+        rating=review_data.rating,
+        comment=review_data.comment
+    )
+    
+    doc = review.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.reviews.insert_one(doc)
+    
+    # Update recipe average rating
+    all_reviews = await db.reviews.find({"recipe_id": recipe_id}, {"_id": 0}).to_list(1000)
+    if all_reviews:
+        avg_rating = sum(r.get('rating', 0) for r in all_reviews) / len(all_reviews)
+        await db.recipes.update_one(
+            {"id": recipe_id},
+            {"$set": {"average_rating": round(avg_rating, 1), "review_count": len(all_reviews)}}
+        )
+    
+    return {"message": "Review added!", "review": review}
+
+@api_router.delete("/recipes/{recipe_id}/reviews/{review_id}")
+async def delete_recipe_review(recipe_id: str, review_id: str, request: Request):
+    """Delete a review"""
+    user_id = await get_user_id_or_none(request)
+    
+    review = await db.reviews.find_one({"id": review_id, "recipe_id": recipe_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    # Only allow deletion by the review author
+    if review.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Cannot delete other users' reviews")
+    
+    await db.reviews.delete_one({"id": review_id})
+    
+    # Update recipe average rating
+    all_reviews = await db.reviews.find({"recipe_id": recipe_id}, {"_id": 0}).to_list(1000)
+    if all_reviews:
+        avg_rating = sum(r.get('rating', 0) for r in all_reviews) / len(all_reviews)
+        await db.recipes.update_one(
+            {"id": recipe_id},
+            {"$set": {"average_rating": round(avg_rating, 1), "review_count": len(all_reviews)}}
+        )
+    else:
+        await db.recipes.update_one(
+            {"id": recipe_id},
+            {"$set": {"average_rating": 0, "review_count": 0}}
+        )
+    
+    return {"message": "Review deleted!"}
+
 @api_router.post("/recipes/{recipe_id}/generate-image")
 async def generate_image_for_recipe(recipe_id: str):
     """Generate an AI image for an existing recipe"""
