@@ -698,6 +698,16 @@ async def parse_image(file: UploadFile = File(...)):
     
     return ImageParseResponse(ingredients_text=raw_text, ingredients=ingredients)
 
+@api_router.post("/parse-instructions-image")
+async def parse_instructions_image(file: UploadFile = File(...)):
+    """Extract cooking instructions from an uploaded image using AI vision"""
+    contents = await file.read()
+    image_base64 = base64.b64encode(contents).decode('utf-8')
+    
+    raw_text, instructions = await extract_instructions_from_image(image_base64)
+    
+    return {"instructions_text": raw_text, "instructions": instructions}
+
 # ---- Recipe Routes ----
 
 @api_router.post("/recipes", response_model=Recipe)
