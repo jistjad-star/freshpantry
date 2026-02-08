@@ -2105,11 +2105,14 @@ def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> 
                 "estimated_price": round(base_price, 2),
                 "prices_by_store": {
                     "tesco": round(data.get("tesco", base_price) * normalized_qty, 2),
+                    "tesco_clubcard": round(data.get("tesco_clubcard", data.get("tesco", base_price)) * normalized_qty, 2),
                     "sainsburys": round(data.get("sainsburys", base_price) * normalized_qty, 2),
+                    "sainsburys_nectar": round(data.get("sainsburys_nectar", data.get("sainsburys", base_price)) * normalized_qty, 2),
                     "aldi": round(data.get("aldi", base_price) * normalized_qty, 2),
                     "lidl": round(data.get("lidl", base_price) * normalized_qty, 2),
                     "asda": round(data.get("asda", base_price) * normalized_qty, 2),
                     "morrisons": round(data.get("morrisons", base_price) * normalized_qty, 2),
+                    "morrisons_more": round(data.get("morrisons_more", data.get("morrisons", base_price)) * normalized_qty, 2),
                 },
                 "matched": True
             }
@@ -2120,11 +2123,14 @@ def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> 
         "estimated_price": round(default_price, 2),
         "prices_by_store": {
             "tesco": round(default_price, 2),
+            "tesco_clubcard": round(default_price * 0.85, 2),
             "sainsburys": round(default_price * 1.1, 2),
+            "sainsburys_nectar": round(default_price * 0.95, 2),
             "aldi": round(default_price * 0.75, 2),
             "lidl": round(default_price * 0.75, 2),
             "asda": round(default_price * 0.9, 2),
             "morrisons": round(default_price * 0.95, 2),
+            "morrisons_more": round(default_price * 0.85, 2),
         },
         "matched": False
     }
