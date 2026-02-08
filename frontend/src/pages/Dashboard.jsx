@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { 
   Leaf, 
   BookOpen, 
@@ -11,40 +11,16 @@ import {
   Package,
   AlertTriangle,
   Sparkles,
-  Utensils,
-  Loader2,
-  Clock,
-  Coffee,
-  Sun,
-  Moon,
-  Cookie,
-  Save
+  Utensils
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import api from "@/lib/api";
 
-// Get meal type based on current time
-const getMealTypeByTime = () => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 11) return { type: "breakfast", label: "Breakfast", icon: Coffee };
-  if (hour >= 11 && hour < 15) return { type: "lunch", label: "Lunch", icon: Sun };
-  if (hour >= 15 && hour < 18) return { type: "snack", label: "Snack", icon: Cookie };
-  return { type: "dinner", label: "Dinner", icon: Moon };
-};
-
 export default function Dashboard() {
-  const navigate = useNavigate();
   const [recipes, setRecipes] = useState([]);
   const [shoppingList, setShoppingList] = useState(null);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Eat Now state
-  const [eatNowSuggestion, setEatNowSuggestion] = useState(null);
-  const [loadingEatNow, setLoadingEatNow] = useState(false);
-  const [savingRecipe, setSavingRecipe] = useState(false);
-  const mealTime = getMealTypeByTime();
 
   useEffect(() => {
     const fetchData = async () => {
