@@ -1021,10 +1021,19 @@ async def get_recipes_grouped_by_ingredients(request: Request):
 
 @api_router.post("/recipes", response_model=Recipe)
 async def create_recipe(recipe_data: RecipeCreate, request: Request):
-    """Create a new recipe"""
+    """Create a new recipe with AI-generated image"""
     user_id = await get_user_id_or_none(request)
     
-    recipe = Recipe(**recipe_data.model_dump(), user_id=user_id)
+    # Generate AI image if no image provided
+    image_url = recipe_data.image_url
+    if not image_url and recipe_data.ingredients:
+        ingredients_dict = [ing.model_dump() if hasattr(ing, 'model_dump') else ing for ing in recipe_data.ingredients]
+        image_url = await generate_recipe_image(recipe_data.name, ingredients_dict)
+    
+    recipe_dict = recipe_data.model_dump()
+    recipe_dict['image_url'] = image_url
+    
+    recipe = Recipe(**recipe_dict, user_id=user_id)
     doc = recipe.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     
