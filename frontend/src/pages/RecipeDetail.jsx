@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus, Pencil, X, Check, Leaf, Fish, Salad, Zap, Heart, Calendar, Edit } from "lucide-react";
+import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus, Pencil, X, Check, Leaf, Fish, Salad, Zap, Heart, Calendar, Edit, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import api from "@/lib/api";
+
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const ALL_CATEGORIES = [
   { value: "vegan", label: "Vegan", icon: Leaf, color: "bg-green-100 text-green-700 border-green-200" },
