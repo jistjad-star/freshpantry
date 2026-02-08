@@ -868,6 +868,270 @@ async def get_all_weekly_plans(request: Request):
             plan['created_at'] = datetime.fromisoformat(plan['created_at'])
     return plans
 
+# ---- Pantry/Inventory Routes ----
+
+@api_router.get("/pantry")
+async def get_pantry(request: Request):
+    """Get the user's pantry inventory"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        # Create empty pantry
+        pantry = Pantry(user_id=user_id).model_dump()
+        pantry['created_at'] = pantry['created_at'].isoformat()
+        pantry['updated_at'] = pantry['updated_at'].isoformat()
+        await db.pantry.insert_one(pantry)
+    
+    # Convert dates
+    if isinstance(pantry.get('created_at'), str):
+        pantry['created_at'] = datetime.fromisoformat(pantry['created_at'])
+    if isinstance(pantry.get('updated_at'), str):
+        pantry['updated_at'] = datetime.fromisoformat(pantry['updated_at'])
+    for item in pantry.get('items', []):
+        if isinstance(item.get('last_updated'), str):
+            item['last_updated'] = datetime.fromisoformat(item['last_updated'])
+    
+    return pantry
+
+@api_router.post("/pantry/items")
+async def add_pantry_item(item_data: PantryItemCreate, request: Request):
+    """Add a new item to the pantry"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        pantry = Pantry(user_id=user_id).model_dump()
+        pantry['created_at'] = pantry['created_at'].isoformat()
+        pantry['updated_at'] = pantry['updated_at'].isoformat()
+    
+    # Check if item already exists (by name and unit)
+    existing_idx = None
+    for i, existing in enumerate(pantry.get('items', [])):
+        if existing['name'].lower() == item_data.name.lower() and existing['unit'] == item_data.unit:
+            existing_idx = i
+            break
+    
+    new_item = PantryItem(**item_data.model_dump()).model_dump()
+    new_item['last_updated'] = new_item['last_updated'].isoformat()
+    
+    if existing_idx is not None:
+        # Update existing item quantity
+        pantry['items'][existing_idx]['quantity'] += item_data.quantity
+        pantry['items'][existing_idx]['last_updated'] = datetime.now(timezone.utc).isoformat()
+        if item_data.min_threshold:
+            pantry['items'][existing_idx]['min_threshold'] = item_data.min_threshold
+        if item_data.typical_purchase:
+            pantry['items'][existing_idx]['typical_purchase'] = item_data.typical_purchase
+    else:
+        pantry['items'].append(new_item)
+    
+    pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.pantry.update_one(query, {"$set": pantry}, upsert=True)
+    
+    return {"message": "Item added to pantry", "item": new_item}
+
+@api_router.put("/pantry/items/{item_id}")
+async def update_pantry_item(item_id: str, update_data: PantryItemUpdate, request: Request):
+    """Update a pantry item"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        raise HTTPException(status_code=404, detail="Pantry not found")
+    
+    # Find and update the item
+    item_found = False
+    for item in pantry['items']:
+        if item['id'] == item_id:
+            if update_data.quantity is not None:
+                item['quantity'] = update_data.quantity
+            if update_data.min_threshold is not None:
+                item['min_threshold'] = update_data.min_threshold
+            if update_data.typical_purchase is not None:
+                item['typical_purchase'] = update_data.typical_purchase
+            if update_data.expiry_date is not None:
+                item['expiry_date'] = update_data.expiry_date
+            item['last_updated'] = datetime.now(timezone.utc).isoformat()
+            item_found = True
+            break
+    
+    if not item_found:
+        raise HTTPException(status_code=404, detail="Item not found in pantry")
+    
+    pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+    await db.pantry.update_one(query, {"$set": pantry})
+    
+    return {"message": "Item updated"}
+
+@api_router.delete("/pantry/items/{item_id}")
+async def delete_pantry_item(item_id: str, request: Request):
+    """Remove an item from the pantry"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        raise HTTPException(status_code=404, detail="Pantry not found")
+    
+    pantry['items'] = [item for item in pantry['items'] if item['id'] != item_id]
+    pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.pantry.update_one(query, {"$set": pantry})
+    return {"message": "Item removed from pantry"}
+
+@api_router.post("/pantry/cook")
+async def cook_recipe(data: CookRecipeRequest, request: Request):
+    """Deduct ingredients from pantry when cooking a recipe"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get the recipe
+    recipe = await db.recipes.find_one({"id": data.recipe_id}, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Get the pantry
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        pantry = Pantry(user_id=user_id).model_dump()
+        pantry['created_at'] = pantry['created_at'].isoformat()
+        pantry['updated_at'] = pantry['updated_at'].isoformat()
+    
+    # Deduct ingredients
+    deducted = []
+    missing = []
+    
+    for recipe_ing in recipe.get('ingredients', []):
+        found = False
+        for pantry_item in pantry['items']:
+            # Match by name (case-insensitive, partial match)
+            if recipe_ing['name'].lower() in pantry_item['name'].lower() or pantry_item['name'].lower() in recipe_ing['name'].lower():
+                # Try to parse quantity
+                try:
+                    recipe_qty = float(recipe_ing['quantity']) * data.servings_multiplier
+                except (ValueError, TypeError):
+                    recipe_qty = 1 * data.servings_multiplier
+                
+                pantry_item['quantity'] = max(0, pantry_item['quantity'] - recipe_qty)
+                pantry_item['last_updated'] = datetime.now(timezone.utc).isoformat()
+                deducted.append({
+                    "name": pantry_item['name'],
+                    "deducted": recipe_qty,
+                    "remaining": pantry_item['quantity']
+                })
+                found = True
+                break
+        
+        if not found:
+            missing.append(recipe_ing['name'])
+    
+    pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+    await db.pantry.update_one(query, {"$set": pantry}, upsert=True)
+    
+    return {
+        "message": f"Cooked {recipe['name']}",
+        "deducted": deducted,
+        "missing_ingredients": missing
+    }
+
+@api_router.get("/pantry/low-stock")
+async def get_low_stock_items(request: Request):
+    """Get items that are below their minimum threshold"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        return {"low_stock_items": [], "suggested_shopping": []}
+    
+    low_stock = []
+    suggested_shopping = []
+    
+    for item in pantry.get('items', []):
+        if item['quantity'] <= item.get('min_threshold', 0):
+            low_stock.append(item)
+            suggested_shopping.append({
+                "name": item['name'],
+                "current": item['quantity'],
+                "unit": item['unit'],
+                "suggested_buy": item.get('typical_purchase', 1) or 1,
+                "category": item.get('category', 'other')
+            })
+    
+    return {
+        "low_stock_items": low_stock,
+        "suggested_shopping": suggested_shopping
+    }
+
+@api_router.post("/pantry/add-from-shopping")
+async def add_from_shopping_list(request: Request):
+    """Add checked shopping list items to pantry"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get shopping list
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
+    if not shopping_list:
+        return {"message": "No shopping list found", "added": 0}
+    
+    # Get or create pantry
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    if not pantry:
+        pantry = Pantry(user_id=user_id).model_dump()
+        pantry['created_at'] = pantry['created_at'].isoformat()
+        pantry['updated_at'] = pantry['updated_at'].isoformat()
+    
+    added_count = 0
+    
+    # Add checked items to pantry
+    for item in shopping_list.get('items', []):
+        if item.get('checked', False):
+            # Try to parse quantity
+            try:
+                qty = float(item['quantity'])
+            except (ValueError, TypeError):
+                qty = 1
+            
+            # Check if item exists in pantry
+            existing_idx = None
+            for i, pantry_item in enumerate(pantry['items']):
+                if pantry_item['name'].lower() == item['name'].lower():
+                    existing_idx = i
+                    break
+            
+            if existing_idx is not None:
+                pantry['items'][existing_idx]['quantity'] += qty
+                pantry['items'][existing_idx]['last_updated'] = datetime.now(timezone.utc).isoformat()
+            else:
+                new_item = PantryItem(
+                    name=item['name'],
+                    quantity=qty,
+                    unit=item.get('unit', ''),
+                    category=item.get('category', 'other'),
+                    typical_purchase=qty
+                ).model_dump()
+                new_item['last_updated'] = new_item['last_updated'].isoformat()
+                pantry['items'].append(new_item)
+            
+            added_count += 1
+    
+    pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+    await db.pantry.update_one(query, {"$set": pantry}, upsert=True)
+    
+    return {"message": f"Added {added_count} items to pantry", "added": added_count}
+
 # Include the router in the main app
 app.include_router(api_router)
 
