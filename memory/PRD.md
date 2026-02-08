@@ -122,6 +122,8 @@ Build an app that takes Green Chef recipes and turns them into weekly shopping l
 ## Changelog
 
 ### 2025-02-08
+- **Added**: Group recipes by shared ingredients - "Group by Ingredients" button in Recipes page shows which recipes share common ingredients
+- **Improved**: Shopping list consolidation - same ingredients from multiple recipes now combine quantities automatically (e.g., "2 cups flour" + "1 cup flour" = "3 cups flour")
 - **Added**: Auto-calculate cooking time from instructions - AI extracts prep time and cook time when parsing instruction screenshots
 - **Added**: Meal Suggestions page - AI-powered recommendations based on pantry inventory, showing match percentage and missing ingredients
 - **Added**: 7 meals per week limit on Weekly Planner with visual indicator
