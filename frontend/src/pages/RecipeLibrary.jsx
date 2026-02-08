@@ -142,6 +142,37 @@ export default function RecipeLibrary() {
             <p className="text-stone-500">{filteredRecipes.length} of {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Sort dropdown */}
+            <div className="flex items-center gap-1.5 bg-stone-50 rounded-lg p-1 border border-stone-200">
+              <button
+                onClick={() => setSortBy(null)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  !sortBy ? 'bg-white shadow-sm text-[#1A2E1A]' : 'text-stone-500 hover:text-stone-700'
+                }`}
+                data-testid="sort-default-btn"
+              >
+                Default
+              </button>
+              <button
+                onClick={() => setSortBy("popularity")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  sortBy === "popularity" ? 'bg-amber-100 shadow-sm text-amber-700' : 'text-stone-500 hover:text-stone-700'
+                }`}
+                data-testid="sort-popularity-btn"
+              >
+                <Star className="w-3.5 h-3.5" />
+                Top Rated
+              </button>
+              <button
+                onClick={() => setSortBy("newest")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  sortBy === "newest" ? 'bg-white shadow-sm text-[#1A2E1A]' : 'text-stone-500 hover:text-stone-700'
+                }`}
+                data-testid="sort-newest-btn"
+              >
+                Newest
+              </button>
+            </div>
             {/* Export/Import buttons */}
             <input
               type="file"
