@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, Leaf, Fish, Salad, Zap, Heart } from "lucide-react";
+import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, Leaf, Fish, Salad, Zap, Heart, Download, Upload, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -24,7 +24,11 @@ export default function RecipeLibrary() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [viewMode, setViewMode] = useState("all"); // "all" or "grouped"
+  const [viewMode, setViewMode] = useState("all");
+  const [selectedForExport, setSelectedForExport] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => { fetchRecipes(); }, []);
 
@@ -50,6 +54,68 @@ export default function RecipeLibrary() {
       toast.success("Recipe deleted");
     } catch (error) {
       toast.error("Failed to delete");
+    }
+  };
+
+  const toggleExportSelection = (recipeId) => {
+    setSelectedForExport(prev => 
+      prev.includes(recipeId) 
+        ? prev.filter(id => id !== recipeId)
+        : [...prev, recipeId]
+    );
+  };
+
+  const exportRecipes = async () => {
+    if (selectedForExport.length === 0) {
+      toast.error("Select recipes to export");
+      return;
+    }
+    
+    setExporting(true);
+    try {
+      const response = await api.exportRecipes(selectedForExport);
+      const dataStr = JSON.stringify(response.data, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `fresh-pantry-recipes-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${selectedForExport.length} recipes!`);
+      setSelectedForExport([]);
+    } catch (error) {
+      toast.error("Failed to export recipes");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleFileImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (!data.recipes || !Array.isArray(data.recipes)) {
+        throw new Error("Invalid file format");
+      }
+      
+      const response = await api.importRecipes(data.recipes);
+      toast.success(`Imported ${response.data.count} recipes!`);
+      fetchRecipes();
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Failed to import. Check file format.");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
