@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, UploadFile, File
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,10 +8,12 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import httpx
 from bs4 import BeautifulSoup
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+import base64
+import re
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -39,6 +41,14 @@ logger = logging.getLogger(__name__)
 
 # ============== MODELS ==============
 
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Ingredient(BaseModel):
     model_config = ConfigDict(extra="ignore")
     name: str
@@ -50,6 +60,7 @@ class Ingredient(BaseModel):
 class Recipe(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     name: str
     description: Optional[str] = ""
     servings: int = 2
@@ -87,6 +98,7 @@ class ShoppingListItem(BaseModel):
 class ShoppingList(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     items: List[ShoppingListItem] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -104,6 +116,7 @@ class WeeklyPlanDay(BaseModel):
 class WeeklyPlan(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     week_start: str
     days: List[WeeklyPlanDay] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -120,6 +133,63 @@ class ParseIngredientsRequest(BaseModel):
 class ParseIngredientsResponse(BaseModel):
     ingredients: List[Ingredient]
     instructions: List[str]
+
+class ImageParseResponse(BaseModel):
+    ingredients_text: str
+    ingredients: List[Ingredient]
+
+# ============== AUTH HELPER FUNCTIONS ==============
+
+async def get_current_user(request: Request) -> Optional[User]:
+    """Get current user from session token (cookie or header)"""
+    # Check cookie first
+    session_token = request.cookies.get("session_token")
+    
+    # Fallback to Authorization header
+    if not session_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header[7:]
+    
+    if not session_token:
+        return None
+    
+    # Find session
+    session_doc = await db.user_sessions.find_one(
+        {"session_token": session_token},
+        {"_id": 0}
+    )
+    
+    if not session_doc:
+        return None
+    
+    # Check expiry
+    expires_at = session_doc.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        return None
+    
+    # Get user
+    user_doc = await db.users.find_one(
+        {"user_id": session_doc["user_id"]},
+        {"_id": 0}
+    )
+    
+    if not user_doc:
+        return None
+    
+    if isinstance(user_doc.get('created_at'), str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    return User(**user_doc)
+
+async def get_user_id_or_none(request: Request) -> Optional[str]:
+    """Get user_id if logged in, otherwise None (for backward compatibility)"""
+    user = await get_current_user(request)
+    return user.user_id if user else None
 
 # ============== HELPER FUNCTIONS ==============
 
@@ -151,7 +221,6 @@ async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ing
         
         # Parse the JSON response
         import json
-        # Clean up response - remove markdown code blocks if present
         clean_response = response.strip()
         if clean_response.startswith("```"):
             clean_response = clean_response.split("```")[1]
@@ -164,6 +233,60 @@ async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ing
     except Exception as e:
         logger.error(f"Error parsing ingredients with AI: {e}")
         return []
+
+async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
+    """Use AI vision to extract ingredients from an image"""
+    if not EMERGENT_LLM_KEY:
+        logger.warning("No EMERGENT_LLM_KEY found")
+        return "", []
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"image-parse-{uuid.uuid4()}",
+            system_message="""You are a helpful assistant that extracts recipe ingredients from images.
+            When given an image of a recipe or ingredient list, extract all the ingredients you can see.
+            First, list all the raw text you see for ingredients.
+            Then parse each ingredient into structured format with:
+            - name: the ingredient name
+            - quantity: the amount
+            - unit: the unit of measurement
+            - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
+            
+            Return as JSON with format:
+            {
+                "raw_text": "the raw ingredient text you extracted",
+                "ingredients": [{"name": "...", "quantity": "...", "unit": "...", "category": "..."}]
+            }
+            
+            Return ONLY valid JSON, no markdown."""
+        ).with_model("openai", "gpt-5.2")
+        
+        # Create message with image
+        user_message = UserMessage(
+            text="Extract all ingredients from this image. Include quantities and units where visible.",
+            image_url=f"data:image/jpeg;base64,{image_base64}"
+        )
+        
+        response = await chat.send_message(user_message)
+        
+        # Parse response
+        import json
+        clean_response = response.strip()
+        if clean_response.startswith("```"):
+            clean_response = clean_response.split("```")[1]
+            if clean_response.startswith("json"):
+                clean_response = clean_response[4:]
+        clean_response = clean_response.strip()
+        
+        data = json.loads(clean_response)
+        raw_text = data.get("raw_text", "")
+        ingredients = [Ingredient(**ing) for ing in data.get("ingredients", [])]
+        
+        return raw_text, ingredients
+    except Exception as e:
+        logger.error(f"Error extracting from image: {e}")
+        return "", []
 
 async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
     """Use AI to consolidate similar ingredients"""
@@ -224,7 +347,6 @@ async def scrape_recipe_from_url(url: str) -> dict:
             
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # Try to find recipe data
             recipe_data = {
                 'name': '',
                 'description': '',
@@ -234,7 +356,6 @@ async def scrape_recipe_from_url(url: str) -> dict:
                 'source_url': url
             }
             
-            # Try to get title
             title_selectors = ['h1', '.recipe-title', '[data-test-id="recipe-name"]', '.recipe-name']
             for selector in title_selectors:
                 title_elem = soup.select_one(selector)
@@ -242,7 +363,6 @@ async def scrape_recipe_from_url(url: str) -> dict:
                     recipe_data['name'] = title_elem.get_text(strip=True)
                     break
             
-            # Try to get description
             desc_selectors = ['.recipe-description', '[data-test-id="recipe-description"]', 'meta[name="description"]']
             for selector in desc_selectors:
                 desc_elem = soup.select_one(selector)
@@ -253,7 +373,6 @@ async def scrape_recipe_from_url(url: str) -> dict:
                         recipe_data['description'] = desc_elem.get_text(strip=True)
                     break
             
-            # Try to get ingredients
             ing_selectors = ['.ingredients', '[data-test-id="ingredients"]', '.recipe-ingredients', '.ingredient-list']
             for selector in ing_selectors:
                 ing_elem = soup.select_one(selector)
@@ -261,13 +380,11 @@ async def scrape_recipe_from_url(url: str) -> dict:
                     recipe_data['ingredients_text'] = ing_elem.get_text('\n', strip=True)
                     break
             
-            # If no structured ingredients found, look for list items
             if not recipe_data['ingredients_text']:
                 ing_items = soup.select('li[class*="ingredient"], .ingredient-item')
                 if ing_items:
                     recipe_data['ingredients_text'] = '\n'.join([item.get_text(strip=True) for item in ing_items])
             
-            # Try to get instructions
             inst_selectors = ['.instructions', '[data-test-id="instructions"]', '.recipe-instructions', '.directions']
             for selector in inst_selectors:
                 inst_elem = soup.select_one(selector)
@@ -275,7 +392,6 @@ async def scrape_recipe_from_url(url: str) -> dict:
                     recipe_data['instructions_text'] = inst_elem.get_text('\n', strip=True)
                     break
             
-            # Try to get image
             img_selectors = ['.recipe-image img', '[data-test-id="recipe-image"]', 'meta[property="og:image"]', '.hero-image img']
             for selector in img_selectors:
                 img_elem = soup.select_one(selector)
@@ -291,17 +407,119 @@ async def scrape_recipe_from_url(url: str) -> dict:
         logger.error(f"Error scraping recipe: {e}")
         raise HTTPException(status_code=400, detail=f"Could not fetch recipe from URL: {str(e)}")
 
+# ============== AUTH ROUTES ==============
+
+@api_router.post("/auth/session")
+async def create_session(request: Request, response: Response):
+    """Exchange session_id for session_token"""
+    body = await request.json()
+    session_id = body.get("session_id")
+    
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id required")
+    
+    # Call Emergent auth to get user data
+    async with httpx.AsyncClient() as client_http:
+        auth_response = await client_http.get(
+            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+            headers={"X-Session-ID": session_id}
+        )
+        
+        if auth_response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid session")
+        
+        auth_data = auth_response.json()
+    
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    email = auth_data.get("email")
+    name = auth_data.get("name")
+    picture = auth_data.get("picture")
+    session_token = auth_data.get("session_token")
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+        # Update user info
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {"name": name, "picture": picture}}
+        )
+    else:
+        # Create new user
+        user_doc = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(user_doc)
+    
+    # Store session
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60  # 7 days
+    )
+    
+    return {
+        "user_id": user_id,
+        "email": email,
+        "name": name,
+        "picture": picture
+    }
+
+@api_router.get("/auth/me")
+async def get_me(request: Request):
+    """Get current user from session"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    return {
+        "user_id": user.user_id,
+        "email": user.email,
+        "name": user.name,
+        "picture": user.picture
+    }
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Logout and clear session"""
+    session_token = request.cookies.get("session_token")
+    
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
+    
+    response.delete_cookie(key="session_token", path="/")
+    return {"message": "Logged out"}
+
 # ============== API ROUTES ==============
 
 @api_router.get("/")
 async def root():
     return {"message": "The Emerald Pantry API - Wicked good shopping lists!"}
 
-# ---- Parse Ingredients Route ----
+# ---- Parse Ingredients Routes ----
 
 @api_router.post("/parse-ingredients", response_model=ParseIngredientsResponse)
 async def parse_ingredients(data: ParseIngredientsRequest):
-    """Parse pasted ingredient text using AI - perfect for Green Chef copy/paste"""
+    """Parse pasted ingredient text using AI"""
     ingredients = []
     instructions = []
     
@@ -309,22 +527,32 @@ async def parse_ingredients(data: ParseIngredientsRequest):
         ingredients = await parse_ingredients_with_ai(data.ingredients_text, data.recipe_name or "Recipe")
     
     if data.instructions_text and data.instructions_text.strip():
-        # Split instructions by newlines or numbered steps
         raw_instructions = data.instructions_text.strip()
-        # Try to split by common patterns
-        import re
-        # Split by numbered steps like "1.", "2.", etc. or by newlines
         steps = re.split(r'\n+|\d+\.\s*', raw_instructions)
         instructions = [step.strip() for step in steps if step.strip()]
     
     return ParseIngredientsResponse(ingredients=ingredients, instructions=instructions)
 
+@api_router.post("/parse-image", response_model=ImageParseResponse)
+async def parse_image(file: UploadFile = File(...)):
+    """Extract ingredients from an uploaded image using AI vision"""
+    # Read and encode image
+    contents = await file.read()
+    image_base64 = base64.b64encode(contents).decode('utf-8')
+    
+    # Extract ingredients
+    raw_text, ingredients = await extract_ingredients_from_image(image_base64)
+    
+    return ImageParseResponse(ingredients_text=raw_text, ingredients=ingredients)
+
 # ---- Recipe Routes ----
 
 @api_router.post("/recipes", response_model=Recipe)
-async def create_recipe(recipe_data: RecipeCreate):
-    """Create a new recipe manually"""
-    recipe = Recipe(**recipe_data.model_dump())
+async def create_recipe(recipe_data: RecipeCreate, request: Request):
+    """Create a new recipe"""
+    user_id = await get_user_id_or_none(request)
+    
+    recipe = Recipe(**recipe_data.model_dump(), user_id=user_id)
     doc = recipe.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     
@@ -332,19 +560,18 @@ async def create_recipe(recipe_data: RecipeCreate):
     return recipe
 
 @api_router.post("/recipes/import", response_model=Recipe)
-async def import_recipe(import_data: RecipeImport):
-    """Import a recipe from URL (scrape + AI parse)"""
+async def import_recipe(import_data: RecipeImport, request: Request):
+    """Import a recipe from URL"""
+    user_id = await get_user_id_or_none(request)
     scraped = await scrape_recipe_from_url(import_data.url)
     
     if not scraped['name']:
         scraped['name'] = "Imported Recipe"
     
-    # Parse ingredients with AI
     ingredients = []
     if scraped['ingredients_text']:
         ingredients = await parse_ingredients_with_ai(scraped['ingredients_text'], scraped['name'])
     
-    # Parse instructions
     instructions = []
     if scraped['instructions_text']:
         instructions = [step.strip() for step in scraped['instructions_text'].split('\n') if step.strip()]
@@ -355,7 +582,8 @@ async def import_recipe(import_data: RecipeImport):
         ingredients=ingredients,
         instructions=instructions,
         source_url=scraped['source_url'],
-        image_url=scraped['image_url']
+        image_url=scraped['image_url'],
+        user_id=user_id
     )
     
     doc = recipe.model_dump()
@@ -365,9 +593,14 @@ async def import_recipe(import_data: RecipeImport):
     return recipe
 
 @api_router.get("/recipes", response_model=List[Recipe])
-async def get_recipes():
-    """Get all recipes"""
-    recipes = await db.recipes.find({}, {"_id": 0}).to_list(1000)
+async def get_recipes(request: Request):
+    """Get all recipes (for logged in user or all if not logged in)"""
+    user_id = await get_user_id_or_none(request)
+    
+    # If user is logged in, show their recipes. Otherwise show all (backward compat)
+    query = {"user_id": user_id} if user_id else {}
+    recipes = await db.recipes.find(query, {"_id": 0}).to_list(1000)
+    
     for recipe in recipes:
         if isinstance(recipe.get('created_at'), str):
             recipe['created_at'] = datetime.fromisoformat(recipe['created_at'])
@@ -384,9 +617,16 @@ async def get_recipe(recipe_id: str):
     return recipe
 
 @api_router.delete("/recipes/{recipe_id}")
-async def delete_recipe(recipe_id: str):
+async def delete_recipe(recipe_id: str, request: Request):
     """Delete a recipe"""
-    result = await db.recipes.delete_one({"id": recipe_id})
+    user_id = await get_user_id_or_none(request)
+    
+    # If logged in, only delete user's recipes
+    query = {"id": recipe_id}
+    if user_id:
+        query["user_id"] = user_id
+    
+    result = await db.recipes.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Recipe not found")
     return {"message": "Recipe deleted successfully"}
@@ -394,8 +634,9 @@ async def delete_recipe(recipe_id: str):
 # ---- Shopping List Routes ----
 
 @api_router.post("/shopping-list/generate", response_model=ShoppingList)
-async def generate_shopping_list(data: ShoppingListGenerate):
+async def generate_shopping_list(data: ShoppingListGenerate, request: Request):
     """Generate a shopping list from selected recipes"""
+    user_id = await get_user_id_or_none(request)
     items = []
     
     for recipe_id in data.recipe_ids:
@@ -411,25 +652,29 @@ async def generate_shopping_list(data: ShoppingListGenerate):
                 )
                 items.append(item)
     
-    # Consolidate similar ingredients using AI
     if items:
         items = await consolidate_ingredients_with_ai(items)
     
-    shopping_list = ShoppingList(items=items)
+    shopping_list = ShoppingList(items=items, user_id=user_id)
     doc = shopping_list.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
     
-    # Upsert - replace existing or create new
-    await db.shopping_lists.delete_many({})  # Keep only one active list
+    # Delete old list for this user
+    delete_query = {"user_id": user_id} if user_id else {"user_id": None}
+    await db.shopping_lists.delete_many(delete_query)
     await db.shopping_lists.insert_one(doc)
     
     return shopping_list
 
 @api_router.get("/shopping-list", response_model=Optional[ShoppingList])
-async def get_shopping_list():
+async def get_shopping_list(request: Request):
     """Get the current shopping list"""
-    shopping_list = await db.shopping_lists.find_one({}, {"_id": 0})
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
     if shopping_list:
         if isinstance(shopping_list.get('created_at'), str):
             shopping_list['created_at'] = datetime.fromisoformat(shopping_list['created_at'])
@@ -438,16 +683,20 @@ async def get_shopping_list():
     return shopping_list
 
 @api_router.put("/shopping-list", response_model=ShoppingList)
-async def update_shopping_list(data: ShoppingListUpdate):
-    """Update the shopping list (check items, modify quantities, etc.)"""
-    shopping_list = await db.shopping_lists.find_one({}, {"_id": 0})
+async def update_shopping_list(data: ShoppingListUpdate, request: Request):
+    """Update the shopping list"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
     if not shopping_list:
         raise HTTPException(status_code=404, detail="No shopping list found")
     
     shopping_list['items'] = [item.model_dump() for item in data.items]
     shopping_list['updated_at'] = datetime.now(timezone.utc).isoformat()
     
-    await db.shopping_lists.update_one({}, {"$set": shopping_list})
+    await db.shopping_lists.update_one(query, {"$set": shopping_list})
     
     if isinstance(shopping_list.get('created_at'), str):
         shopping_list['created_at'] = datetime.fromisoformat(shopping_list['created_at'])
@@ -457,11 +706,15 @@ async def update_shopping_list(data: ShoppingListUpdate):
     return shopping_list
 
 @api_router.post("/shopping-list/add-item", response_model=ShoppingList)
-async def add_custom_item(item: ShoppingListItem):
+async def add_custom_item(item: ShoppingListItem, request: Request):
     """Add a custom item to the shopping list"""
-    shopping_list = await db.shopping_lists.find_one({}, {"_id": 0})
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
     if not shopping_list:
-        shopping_list = ShoppingList(items=[]).model_dump()
+        shopping_list = ShoppingList(items=[], user_id=user_id).model_dump()
         shopping_list['created_at'] = shopping_list['created_at'].isoformat() if hasattr(shopping_list['created_at'], 'isoformat') else shopping_list['created_at']
         shopping_list['updated_at'] = shopping_list['updated_at'].isoformat() if hasattr(shopping_list['updated_at'], 'isoformat') else shopping_list['updated_at']
         await db.shopping_lists.insert_one(shopping_list)
@@ -469,7 +722,7 @@ async def add_custom_item(item: ShoppingListItem):
     shopping_list['items'].append(item.model_dump())
     shopping_list['updated_at'] = datetime.now(timezone.utc).isoformat()
     
-    await db.shopping_lists.update_one({}, {"$set": shopping_list})
+    await db.shopping_lists.update_one(query, {"$set": shopping_list})
     
     if isinstance(shopping_list.get('created_at'), str):
         shopping_list['created_at'] = datetime.fromisoformat(shopping_list['created_at'])
@@ -479,37 +732,53 @@ async def add_custom_item(item: ShoppingListItem):
     return shopping_list
 
 @api_router.delete("/shopping-list/item/{item_id}")
-async def delete_shopping_item(item_id: str):
+async def delete_shopping_item(item_id: str, request: Request):
     """Delete an item from the shopping list"""
-    shopping_list = await db.shopping_lists.find_one({}, {"_id": 0})
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
     if not shopping_list:
         raise HTTPException(status_code=404, detail="No shopping list found")
     
     shopping_list['items'] = [item for item in shopping_list['items'] if item['id'] != item_id]
     shopping_list['updated_at'] = datetime.now(timezone.utc).isoformat()
     
-    await db.shopping_lists.update_one({}, {"$set": shopping_list})
+    await db.shopping_lists.update_one(query, {"$set": shopping_list})
     return {"message": "Item deleted successfully"}
 
 # ---- Weekly Plan Routes ----
 
 @api_router.post("/weekly-plan", response_model=WeeklyPlan)
-async def save_weekly_plan(data: WeeklyPlanCreate):
+async def save_weekly_plan(data: WeeklyPlanCreate, request: Request):
     """Save or update the weekly meal plan"""
-    plan = WeeklyPlan(**data.model_dump())
+    user_id = await get_user_id_or_none(request)
+    
+    plan = WeeklyPlan(**data.model_dump(), user_id=user_id)
     doc = plan.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     
-    # Upsert based on week_start
-    await db.weekly_plans.delete_many({"week_start": data.week_start})
+    # Delete old plan for this week/user
+    delete_query = {"week_start": data.week_start}
+    if user_id:
+        delete_query["user_id"] = user_id
+    await db.weekly_plans.delete_many(delete_query)
     await db.weekly_plans.insert_one(doc)
     
     return plan
 
 @api_router.get("/weekly-plan", response_model=Optional[WeeklyPlan])
-async def get_weekly_plan(week_start: Optional[str] = None):
+async def get_weekly_plan(request: Request, week_start: Optional[str] = None):
     """Get the weekly meal plan"""
-    query = {"week_start": week_start} if week_start else {}
+    user_id = await get_user_id_or_none(request)
+    
+    query = {}
+    if week_start:
+        query["week_start"] = week_start
+    if user_id:
+        query["user_id"] = user_id
+    
     plan = await db.weekly_plans.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
     if plan:
         if isinstance(plan.get('created_at'), str):
@@ -517,9 +786,13 @@ async def get_weekly_plan(week_start: Optional[str] = None):
     return plan
 
 @api_router.get("/weekly-plan/all", response_model=List[WeeklyPlan])
-async def get_all_weekly_plans():
+async def get_all_weekly_plans(request: Request):
     """Get all weekly plans"""
-    plans = await db.weekly_plans.find({}, {"_id": 0}).to_list(100)
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {}
+    plans = await db.weekly_plans.find(query, {"_id": 0}).to_list(100)
+    
     for plan in plans:
         if isinstance(plan.get('created_at'), str):
             plan['created_at'] = datetime.fromisoformat(plan['created_at'])
