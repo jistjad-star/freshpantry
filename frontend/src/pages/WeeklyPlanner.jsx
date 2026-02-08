@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Calendar, ChefHat, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Plus, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Calendar, ChefHat, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Plus, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const MAX_MEALS_PER_WEEK = 7;
 
 export default function WeeklyPlanner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [recipes, setRecipes] = useState([]);
   const [weeklyPlan, setWeeklyPlan] = useState({});
   const [currentWeek, setCurrentWeek] = useState(getWeekStart(new Date()));
