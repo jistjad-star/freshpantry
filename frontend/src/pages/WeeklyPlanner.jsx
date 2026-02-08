@@ -37,6 +37,28 @@ export default function WeeklyPlanner() {
     return addDays(new Date(dateStr), dayIndex).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
+  // Handle suggested meals from MealSuggestions page
+  useEffect(() => {
+    if (location.state?.suggestedMeals && recipes.length > 0) {
+      const suggestedIds = location.state.suggestedMeals;
+      // Distribute suggested meals across the week
+      const newPlan = { ...weeklyPlan };
+      let dayIndex = 0;
+      
+      for (const recipeId of suggestedIds) {
+        const day = DAYS[dayIndex % 7];
+        if (!newPlan[day]) newPlan[day] = [];
+        newPlan[day].push(recipeId);
+        dayIndex++;
+      }
+      
+      setWeeklyPlan(newPlan);
+      toast.success(`Added ${suggestedIds.length} suggested meals to your plan!`);
+      // Clear the state so it doesn't re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, recipes]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -50,8 +72,17 @@ export default function WeeklyPlanner() {
     fetchData();
   }, [currentWeek]);
 
+  const getTotalMeals = () => DAYS.reduce((sum, day) => sum + (weeklyPlan[day]?.length || 0), 0);
+
   const addRecipeToDay = (day) => {
     if (!selectedRecipeId) { toast.error("Select a recipe first"); return; }
+    
+    // Check if we've reached the max meals limit
+    if (getTotalMeals() >= MAX_MEALS_PER_WEEK) {
+      toast.error(`Maximum ${MAX_MEALS_PER_WEEK} meals per week. Remove one to add another.`);
+      return;
+    }
+    
     setWeeklyPlan(prev => ({ ...prev, [day]: [...(prev[day] || []), selectedRecipeId] }));
     setSelectedRecipeId("");
   };
@@ -82,7 +113,7 @@ export default function WeeklyPlanner() {
   };
 
   const getRecipeById = (id) => recipes.find(r => r.id === id);
-  const totalMeals = DAYS.reduce((sum, day) => sum + (weeklyPlan[day]?.length || 0), 0);
+  const totalMeals = getTotalMeals();
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#4A7C59] animate-spin" /></div>;
 
