@@ -380,16 +380,24 @@ export default function Pantry() {
                                 <Input
                                   type="number"
                                   defaultValue={item.quantity}
+                                  id={`edit-input-${item.id}`}
                                   className="w-20 h-8 text-sm fresh-input"
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      updateItemQuantity(item.id, e.target.value);
-                                    }
-                                  }}
                                   autoFocus
                                   data-testid={`edit-qty-${item.id}`}
                                 />
                                 <span className="text-sm text-stone-500">{item.unit}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const input = document.getElementById(`edit-input-${item.id}`);
+                                    if (input) updateItemQuantity(item.id, input.value);
+                                  }}
+                                  className="h-8 w-8 p-0 text-[#4A7C59] hover:bg-[#4A7C59]/10"
+                                  data-testid={`save-qty-${item.id}`}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
