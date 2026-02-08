@@ -42,6 +42,19 @@ export default function ShoppingList() {
     }
   };
 
+  const fetchCostEstimate = async () => {
+    setLoadingCosts(true);
+    try {
+      const response = await api.estimateShoppingCosts();
+      setCostEstimate(response.data);
+    } catch (error) {
+      console.error("Error fetching costs:", error);
+      toast.error("Failed to estimate costs");
+    } finally {
+      setLoadingCosts(false);
+    }
+  };
+
   const toggleItem = async (itemId) => {
     if (!shoppingList) return;
     const updatedItems = shoppingList.items.map(item => item.id === itemId ? { ...item, checked: !item.checked } : item);
