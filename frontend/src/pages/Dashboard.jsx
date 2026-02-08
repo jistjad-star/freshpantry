@@ -183,6 +183,19 @@ export default function Dashboard() {
                     Add Recipe
                   </Button>
                 </Link>
+                <Button 
+                  onClick={generateEatNow}
+                  disabled={loadingEatNow}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-8 py-6 text-base shadow-lg"
+                  data-testid="cta-eat-now"
+                >
+                  {loadingEatNow ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Utensils className="w-5 h-5 mr-2" />
+                  )}
+                  Eat Now
+                </Button>
                 <Link to="/pantry">
                   <Button 
                     className="btn-secondary px-8 py-6 text-base"
