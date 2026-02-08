@@ -752,7 +752,21 @@ export default function AddRecipe() {
               ) : (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{pasteName}</h3>
+                    <div>
+                      <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{pasteName}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm text-stone-500">Serves:</span>
+                        <select
+                          value={pasteServings}
+                          onChange={(e) => setPasteServings(Number(e.target.value))}
+                          className="px-3 py-1 rounded-lg border border-stone-200 text-sm text-[#1A2E1A] focus:outline-none focus:ring-2 focus:ring-[#4A7C59]/20"
+                        >
+                          {[1,2,3,4,5,6,7,8,10,12].map(n => (
+                            <option key={n} value={n}>{n} {n === 1 ? 'person' : 'people'}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                     <Button variant="outline" onClick={() => { setIsParsed(false); setParsedIngredients([]); setParsedInstructions([]); }}>
                       Edit
                     </Button>
