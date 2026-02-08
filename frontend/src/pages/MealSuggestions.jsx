@@ -8,7 +8,10 @@ import {
   AlertCircle,
   ArrowRight,
   RefreshCw,
-  Calendar
+  Calendar,
+  Wand2,
+  Plus,
+  Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -21,6 +24,9 @@ export default function MealSuggestions() {
   const [suggestions, setSuggestions] = useState([]);
   const [message, setMessage] = useState("");
   const [selectedMeals, setSelectedMeals] = useState([]);
+  const [generatingRecipe, setGeneratingRecipe] = useState(false);
+  const [generatedRecipe, setGeneratedRecipe] = useState(null);
+  const [savingRecipe, setSavingRecipe] = useState(false);
 
   const fetchSuggestions = async () => {
     setLoading(true);
@@ -40,6 +46,57 @@ export default function MealSuggestions() {
     fetchSuggestions();
   }, []);
 
+  const generateAIRecipe = async () => {
+    setGeneratingRecipe(true);
+    setGeneratedRecipe(null);
+    try {
+      const response = await api.generateAIRecipe();
+      setGeneratedRecipe(response.data.recipe);
+      toast.success("Recipe generated from your pantry!");
+    } catch (error) {
+      console.error("Error generating recipe:", error);
+      if (error.response?.data?.detail?.includes("pantry")) {
+        toast.error("Add items to your pantry first!");
+      } else {
+        toast.error("Failed to generate recipe");
+      }
+    } finally {
+      setGeneratingRecipe(false);
+    }
+  };
+
+  const saveGeneratedRecipe = async () => {
+    if (!generatedRecipe) return;
+    
+    setSavingRecipe(true);
+    try {
+      const recipeData = {
+        name: generatedRecipe.name,
+        description: generatedRecipe.description,
+        servings: generatedRecipe.servings || 4,
+        prep_time: generatedRecipe.prep_time,
+        cook_time: generatedRecipe.cook_time,
+        ingredients: generatedRecipe.ingredients?.map(ing => ({
+          name: ing.name,
+          quantity: String(ing.quantity),
+          unit: ing.unit || "",
+          category: ing.category || "other"
+        })) || [],
+        instructions: generatedRecipe.instructions || [],
+        categories: generatedRecipe.categories || []
+      };
+      
+      const response = await api.createRecipe(recipeData);
+      toast.success("Recipe saved to your library!");
+      navigate(`/recipes/${response.data.id}`);
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      toast.error("Failed to save recipe");
+    } finally {
+      setSavingRecipe(false);
+    }
+  };
+
   const toggleMealSelection = (recipeId) => {
     setSelectedMeals(prev => {
       if (prev.includes(recipeId)) {
@@ -58,7 +115,6 @@ export default function MealSuggestions() {
       toast.error("Please select at least one meal");
       return;
     }
-    // Navigate to planner with selected meals
     navigate("/planner", { state: { suggestedMeals: selectedMeals } });
     toast.success(`Adding ${selectedMeals.length} meals to your weekly plan!`);
   };
@@ -90,16 +146,124 @@ export default function MealSuggestions() {
                 AI-powered recommendations based on your pantry
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={fetchSuggestions}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={fetchSuggestions}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* AI Recipe Generator Card */}
+        <div className="mb-8 fresh-card-static p-6 bg-gradient-to-br from-[#4A7C59]/5 to-[#4A7C59]/10 border-[#4A7C59]/20">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-full bg-[#4A7C59]/20">
+              <Wand2 className="w-6 h-6 text-[#4A7C59]" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-display text-lg font-semibold text-[#1A2E1A] mb-1">
+                Create a New Recipe from Your Pantry
+              </h2>
+              <p className="text-stone-600 text-sm mb-4">
+                Let AI create a delicious recipe using only ingredients you already have
+              </p>
+              <Button 
+                onClick={generateAIRecipe}
+                disabled={generatingRecipe}
+                className="btn-primary"
+                data-testid="generate-ai-recipe-btn"
+              >
+                {generatingRecipe ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Creating Recipe...</>
+                ) : (
+                  <><Wand2 className="w-4 h-4 mr-2" />Generate Recipe</>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Generated Recipe Display */}
+          {generatedRecipe && (
+            <div className="mt-6 p-5 rounded-xl bg-white border border-[#4A7C59]/30" data-testid="generated-recipe">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-display text-xl font-bold text-[#1A2E1A]">
+                    {generatedRecipe.name}
+                  </h3>
+                  <p className="text-stone-600 text-sm mt-1">{generatedRecipe.description}</p>
+                </div>
+                <Button 
+                  onClick={saveGeneratedRecipe}
+                  disabled={savingRecipe}
+                  className="btn-primary"
+                  data-testid="save-generated-recipe-btn"
+                >
+                  {savingRecipe ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <><Save className="w-4 h-4 mr-2" />Save Recipe</>
+                  )}
+                </Button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-[#1A2E1A] mb-2 flex items-center gap-2">
+                    <span className="text-sm">🥘</span> Ingredients
+                  </h4>
+                  <ul className="space-y-1 text-sm text-stone-600">
+                    {generatedRecipe.ingredients?.map((ing, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        {ing.from_pantry ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-3.5 h-3.5 text-orange-500" />
+                        )}
+                        <span className={!ing.from_pantry ? 'text-orange-700 font-medium' : ''}>
+                          {ing.quantity} {ing.unit} {ing.name}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  {generatedRecipe.missing_ingredients?.length > 0 && (
+                    <div className="mt-3 p-2 rounded-lg bg-orange-50 border border-orange-200">
+                      <p className="text-xs text-orange-700">
+                        <AlertCircle className="w-3 h-3 inline mr-1" />
+                        You may need: {generatedRecipe.missing_ingredients.join(", ")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-[#1A2E1A] mb-2 flex items-center gap-2">
+                    <span className="text-sm">📝</span> Instructions
+                  </h4>
+                  <ol className="space-y-2 text-sm text-stone-600 list-decimal list-inside">
+                    {generatedRecipe.instructions?.slice(0, 4).map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                    {generatedRecipe.instructions?.length > 4 && (
+                      <li className="text-stone-400 italic">+{generatedRecipe.instructions.length - 4} more steps...</li>
+                    )}
+                  </ol>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-stone-200 flex items-center gap-4 text-xs text-stone-500">
+                {generatedRecipe.prep_time && <span>⏱️ Prep: {generatedRecipe.prep_time}</span>}
+                {generatedRecipe.cook_time && <span>🔥 Cook: {generatedRecipe.cook_time}</span>}
+                {generatedRecipe.servings && <span>👥 Serves: {generatedRecipe.servings}</span>}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Selection Counter */}
