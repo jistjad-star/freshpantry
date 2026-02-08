@@ -1086,17 +1086,28 @@ async def get_recipes_grouped_by_ingredients(request: Request):
 
 @api_router.post("/recipes", response_model=Recipe)
 async def create_recipe(recipe_data: RecipeCreate, request: Request):
-    """Create a new recipe with AI-generated image"""
+    """Create a new recipe with AI-generated image and auto-suggested categories"""
     user_id = await get_user_id_or_none(request)
     
     # Generate AI image if no image provided
     image_url = recipe_data.image_url
+    ingredients_dict = [ing.model_dump() if hasattr(ing, 'model_dump') else ing for ing in recipe_data.ingredients]
+    
     if not image_url and recipe_data.ingredients:
-        ingredients_dict = [ing.model_dump() if hasattr(ing, 'model_dump') else ing for ing in recipe_data.ingredients]
         image_url = await generate_recipe_image(recipe_data.name, ingredients_dict)
+    
+    # Auto-suggest categories if none provided
+    categories = recipe_data.categories
+    if not categories and recipe_data.ingredients:
+        categories = suggest_recipe_categories(
+            ingredients_dict, 
+            recipe_data.prep_time or "", 
+            recipe_data.cook_time or ""
+        )
     
     recipe_dict = recipe_data.model_dump()
     recipe_dict['image_url'] = image_url
+    recipe_dict['categories'] = categories
     
     recipe = Recipe(**recipe_dict, user_id=user_id)
     doc = recipe.model_dump()
