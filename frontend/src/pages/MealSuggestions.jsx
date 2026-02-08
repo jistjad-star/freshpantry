@@ -237,7 +237,7 @@ export default function MealSuggestions() {
                 </div>
               </div>
               );
-            ))}
+            })}
           </div>
         )}
 
