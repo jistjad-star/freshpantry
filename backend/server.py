@@ -58,6 +58,9 @@ class Ingredient(BaseModel):
     category: str = "other"
     checked: bool = False
 
+# Recipe categories
+RECIPE_CATEGORIES = ["vegan", "vegetarian", "pescatarian", "low-fat", "quick-easy", "comfort-food", "healthy", "family-friendly"]
+
 class Recipe(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -69,6 +72,7 @@ class Recipe(BaseModel):
     cook_time: Optional[str] = ""
     ingredients: List[Ingredient] = []
     instructions: List[str] = []
+    categories: List[str] = []  # vegan, vegetarian, pescatarian, low-fat, quick-easy
     source_url: Optional[str] = None
     image_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -81,6 +85,7 @@ class RecipeCreate(BaseModel):
     cook_time: Optional[str] = ""
     ingredients: List[Ingredient] = []
     instructions: List[str] = []
+    categories: List[str] = []
     image_url: Optional[str] = None
 
 class RecipeImport(BaseModel):
