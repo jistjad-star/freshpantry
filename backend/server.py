@@ -278,6 +278,43 @@ async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ing
         logger.error(f"Error parsing ingredients with AI: {e}")
         return []
 
+async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
+    """Generate an AI image for a recipe"""
+    if not EMERGENT_LLM_KEY:
+        logger.warning("No EMERGENT_LLM_KEY found for image generation")
+        return ""
+    
+    try:
+        # Create a descriptive prompt for the food image
+        ingredient_names = [ing.get('name', '') for ing in ingredients[:5]]
+        ingredients_text = ", ".join(ingredient_names) if ingredient_names else ""
+        
+        prompt = f"Professional food photography of {recipe_name}, a delicious home-cooked dish"
+        if ingredients_text:
+            prompt += f" featuring {ingredients_text}"
+        prompt += ". Appetizing, well-plated, natural lighting, top-down or 45-degree angle, clean white plate, rustic wooden table background."
+        
+        logger.info(f"Generating image for recipe: {recipe_name}")
+        
+        image_gen = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY)
+        images = await image_gen.generate_images(
+            prompt=prompt,
+            model="gpt-image-1",
+            number_of_images=1
+        )
+        
+        if images and len(images) > 0:
+            # Convert to base64 data URL
+            image_base64 = base64.b64encode(images[0]).decode('utf-8')
+            image_url = f"data:image/png;base64,{image_base64}"
+            logger.info(f"Successfully generated image for {recipe_name}")
+            return image_url
+        
+        return ""
+    except Exception as e:
+        logger.error(f"Error generating recipe image: {e}", exc_info=True)
+        return ""
+
 async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Use AI vision to extract ingredients from an image"""
     if not EMERGENT_LLM_KEY:
