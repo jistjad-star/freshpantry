@@ -114,7 +114,13 @@ Build an app that takes Green Chef recipes and turns them into weekly shopping l
 - [ ] Barcode scanning for pantry
 
 ## Tech Notes
-- Image parsing uses GPT-4o (vision model)
+- Image parsing uses GPT-5.1 (vision model) via ImageContent class
 - Text parsing uses GPT-5.2
 - All AI via Emergent LLM Key - no user API keys needed
 - MongoDB with user_id scoping for multi-tenant support
+
+## Changelog
+
+### 2025-02-08
+- **Fixed**: Screenshot upload feature - changed from deprecated `image_url` parameter to `file_contents=[ImageContent(image_base64=...)]` in emergentintegrations library
+- **Updated**: Vision model from GPT-4o to GPT-5.1 (recommended vision model)
