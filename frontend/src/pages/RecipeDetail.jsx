@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Clock, Users, ChefHat, Trash2, ShoppingCart, Loader2, ExternalLink, UtensilsCrossed, ImagePlus, Sparkles, Minus, Plus, Pencil, X, Check, Leaf, Fish, Salad, Zap, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
+
+const ALL_CATEGORIES = [
+  { value: "vegan", label: "Vegan", icon: Leaf, color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "vegetarian", label: "Veggie", icon: Salad, color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  { value: "pescatarian", label: "Pescatarian", icon: Fish, color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { value: "low-fat", label: "Low Fat", icon: Heart, color: "bg-pink-100 text-pink-700 border-pink-200" },
+  { value: "quick-easy", label: "Quick & Easy", icon: Zap, color: "bg-amber-100 text-amber-700 border-amber-200" },
+];
 
 export default function RecipeDetail() {
   const { id } = useParams();
@@ -15,6 +23,9 @@ export default function RecipeDetail() {
   const [cooking, setCooking] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [servings, setServings] = useState(null);
+  const [editingCategories, setEditingCategories] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [savingCategories, setSavingCategories] = useState(false);
 
   useEffect(() => {
     const fetchRecipe = async () => {
@@ -22,6 +33,7 @@ export default function RecipeDetail() {
         const response = await api.getRecipe(id);
         setRecipe(response.data);
         setServings(response.data.servings || 2);
+        setSelectedCategories(response.data.categories || []);
       } catch (error) {
         toast.error("Recipe not found");
         navigate("/recipes");
