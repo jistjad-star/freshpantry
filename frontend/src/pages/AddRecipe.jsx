@@ -476,7 +476,7 @@ export default function AddRecipe() {
                 <div>
                   <p className="text-sm font-medium text-[#1A2E1A]">Screenshot Upload</p>
                   <p className="text-sm text-stone-500 mt-1">
-                    Take a screenshot of your recipe ingredients and our AI will extract them.
+                    Upload multiple screenshots of your recipe ingredients and our AI will extract them all.
                   </p>
                 </div>
               </div>
@@ -499,35 +499,55 @@ export default function AddRecipe() {
                     ref={fileInputRef}
                     onChange={handleImageSelect}
                     accept="image/*"
+                    multiple
                     className="hidden"
                   />
                   
-                  {!imagePreview ? (
+                  {/* Image previews grid */}
+                  {imagePreviews.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img 
+                            src={preview} 
+                            alt={`Ingredient image ${index + 1}`} 
+                            className="w-full h-32 object-cover rounded-xl bg-stone-100"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeIngredientImage(index)}
+                            className="absolute top-2 right-2 bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <span className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                            {index + 1}
+                          </span>
+                        </div>
+                      ))}
+                      {/* Add more button */}
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-stone-300 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
+                      >
+                        <Plus className="w-6 h-6 text-stone-400" />
+                        <span className="text-xs text-stone-400 mt-1">Add more</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {imagePreviews.length === 0 && (
                     <div 
                       onClick={() => fileInputRef.current?.click()}
                       className="border-2 border-dashed border-stone-300 rounded-2xl p-12 text-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
                       data-testid="image-upload-area"
                     >
                       <Upload className="w-12 h-12 text-stone-400 mx-auto mb-4" />
-                      <p className="text-stone-600 mb-2">Click to upload screenshot</p>
-                      <p className="text-sm text-stone-400">PNG, JPG up to 10MB</p>
+                      <p className="text-stone-600 mb-2">Click to upload screenshots</p>
+                      <p className="text-sm text-stone-400">Upload multiple images - PNG, JPG up to 10MB each</p>
                     </div>
-                  ) : (
-                    <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Recipe screenshot" 
-                        className="w-full max-h-80 object-contain rounded-xl bg-stone-100"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => { setImageFile(null); setImagePreview(null); }}
-                        className="absolute top-2 right-2 bg-white"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  )}
                   )}
 
                   <Button
