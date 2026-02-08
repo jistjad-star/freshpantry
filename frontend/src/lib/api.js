@@ -17,10 +17,13 @@ export const api = {
   getRecipe: (id) => axios.get(`${API}/recipes/${id}`),
   getRecipesGrouped: () => axios.get(`${API}/recipes/grouped`),
   createRecipe: (data) => axios.post(`${API}/recipes`, data),
+  updateRecipe: (id, data) => axios.put(`${API}/recipes/${id}`, data),
   importRecipe: (url) => axios.post(`${API}/recipes/import`, { url }),
   deleteRecipe: (id) => axios.delete(`${API}/recipes/${id}`),
   generateRecipeImage: (id) => axios.post(`${API}/recipes/${id}/generate-image`),
   updateRecipeCategories: (id, categories) => axios.put(`${API}/recipes/${id}/categories`, { categories }),
+  exportRecipes: (recipeIds) => axios.post(`${API}/recipes/export`, { recipe_ids: recipeIds }),
+  importRecipes: (recipes) => axios.post(`${API}/recipes/import-batch`, { recipes }),
   
   // Parse ingredients
   parseIngredients: (recipeName, ingredientsText, instructionsText = "") => 
@@ -54,6 +57,7 @@ export const api = {
   updateShoppingList: (items) => axios.put(`${API}/shopping-list`, { items }),
   addShoppingItem: (item) => axios.post(`${API}/shopping-list/add-item`, item),
   deleteShoppingItem: (id) => axios.delete(`${API}/shopping-list/item/${id}`),
+  estimateShoppingCosts: () => axios.get(`${API}/shopping-list/estimate-costs`),
 
   // Weekly Plan
   getWeeklyPlan: (weekStart) => axios.get(`${API}/weekly-plan`, { params: { week_start: weekStart } }),
@@ -71,6 +75,7 @@ export const api = {
 
   // Meal Suggestions
   getMealSuggestions: () => axios.get(`${API}/suggestions/meals`),
+  generateAIRecipe: () => axios.post(`${API}/suggestions/generate-recipe`),
 };
 
 export default api;
