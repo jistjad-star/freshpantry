@@ -122,5 +122,7 @@ Build an app that takes Green Chef recipes and turns them into weekly shopping l
 ## Changelog
 
 ### 2025-02-08
+- **Added**: Instructions image upload - users can now upload a screenshot of cooking instructions and AI will extract the steps
 - **Fixed**: Screenshot upload feature - changed from deprecated `image_url` parameter to `file_contents=[ImageContent(image_base64=...)]` in emergentintegrations library
+- **Fixed**: Null value handling for ingredients without quantities (e.g., Green Chef ingredient lists)
 - **Updated**: Vision model from GPT-4o to GPT-5.1 (recommended vision model)
