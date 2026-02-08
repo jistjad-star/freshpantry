@@ -2049,7 +2049,17 @@ UK_PRICE_DATA = {
     "honey": {"price": 3.50, "unit": "jar", "tesco": 3.50, "tesco_clubcard": 2.85, "sainsburys": 4.00, "sainsburys_nectar": 3.25, "aldi": 2.49, "lidl": 2.49, "asda": 3.00, "morrisons": 3.30, "morrisons_more": 2.85},
     # Spices
     "salt": {"price": 0.65, "unit": "pack", "tesco": 0.65, "tesco_clubcard": 0.50, "sainsburys": 0.75, "sainsburys_nectar": 0.60, "aldi": 0.35, "lidl": 0.35, "asda": 0.50, "morrisons": 0.60, "morrisons_more": 0.50},
-    "pepper": {"price": 1.50, "unit": "jar", "tesco": 1.50, "sainsburys": 1.75, "aldi": 0.99, "lidl": 0.99, "asda": 1.20, "morrisons": 1.40},
+    "pepper": {"price": 1.50, "unit": "jar", "tesco": 1.50, "tesco_clubcard": 1.20, "sainsburys": 1.75, "sainsburys_nectar": 1.40, "aldi": 0.99, "lidl": 0.99, "asda": 1.20, "morrisons": 1.40, "morrisons_more": 1.20},
+}
+
+# Store display names and their loyalty card info
+STORE_INFO = {
+    "tesco": {"display": "Tesco", "loyalty": "tesco_clubcard", "loyalty_name": "Clubcard"},
+    "sainsburys": {"display": "Sainsbury's", "loyalty": "sainsburys_nectar", "loyalty_name": "Nectar"},
+    "aldi": {"display": "Aldi", "loyalty": None, "loyalty_name": None},
+    "lidl": {"display": "Lidl", "loyalty": None, "loyalty_name": None},
+    "asda": {"display": "Asda", "loyalty": None, "loyalty_name": None},
+    "morrisons": {"display": "Morrisons", "loyalty": "morrisons_more", "loyalty_name": "More Card"},
 }
 
 def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> dict:
