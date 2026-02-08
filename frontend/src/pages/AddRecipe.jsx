@@ -496,6 +496,11 @@ export default function AddRecipe() {
                       <><Sparkles className="w-5 h-5 mr-2" />Extract Ingredients</>
                     )}
                   </Button>
+                  {!imageFile && (
+                    <p className="text-sm text-stone-500 text-center mt-2" data-testid="upload-helper-text">
+                      👆 Upload an image above to enable extraction
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">

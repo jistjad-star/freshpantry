@@ -245,16 +245,82 @@ export default function RecipeDetail() {
                 <h1 className="font-display text-3xl md:text-4xl font-bold text-[#1A2E1A] mb-3">{recipe.name}</h1>
                 {recipe.description && <p className="text-stone-600 mb-4 max-w-2xl">{recipe.description}</p>}
                 
-                {/* Category badges */}
-                {recipe.categories?.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {recipe.categories.map(cat => (
-                      <span key={cat} className="px-3 py-1 rounded-full text-xs font-medium bg-[#4A7C59]/10 text-[#4A7C59]">
-                        {cat.replace('-', ' ')}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {/* Category badges with edit functionality */}
+                <div className="mb-4">
+                  {!editingCategories ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {recipe.categories?.length > 0 ? (
+                        recipe.categories.map(cat => {
+                          const categoryInfo = ALL_CATEGORIES.find(c => c.value === cat);
+                          const Icon = categoryInfo?.icon;
+                          return (
+                            <span key={cat} className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${categoryInfo?.color || 'bg-[#4A7C59]/10 text-[#4A7C59] border-[#4A7C59]/20'}`}>
+                              {Icon && <Icon className="w-3 h-3" />}
+                              {categoryInfo?.label || cat.replace('-', ' ')}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-sm text-stone-400 italic">No categories</span>
+                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setEditingCategories(true)}
+                        className="text-stone-400 hover:text-[#4A7C59] h-7 px-2"
+                        data-testid="edit-categories-btn"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 p-4 rounded-xl bg-stone-50 border border-stone-200" data-testid="category-edit-panel">
+                      <p className="text-sm font-medium text-stone-600">Select categories:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {ALL_CATEGORIES.map(cat => {
+                          const Icon = cat.icon;
+                          const isSelected = selectedCategories.includes(cat.value);
+                          return (
+                            <button
+                              key={cat.value}
+                              onClick={() => toggleCategory(cat.value)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 border transition-all ${
+                                isSelected 
+                                  ? cat.color 
+                                  : 'bg-white text-stone-500 border-stone-200 hover:border-stone-300'
+                              }`}
+                              data-testid={`category-toggle-${cat.value}`}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                              {cat.label}
+                              {isSelected && <Check className="w-3 h-3 ml-0.5" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center gap-2 pt-2">
+                        <Button 
+                          size="sm" 
+                          onClick={saveCategories}
+                          disabled={savingCategories}
+                          className="btn-primary h-8"
+                          data-testid="save-categories-btn"
+                        >
+                          {savingCategories ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={cancelEditCategories}
+                          className="h-8 text-stone-500"
+                          data-testid="cancel-categories-btn"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   {/* Servings Adjuster */}
