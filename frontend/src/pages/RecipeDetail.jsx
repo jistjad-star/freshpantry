@@ -89,6 +89,66 @@ export default function RecipeDetail() {
     }
   };
 
+  // Scale ingredient quantity based on servings
+  const scaleQuantity = (originalQty, originalServings, newServings) => {
+    if (!originalQty || !originalServings || !newServings) return originalQty;
+    
+    const multiplier = newServings / originalServings;
+    
+    // Try to parse the quantity
+    const qtyStr = String(originalQty).trim();
+    
+    // Handle fractions like "1/2", "1/4"
+    if (qtyStr.includes('/')) {
+      const parts = qtyStr.split('/');
+      if (parts.length === 2) {
+        const num = parseFloat(parts[0]) || 0;
+        const denom = parseFloat(parts[1]) || 1;
+        const scaled = (num / denom) * multiplier;
+        
+        // Format nicely
+        if (scaled === Math.floor(scaled)) return String(Math.floor(scaled));
+        if (scaled >= 1) return scaled.toFixed(1).replace(/\.0$/, '');
+        
+        // Convert back to fraction if small
+        if (Math.abs(scaled - 0.25) < 0.05) return '1/4';
+        if (Math.abs(scaled - 0.33) < 0.05) return '1/3';
+        if (Math.abs(scaled - 0.5) < 0.05) return '1/2';
+        if (Math.abs(scaled - 0.67) < 0.05) return '2/3';
+        if (Math.abs(scaled - 0.75) < 0.05) return '3/4';
+        
+        return scaled.toFixed(2).replace(/\.?0+$/, '');
+      }
+    }
+    
+    // Handle mixed numbers like "1 1/2"
+    const mixedMatch = qtyStr.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+    if (mixedMatch) {
+      const whole = parseInt(mixedMatch[1]);
+      const num = parseInt(mixedMatch[2]);
+      const denom = parseInt(mixedMatch[3]);
+      const total = (whole + num / denom) * multiplier;
+      if (total === Math.floor(total)) return String(Math.floor(total));
+      return total.toFixed(1).replace(/\.0$/, '');
+    }
+    
+    // Handle plain numbers
+    const num = parseFloat(qtyStr);
+    if (!isNaN(num)) {
+      const scaled = num * multiplier;
+      if (scaled === Math.floor(scaled)) return String(Math.floor(scaled));
+      return scaled.toFixed(1).replace(/\.0$/, '');
+    }
+    
+    return originalQty; // Return original if can't parse
+  };
+
+  const originalServings = recipe?.servings || 2;
+  const scaledIngredients = recipe?.ingredients?.map(ing => ({
+    ...ing,
+    scaledQuantity: scaleQuantity(ing.quantity, originalServings, servings)
+  })) || [];
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#4A7C59] animate-spin" /></div>;
   }
