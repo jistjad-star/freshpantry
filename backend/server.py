@@ -711,7 +711,7 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
         return consolidated  # Fall back to local consolidation
 
 async def scrape_recipe_from_url(url: str) -> dict:
-    """Scrape recipe data from Green Chef or similar recipe URLs"""
+    """Scrape recipe data from recipe URLs"""
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client_http:
             headers = {
