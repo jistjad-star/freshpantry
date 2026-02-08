@@ -133,5 +133,5 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - **Added**: "Get Suggestions" button on Planner page to quickly get meal recommendations
 - **Added**: Instructions image upload - users can now upload a screenshot of cooking instructions and AI will extract the steps
 - **Fixed**: Screenshot upload feature - changed from deprecated `image_url` parameter to `file_contents=[ImageContent(image_base64=...)]` in emergentintegrations library
-- **Fixed**: Null value handling for ingredients without quantities (e.g., Green Chef ingredient lists)
+- **Fixed**: Null value handling for ingredients without quantities
 - **Updated**: Vision model from GPT-4o to GPT-5.1 (recommended vision model)
