@@ -51,18 +51,19 @@ export default function AddRecipe() {
   const fileInputRef = useRef(null);
   const instructionsFileInputRef = useRef(null);
   
-  // Image upload state
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  // Multiple image upload state for ingredients
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [imageName, setImageName] = useState("");
   const [imageServings, setImageServings] = useState(2);
   const [imageIngredients, setImageIngredients] = useState([]);
   const [imageRawText, setImageRawText] = useState("");
   const [isImageParsed, setIsImageParsed] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Instructions image upload state
-  const [instructionsImageFile, setInstructionsImageFile] = useState(null);
-  const [instructionsImagePreview, setInstructionsImagePreview] = useState(null);
+  // Multiple instructions image upload state
+  const [instructionsImageFiles, setInstructionsImageFiles] = useState([]);
+  const [instructionsImagePreviews, setInstructionsImagePreviews] = useState([]);
   const [imageInstructions, setImageInstructions] = useState([]);
   const [instructionsRawText, setInstructionsRawText] = useState("");
   const [isInstructionsParsed, setIsInstructionsParsed] = useState(false);
