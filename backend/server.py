@@ -1626,7 +1626,9 @@ async def cook_recipe(data: CookRecipeRequest, request: Request):
 
 @api_router.get("/pantry/low-stock")
 async def get_low_stock_items(request: Request):
-    """Get items that are below their minimum threshold"""
+    """Get staple items that are below their minimum threshold.
+    Only alerts for pantry staples like dairy, sauces, condiments, spices - 
+    not fresh produce or protein that you buy per-recipe."""
     user_id = await get_user_id_or_none(request)
     
     query = {"user_id": user_id} if user_id else {"user_id": None}
@@ -1635,19 +1637,44 @@ async def get_low_stock_items(request: Request):
     if not pantry:
         return {"low_stock_items": [], "suggested_shopping": []}
     
+    # Categories that should trigger low-stock alerts (staples you keep stocked)
+    STAPLE_CATEGORIES = ['dairy', 'pantry', 'spices', 'frozen', 'grains']
+    
+    # Common staple keywords for items that might be miscategorized
+    STAPLE_KEYWORDS = [
+        'cheese', 'milk', 'cream', 'butter', 'yogurt', 'yoghurt',
+        'sauce', 'ketchup', 'mayo', 'mayonnaise', 'mustard', 'soy sauce',
+        'oil', 'vinegar', 'honey', 'syrup', 'jam', 'jelly',
+        'flour', 'sugar', 'salt', 'pepper', 'rice', 'pasta', 'noodles',
+        'stock', 'broth', 'bouillon', 'tomato paste', 'coconut milk',
+        'beans', 'lentils', 'chickpeas', 'canned',
+        'bread', 'tortilla', 'wrap',
+        'egg', 'eggs'
+    ]
+    
     low_stock = []
     suggested_shopping = []
     
     for item in pantry.get('items', []):
         if item['quantity'] <= item.get('min_threshold', 0):
-            low_stock.append(item)
-            suggested_shopping.append({
-                "name": item['name'],
-                "current": item['quantity'],
-                "unit": item['unit'],
-                "suggested_buy": item.get('typical_purchase', 1) or 1,
-                "category": item.get('category', 'other')
-            })
+            category = item.get('category', 'other').lower()
+            name_lower = item.get('name', '').lower()
+            
+            # Check if it's a staple category or contains staple keywords
+            is_staple = (
+                category in STAPLE_CATEGORIES or
+                any(kw in name_lower for kw in STAPLE_KEYWORDS)
+            )
+            
+            if is_staple:
+                low_stock.append(item)
+                suggested_shopping.append({
+                    "name": item['name'],
+                    "current": item['quantity'],
+                    "unit": item['unit'],
+                    "suggested_buy": item.get('typical_purchase', 1) or 1,
+                    "category": item.get('category', 'other')
+                })
     
     return {
         "low_stock_items": low_stock,
