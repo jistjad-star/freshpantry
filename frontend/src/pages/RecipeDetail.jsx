@@ -296,7 +296,11 @@ export default function RecipeDetail() {
                 {scaledIngredients.map((ing, index) => (
                   <li key={index} className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100" data-testid={`ingredient-${index}`}>
                     <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>{ing.category}</span>
-                    <span className="text-[#1A2E1A]"><span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}</span>
+                    <span className="text-[#1A2E1A]">
+                      <span className={`font-medium ${servings !== originalServings ? 'text-[#4A7C59] bg-[#4A7C59]/10 px-1.5 py-0.5 rounded' : 'text-[#4A7C59]'}`}>
+                        {ing.scaledQuantity} {ing.unit}
+                      </span> {ing.name}
+                    </span>
                   </li>
                 ))}
               </ul>
