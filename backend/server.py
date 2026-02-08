@@ -297,6 +297,28 @@ async def scrape_recipe_from_url(url: str) -> dict:
 async def root():
     return {"message": "The Emerald Pantry API - Wicked good shopping lists!"}
 
+# ---- Parse Ingredients Route ----
+
+@api_router.post("/parse-ingredients", response_model=ParseIngredientsResponse)
+async def parse_ingredients(data: ParseIngredientsRequest):
+    """Parse pasted ingredient text using AI - perfect for Green Chef copy/paste"""
+    ingredients = []
+    instructions = []
+    
+    if data.ingredients_text.strip():
+        ingredients = await parse_ingredients_with_ai(data.ingredients_text, data.recipe_name or "Recipe")
+    
+    if data.instructions_text and data.instructions_text.strip():
+        # Split instructions by newlines or numbered steps
+        raw_instructions = data.instructions_text.strip()
+        # Try to split by common patterns
+        import re
+        # Split by numbered steps like "1.", "2.", etc. or by newlines
+        steps = re.split(r'\n+|\d+\.\s*', raw_instructions)
+        instructions = [step.strip() for step in steps if step.strip()]
+    
+    return ParseIngredientsResponse(ingredients=ingredients, instructions=instructions)
+
 # ---- Recipe Routes ----
 
 @api_router.post("/recipes", response_model=Recipe)
