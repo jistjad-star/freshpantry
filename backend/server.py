@@ -1739,6 +1739,385 @@ async def add_from_shopping_list(request: Request):
     
     return {"message": f"Added {added_count} items to pantry", "added": added_count}
 
+# ============== RECIPE UPDATE/EDIT ENDPOINT ==============
+
+class RecipeUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    servings: Optional[int] = None
+    prep_time: Optional[str] = None
+    cook_time: Optional[str] = None
+    ingredients: Optional[List[Ingredient]] = None
+    instructions: Optional[List[str]] = None
+    categories: Optional[List[str]] = None
+
+@api_router.put("/recipes/{recipe_id}")
+async def update_recipe(recipe_id: str, update_data: RecipeUpdate, request: Request):
+    """Update an existing recipe"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Find recipe
+    query = {"id": recipe_id}
+    if user_id:
+        query["user_id"] = user_id
+    
+    recipe = await db.recipes.find_one(query, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Update fields
+    update_dict = {}
+    if update_data.name is not None:
+        update_dict["name"] = update_data.name
+    if update_data.description is not None:
+        update_dict["description"] = update_data.description
+    if update_data.servings is not None:
+        update_dict["servings"] = update_data.servings
+    if update_data.prep_time is not None:
+        update_dict["prep_time"] = update_data.prep_time
+    if update_data.cook_time is not None:
+        update_dict["cook_time"] = update_data.cook_time
+    if update_data.ingredients is not None:
+        update_dict["ingredients"] = [ing.model_dump() for ing in update_data.ingredients]
+    if update_data.instructions is not None:
+        update_dict["instructions"] = update_data.instructions
+    if update_data.categories is not None:
+        update_dict["categories"] = update_data.categories
+    
+    if update_dict:
+        await db.recipes.update_one(query, {"$set": update_dict})
+    
+    # Return updated recipe
+    updated_recipe = await db.recipes.find_one(query, {"_id": 0})
+    if isinstance(updated_recipe.get('created_at'), str):
+        updated_recipe['created_at'] = datetime.fromisoformat(updated_recipe['created_at'])
+    return updated_recipe
+
+# ============== RECIPE EXPORT/IMPORT ENDPOINTS ==============
+
+class RecipeExportRequest(BaseModel):
+    recipe_ids: List[str]
+
+@api_router.post("/recipes/export")
+async def export_recipes(data: RecipeExportRequest, request: Request):
+    """Export recipes as JSON for sharing"""
+    user_id = await get_user_id_or_none(request)
+    
+    exported = []
+    for recipe_id in data.recipe_ids:
+        query = {"id": recipe_id}
+        if user_id:
+            query["user_id"] = user_id
+        
+        recipe = await db.recipes.find_one(query, {"_id": 0})
+        if recipe:
+            # Remove user-specific and system fields
+            export_recipe = {
+                "name": recipe.get("name"),
+                "description": recipe.get("description", ""),
+                "servings": recipe.get("servings", 2),
+                "prep_time": recipe.get("prep_time", ""),
+                "cook_time": recipe.get("cook_time", ""),
+                "ingredients": recipe.get("ingredients", []),
+                "instructions": recipe.get("instructions", []),
+                "categories": recipe.get("categories", []),
+                "source_url": recipe.get("source_url"),
+            }
+            exported.append(export_recipe)
+    
+    return {
+        "recipes": exported,
+        "count": len(exported),
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0"
+    }
+
+class RecipeImportBatchRequest(BaseModel):
+    recipes: List[dict]
+
+@api_router.post("/recipes/import-batch")
+async def import_recipes_batch(data: RecipeImportBatchRequest, request: Request):
+    """Import multiple recipes from exported JSON"""
+    user_id = await get_user_id_or_none(request)
+    
+    imported = []
+    for recipe_data in data.recipes:
+        try:
+            # Create new recipe with new ID
+            ingredients = []
+            for ing in recipe_data.get("ingredients", []):
+                ingredients.append(Ingredient(
+                    name=ing.get("name", ""),
+                    quantity=str(ing.get("quantity", "")),
+                    unit=ing.get("unit", ""),
+                    category=ing.get("category", "other")
+                ))
+            
+            recipe = Recipe(
+                name=recipe_data.get("name", "Imported Recipe"),
+                description=recipe_data.get("description", ""),
+                servings=recipe_data.get("servings", 2),
+                prep_time=recipe_data.get("prep_time", ""),
+                cook_time=recipe_data.get("cook_time", ""),
+                ingredients=ingredients,
+                instructions=recipe_data.get("instructions", []),
+                categories=recipe_data.get("categories", []),
+                source_url=recipe_data.get("source_url"),
+                user_id=user_id
+            )
+            
+            doc = recipe.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.recipes.insert_one(doc)
+            imported.append({"name": recipe.name, "id": recipe.id})
+        except Exception as e:
+            logger.error(f"Failed to import recipe: {e}")
+    
+    return {
+        "imported": imported,
+        "count": len(imported),
+        "message": f"Successfully imported {len(imported)} recipes"
+    }
+
+# ============== AI RECIPE GENERATION FROM PANTRY ==============
+
+@api_router.post("/suggestions/generate-recipe")
+async def generate_ai_recipe_from_pantry(request: Request):
+    """Generate a new AI recipe based solely on pantry ingredients"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get pantry
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry or not pantry.get('items'):
+        raise HTTPException(status_code=400, detail="Add items to your pantry first")
+    
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"recipe-gen-{uuid.uuid4()}",
+            system_message="""You are a creative chef that generates delicious recipes.
+            Given a list of available ingredients, create a complete recipe that uses primarily those ingredients.
+            You can suggest 1-2 common pantry staples that might be missing.
+            
+            Return as JSON with format:
+            {
+                "name": "Recipe Name",
+                "description": "Brief appetizing description",
+                "servings": 4,
+                "prep_time": "15 min",
+                "cook_time": "30 min",
+                "ingredients": [
+                    {"name": "ingredient", "quantity": "2", "unit": "cups", "category": "produce", "from_pantry": true}
+                ],
+                "instructions": ["Step 1", "Step 2", ...],
+                "missing_ingredients": ["any item not in pantry but needed"],
+                "categories": ["vegan", "quick-easy"]
+            }
+            
+            Categories can be: vegan, vegetarian, pescatarian, low-fat, quick-easy
+            Return ONLY valid JSON, no markdown."""
+        ).with_model("openai", "gpt-5.2")
+        
+        # Format pantry items
+        pantry_text = "\n".join([
+            f"- {item.get('name', '')} ({item.get('quantity', '')} {item.get('unit', '')})" 
+            for item in pantry['items'] if item.get('quantity', 0) > 0
+        ])
+        
+        user_message = UserMessage(
+            text=f"""Create a delicious recipe using these available ingredients:
+
+{pantry_text}
+
+Make sure the recipe is practical and tasty. Use primarily ingredients from the list.
+If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil."""
+        )
+        
+        response = await chat.send_message(user_message)
+        
+        import json
+        clean_response = response.strip()
+        
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
+        clean_response = clean_response.strip()
+        
+        try:
+            recipe_data = json.loads(clean_response)
+        except json.JSONDecodeError:
+            start = clean_response.find("{")
+            end = clean_response.rfind("}") + 1
+            if start >= 0 and end > start:
+                recipe_data = json.loads(clean_response[start:end])
+            else:
+                raise HTTPException(status_code=500, detail="Failed to parse AI response")
+        
+        return {
+            "recipe": recipe_data,
+            "message": "Recipe generated from your pantry ingredients!"
+        }
+    except Exception as e:
+        logger.error(f"Error generating recipe: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate recipe")
+
+# ============== SHOPPING LIST COST ESTIMATION ==============
+
+# UK supermarket average prices (£ per standard unit)
+UK_PRICE_DATA = {
+    # Produce
+    "tomato": {"price": 0.30, "unit": "each", "tesco": 0.28, "sainsburys": 0.32, "aldi": 0.22, "lidl": 0.20, "asda": 0.25, "morrisons": 0.29},
+    "onion": {"price": 0.15, "unit": "each", "tesco": 0.15, "sainsburys": 0.18, "aldi": 0.10, "lidl": 0.10, "asda": 0.12, "morrisons": 0.14},
+    "garlic": {"price": 0.40, "unit": "bulb", "tesco": 0.40, "sainsburys": 0.45, "aldi": 0.29, "lidl": 0.29, "asda": 0.35, "morrisons": 0.40},
+    "potato": {"price": 0.20, "unit": "each", "tesco": 0.20, "sainsburys": 0.22, "aldi": 0.15, "lidl": 0.15, "asda": 0.18, "morrisons": 0.20},
+    "carrot": {"price": 0.10, "unit": "each", "tesco": 0.10, "sainsburys": 0.12, "aldi": 0.07, "lidl": 0.07, "asda": 0.08, "morrisons": 0.10},
+    "pepper": {"price": 0.70, "unit": "each", "tesco": 0.70, "sainsburys": 0.80, "aldi": 0.49, "lidl": 0.49, "asda": 0.60, "morrisons": 0.65},
+    "broccoli": {"price": 0.89, "unit": "head", "tesco": 0.89, "sainsburys": 0.99, "aldi": 0.69, "lidl": 0.69, "asda": 0.79, "morrisons": 0.85},
+    "lettuce": {"price": 0.65, "unit": "head", "tesco": 0.65, "sainsburys": 0.75, "aldi": 0.49, "lidl": 0.49, "asda": 0.55, "morrisons": 0.60},
+    "mushroom": {"price": 1.20, "unit": "250g", "tesco": 1.20, "sainsburys": 1.35, "aldi": 0.89, "lidl": 0.89, "asda": 1.00, "morrisons": 1.15},
+    "spinach": {"price": 1.50, "unit": "bag", "tesco": 1.50, "sainsburys": 1.65, "aldi": 1.09, "lidl": 1.09, "asda": 1.30, "morrisons": 1.45},
+    # Dairy
+    "milk": {"price": 1.55, "unit": "liter", "tesco": 1.55, "sainsburys": 1.60, "aldi": 1.09, "lidl": 1.09, "asda": 1.35, "morrisons": 1.50},
+    "cheese": {"price": 2.50, "unit": "250g", "tesco": 2.50, "sainsburys": 2.75, "aldi": 1.89, "lidl": 1.89, "asda": 2.20, "morrisons": 2.40},
+    "butter": {"price": 2.00, "unit": "250g", "tesco": 2.00, "sainsburys": 2.20, "aldi": 1.49, "lidl": 1.49, "asda": 1.75, "morrisons": 1.90},
+    "egg": {"price": 2.30, "unit": "6 pack", "tesco": 2.30, "sainsburys": 2.50, "aldi": 1.69, "lidl": 1.69, "asda": 2.00, "morrisons": 2.20},
+    "cream": {"price": 1.20, "unit": "300ml", "tesco": 1.20, "sainsburys": 1.35, "aldi": 0.89, "lidl": 0.89, "asda": 1.05, "morrisons": 1.15},
+    "yogurt": {"price": 1.50, "unit": "500g", "tesco": 1.50, "sainsburys": 1.65, "aldi": 1.09, "lidl": 1.09, "asda": 1.30, "morrisons": 1.45},
+    # Protein
+    "chicken": {"price": 5.50, "unit": "kg", "tesco": 5.50, "sainsburys": 6.00, "aldi": 4.29, "lidl": 4.29, "asda": 4.80, "morrisons": 5.20},
+    "beef": {"price": 8.00, "unit": "kg", "tesco": 8.00, "sainsburys": 9.00, "aldi": 6.49, "lidl": 6.49, "asda": 7.00, "morrisons": 7.50},
+    "pork": {"price": 5.00, "unit": "kg", "tesco": 5.00, "sainsburys": 5.50, "aldi": 3.99, "lidl": 3.99, "asda": 4.30, "morrisons": 4.70},
+    "salmon": {"price": 12.00, "unit": "kg", "tesco": 12.00, "sainsburys": 13.50, "aldi": 9.99, "lidl": 9.99, "asda": 10.50, "morrisons": 11.50},
+    "fish": {"price": 8.00, "unit": "kg", "tesco": 8.00, "sainsburys": 9.00, "aldi": 6.49, "lidl": 6.49, "asda": 7.00, "morrisons": 7.50},
+    # Pantry
+    "rice": {"price": 2.00, "unit": "kg", "tesco": 2.00, "sainsburys": 2.20, "aldi": 1.49, "lidl": 1.49, "asda": 1.70, "morrisons": 1.90},
+    "pasta": {"price": 1.20, "unit": "500g", "tesco": 1.20, "sainsburys": 1.35, "aldi": 0.75, "lidl": 0.75, "asda": 0.95, "morrisons": 1.10},
+    "flour": {"price": 1.10, "unit": "kg", "tesco": 1.10, "sainsburys": 1.25, "aldi": 0.75, "lidl": 0.75, "asda": 0.90, "morrisons": 1.05},
+    "sugar": {"price": 1.20, "unit": "kg", "tesco": 1.20, "sainsburys": 1.35, "aldi": 0.89, "lidl": 0.89, "asda": 1.00, "morrisons": 1.15},
+    "oil": {"price": 2.50, "unit": "liter", "tesco": 2.50, "sainsburys": 2.80, "aldi": 1.89, "lidl": 1.89, "asda": 2.20, "morrisons": 2.40},
+    "olive oil": {"price": 4.50, "unit": "500ml", "tesco": 4.50, "sainsburys": 5.00, "aldi": 2.99, "lidl": 2.99, "asda": 3.80, "morrisons": 4.20},
+    "bread": {"price": 1.20, "unit": "loaf", "tesco": 1.20, "sainsburys": 1.35, "aldi": 0.75, "lidl": 0.75, "asda": 0.95, "morrisons": 1.10},
+    "soy sauce": {"price": 1.80, "unit": "bottle", "tesco": 1.80, "sainsburys": 2.00, "aldi": 1.29, "lidl": 1.29, "asda": 1.50, "morrisons": 1.70},
+    "honey": {"price": 3.50, "unit": "jar", "tesco": 3.50, "sainsburys": 4.00, "aldi": 2.49, "lidl": 2.49, "asda": 3.00, "morrisons": 3.30},
+    # Spices
+    "salt": {"price": 0.65, "unit": "pack", "tesco": 0.65, "sainsburys": 0.75, "aldi": 0.35, "lidl": 0.35, "asda": 0.50, "morrisons": 0.60},
+    "pepper": {"price": 1.50, "unit": "jar", "tesco": 1.50, "sainsburys": 1.75, "aldi": 0.99, "lidl": 0.99, "asda": 1.20, "morrisons": 1.40},
+}
+
+def estimate_item_price(item_name: str, quantity: float = 1) -> dict:
+    """Estimate price for a shopping item"""
+    name_lower = item_name.lower()
+    
+    # Try to find a matching price entry
+    for key, data in UK_PRICE_DATA.items():
+        if key in name_lower or name_lower in key:
+            base_price = data["price"] * max(1, quantity)
+            return {
+                "estimated_price": round(base_price, 2),
+                "prices_by_store": {
+                    "tesco": round(data.get("tesco", base_price) * max(1, quantity), 2),
+                    "sainsburys": round(data.get("sainsburys", base_price) * max(1, quantity), 2),
+                    "aldi": round(data.get("aldi", base_price) * max(1, quantity), 2),
+                    "lidl": round(data.get("lidl", base_price) * max(1, quantity), 2),
+                    "asda": round(data.get("asda", base_price) * max(1, quantity), 2),
+                    "morrisons": round(data.get("morrisons", base_price) * max(1, quantity), 2),
+                },
+                "matched": True
+            }
+    
+    # Default estimate for unknown items
+    default_price = 2.00 * max(1, quantity)
+    return {
+        "estimated_price": round(default_price, 2),
+        "prices_by_store": {
+            "tesco": round(default_price, 2),
+            "sainsburys": round(default_price * 1.1, 2),
+            "aldi": round(default_price * 0.75, 2),
+            "lidl": round(default_price * 0.75, 2),
+            "asda": round(default_price * 0.9, 2),
+            "morrisons": round(default_price * 0.95, 2),
+        },
+        "matched": False
+    }
+
+@api_router.get("/shopping-list/estimate-costs")
+async def estimate_shopping_costs(request: Request):
+    """Estimate costs for the shopping list and recommend cheapest store"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
+    if not shopping_list or not shopping_list.get('items'):
+        return {
+            "items": [],
+            "totals": {},
+            "cheapest_store": None,
+            "message": "No items in shopping list"
+        }
+    
+    # Only estimate for unchecked items
+    items_to_estimate = [item for item in shopping_list['items'] if not item.get('checked', False)]
+    
+    if not items_to_estimate:
+        return {
+            "items": [],
+            "totals": {},
+            "cheapest_store": None,
+            "message": "All items checked off"
+        }
+    
+    # Calculate estimates
+    store_totals = {
+        "tesco": 0, "sainsburys": 0, "aldi": 0, 
+        "lidl": 0, "asda": 0, "morrisons": 0
+    }
+    
+    item_estimates = []
+    for item in items_to_estimate:
+        qty = parse_quantity(item.get('quantity', '1'))
+        estimate = estimate_item_price(item['name'], qty)
+        
+        item_estimates.append({
+            "name": item['name'],
+            "quantity": item.get('quantity', '1'),
+            "unit": item.get('unit', ''),
+            "estimated_price": estimate['estimated_price'],
+            "price_matched": estimate['matched']
+        })
+        
+        for store, price in estimate['prices_by_store'].items():
+            store_totals[store] += price
+    
+    # Round totals
+    store_totals = {store: round(total, 2) for store, total in store_totals.items()}
+    
+    # Find cheapest store
+    cheapest_store = min(store_totals.items(), key=lambda x: x[1])
+    most_expensive = max(store_totals.items(), key=lambda x: x[1])
+    savings = round(most_expensive[1] - cheapest_store[1], 2)
+    
+    return {
+        "items": item_estimates,
+        "totals": store_totals,
+        "cheapest_store": {
+            "name": cheapest_store[0].title(),
+            "total": cheapest_store[1],
+            "savings_vs_most_expensive": savings
+        },
+        "average_estimate": round(sum(store_totals.values()) / len(store_totals), 2),
+        "message": f"Shop at {cheapest_store[0].title()} to save £{savings:.2f}"
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
