@@ -337,6 +337,26 @@ export default function RecipeLibrary() {
                     {recipe.prep_time && <div className="flex items-center gap-1"><Clock className="w-4 h-4" /><span>{recipe.prep_time}</span></div>}
                     <span className="text-[#4A7C59]">{recipe.ingredients?.length || 0} ingredients</span>
                   </div>
+                  {/* Rating display */}
+                  {recipe.review_count > 0 && (
+                    <div className="flex items-center gap-2 mb-4 text-sm">
+                      <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star 
+                            key={star}
+                            className={`w-3.5 h-3.5 ${
+                              star <= Math.round(recipe.average_rating || 0)
+                                ? 'text-amber-400 fill-amber-400'
+                                : 'text-stone-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-stone-500">
+                        {recipe.average_rating?.toFixed(1)} ({recipe.review_count})
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <button
