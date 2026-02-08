@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingCart, Check, Plus, Trash2, Download, Share2, Loader2, ChefHat, Package } from "lucide-react";
+import { ShoppingCart, Check, Plus, Trash2, Download, Share2, Loader2, ChefHat, Package, PoundSterling, Store, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
