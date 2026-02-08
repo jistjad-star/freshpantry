@@ -297,18 +297,26 @@ export default function ShoppingList() {
                     <span className="text-sm text-stone-500 font-normal">({checkedInCategory}/{items.length})</span>
                   </h3>
                   <div className="space-y-2">
-                    {items.map((item) => (
-                      <div key={item.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white border border-stone-100 hover:border-[#4A7C59]/30'}`} data-testid={`item-${item.id}`}>
-                        <Checkbox checked={item.checked} onCheckedChange={() => toggleItem(item.id)} className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]" />
-                        <div className="flex-1">
-                          <span className={item.checked ? 'line-through text-stone-400' : 'text-[#1A2E1A]'}>
-                            <span className="text-[#4A7C59] font-medium">{item.quantity} {item.unit}</span> {item.name}
-                          </span>
-                          {item.recipe_source && <span className="block text-xs text-stone-400 mt-0.5">From: {item.recipe_source}</span>}
+                    {items.map((item) => {
+                      const itemPrice = getItemPrice(item.name);
+                      return (
+                        <div key={item.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white border border-stone-100 hover:border-[#4A7C59]/30'}`} data-testid={`item-${item.id}`}>
+                          <Checkbox checked={item.checked} onCheckedChange={() => toggleItem(item.id)} className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]" />
+                          <div className="flex-1">
+                            <span className={item.checked ? 'line-through text-stone-400' : 'text-[#1A2E1A]'}>
+                              <span className="text-[#4A7C59] font-medium">{item.quantity} {item.unit}</span> {item.name}
+                            </span>
+                            {item.recipe_source && <span className="block text-xs text-stone-400 mt-0.5">From: {item.recipe_source}</span>}
+                          </div>
+                          {itemPrice !== null && (
+                            <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${item.checked ? 'bg-stone-100 text-stone-400' : 'bg-blue-50 text-blue-700'}`}>
+                              ~£{itemPrice.toFixed(2)}
+                            </span>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="text-stone-400 hover:text-[#E07A5F]"><Trash2 className="w-4 h-4" /></Button>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="text-stone-400 hover:text-[#E07A5F]"><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
