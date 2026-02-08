@@ -180,6 +180,86 @@ export default function ShoppingList() {
           </div>
         )}
 
+        {/* Cost Estimate Section */}
+        {totalItems > 0 && (
+          <div className="fresh-card-static p-6 mb-8 bg-gradient-to-br from-blue-50/50 to-stone-50" data-testid="cost-estimate-section">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-[#1A2E1A] flex items-center gap-2">
+                <PoundSterling className="w-5 h-5 text-blue-600" />
+                Estimated Cost (UK)
+              </h3>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fetchCostEstimate}
+                disabled={loadingCosts}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                data-testid="estimate-costs-btn"
+              >
+                {loadingCosts ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
+                {costEstimate ? 'Update Estimate' : 'Get Estimate'}
+              </Button>
+            </div>
+            
+            {costEstimate && costEstimate.cheapest_store && (
+              <div className="space-y-4">
+                {/* Best Store Recommendation */}
+                <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-green-100">
+                      <TrendingDown className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-800">
+                        Best Value: {costEstimate.cheapest_store.name}
+                      </p>
+                      <p className="text-sm text-green-700">
+                        Estimated total: <span className="font-bold">£{costEstimate.cheapest_store.total.toFixed(2)}</span>
+                        {costEstimate.cheapest_store.savings_vs_most_expensive > 0 && (
+                          <span className="ml-2 text-green-600">
+                            (Save £{costEstimate.cheapest_store.savings_vs_most_expensive.toFixed(2)} vs most expensive)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Store Comparison Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {Object.entries(costEstimate.totals)
+                    .sort((a, b) => a[1] - b[1])
+                    .map(([store, total], index) => (
+                      <div 
+                        key={store} 
+                        className={`p-3 rounded-lg border ${
+                          index === 0 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-white border-stone-200'
+                        }`}
+                      >
+                        <p className="text-xs text-stone-500 capitalize">{store}</p>
+                        <p className={`font-semibold ${index === 0 ? 'text-green-700' : 'text-stone-700'}`}>
+                          £{total.toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+                
+                <p className="text-xs text-stone-400 text-center">
+                  * Estimates based on average UK supermarket prices. Actual prices may vary.
+                </p>
+              </div>
+            )}
+            
+            {!costEstimate && !loadingCosts && (
+              <p className="text-sm text-stone-500 text-center py-4">
+                Click "Get Estimate" to see price comparison across UK supermarkets
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="fresh-card-static p-6 mb-8">
           <h3 className="font-semibold text-[#1A2E1A] mb-4 flex items-center gap-2"><Plus className="w-4 h-4 text-[#4A7C59]" />Add Item</h3>
           <div className="grid grid-cols-12 gap-3">
