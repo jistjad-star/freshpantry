@@ -146,6 +146,8 @@ export default function Dashboard() {
     },
   ];
 
+  const MealIcon = mealTime.icon;
+
   const uncheckedItems = shoppingList?.items?.filter(item => !item.checked)?.length || 0;
 
   return (
