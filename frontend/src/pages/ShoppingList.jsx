@@ -303,15 +303,6 @@ export default function ShoppingList() {
                     </div>
                   </div>
                 )}
-                        }`}
-                      >
-                        <p className="text-xs text-stone-500 capitalize">{store}</p>
-                        <p className={`font-semibold ${index === 0 ? 'text-green-700' : 'text-stone-700'}`}>
-                          £{total.toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
-                </div>
                 
                 <p className="text-xs text-stone-400 text-center">
                   * Estimates based on average UK supermarket prices. Actual prices may vary.
