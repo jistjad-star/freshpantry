@@ -2013,29 +2013,60 @@ UK_PRICE_DATA = {
     "pepper": {"price": 1.50, "unit": "jar", "tesco": 1.50, "sainsburys": 1.75, "aldi": 0.99, "lidl": 0.99, "asda": 1.20, "morrisons": 1.40},
 }
 
-def estimate_item_price(item_name: str, quantity: float = 1) -> dict:
-    """Estimate price for a shopping item"""
+def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> dict:
+    """Estimate price for a shopping item - returns price per item/pack, not per gram"""
     name_lower = item_name.lower()
+    unit_lower = unit.lower() if unit else ""
+    
+    # Normalize quantity based on unit - we're estimating per PACK/ITEM, not per gram
+    # If someone needs 300g of something, they probably need to buy 1 pack
+    normalized_qty = 1
+    if quantity > 0:
+        # For grams - convert to packs (typical pack ~250-500g)
+        if 'g' in unit_lower or 'gram' in unit_lower:
+            normalized_qty = max(1, quantity / 250)
+        # For kg
+        elif 'kg' in unit_lower or 'kilo' in unit_lower:
+            normalized_qty = max(1, quantity * 2)  # 500g packs
+        # For ml/l - drinks and liquids
+        elif 'ml' in unit_lower:
+            normalized_qty = max(1, quantity / 500)
+        elif 'l' in unit_lower or 'liter' in unit_lower or 'litre' in unit_lower:
+            normalized_qty = max(1, quantity)
+        # For discrete items like eggs, onions
+        elif any(x in unit_lower for x in ['each', 'piece', 'pcs', '']):
+            if quantity <= 20:
+                normalized_qty = max(1, quantity / 6)  # Pack of 6
+            else:
+                normalized_qty = max(1, quantity / 10)
+        # Default - assume small quantities mean 1 item
+        else:
+            normalized_qty = max(1, min(quantity, 5))  # Cap at 5 to prevent crazy numbers
+    
+    # Round to reasonable pack count
+    normalized_qty = round(normalized_qty, 1)
+    if normalized_qty > 10:
+        normalized_qty = 10  # Cap at 10 packs max
     
     # Try to find a matching price entry
     for key, data in UK_PRICE_DATA.items():
         if key in name_lower or name_lower in key:
-            base_price = data["price"] * max(1, quantity)
+            base_price = data["price"] * normalized_qty
             return {
                 "estimated_price": round(base_price, 2),
                 "prices_by_store": {
-                    "tesco": round(data.get("tesco", base_price) * max(1, quantity), 2),
-                    "sainsburys": round(data.get("sainsburys", base_price) * max(1, quantity), 2),
-                    "aldi": round(data.get("aldi", base_price) * max(1, quantity), 2),
-                    "lidl": round(data.get("lidl", base_price) * max(1, quantity), 2),
-                    "asda": round(data.get("asda", base_price) * max(1, quantity), 2),
-                    "morrisons": round(data.get("morrisons", base_price) * max(1, quantity), 2),
+                    "tesco": round(data.get("tesco", base_price) * normalized_qty, 2),
+                    "sainsburys": round(data.get("sainsburys", base_price) * normalized_qty, 2),
+                    "aldi": round(data.get("aldi", base_price) * normalized_qty, 2),
+                    "lidl": round(data.get("lidl", base_price) * normalized_qty, 2),
+                    "asda": round(data.get("asda", base_price) * normalized_qty, 2),
+                    "morrisons": round(data.get("morrisons", base_price) * normalized_qty, 2),
                 },
                 "matched": True
             }
     
-    # Default estimate for unknown items
-    default_price = 2.00 * max(1, quantity)
+    # Default estimate for unknown items - assume ~£2 per item/pack
+    default_price = 2.00 * normalized_qty
     return {
         "estimated_price": round(default_price, 2),
         "prices_by_store": {
