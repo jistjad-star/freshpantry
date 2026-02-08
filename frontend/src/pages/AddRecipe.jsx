@@ -278,7 +278,7 @@ export default function AddRecipe() {
       const recipeData = {
         name: pasteName,
         description: "",
-        servings: 2,
+        servings: pasteServings,
         prep_time: "",
         cook_time: "",
         ingredients: parsedIngredients,
