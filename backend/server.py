@@ -2164,8 +2164,10 @@ async def estimate_shopping_costs(request: Request):
     
     # Calculate estimates
     store_totals = {
-        "tesco": 0, "sainsburys": 0, "aldi": 0, 
-        "lidl": 0, "asda": 0, "morrisons": 0
+        "tesco": 0, "tesco_clubcard": 0,
+        "sainsburys": 0, "sainsburys_nectar": 0,
+        "aldi": 0, "lidl": 0, "asda": 0, 
+        "morrisons": 0, "morrisons_more": 0
     }
     
     item_estimates = []
@@ -2188,21 +2190,41 @@ async def estimate_shopping_costs(request: Request):
     # Round totals
     store_totals = {store: round(total, 2) for store, total in store_totals.items()}
     
-    # Find cheapest store
-    cheapest_store = min(store_totals.items(), key=lambda x: x[1])
-    most_expensive = max(store_totals.items(), key=lambda x: x[1])
-    savings = round(most_expensive[1] - cheapest_store[1], 2)
+    # Separate standard and loyalty card prices
+    standard_stores = {k: v for k, v in store_totals.items() if k in ["tesco", "sainsburys", "aldi", "lidl", "asda", "morrisons"]}
+    loyalty_stores = {
+        "tesco_clubcard": store_totals.get("tesco_clubcard", 0),
+        "sainsburys_nectar": store_totals.get("sainsburys_nectar", 0),
+        "morrisons_more": store_totals.get("morrisons_more", 0),
+    }
+    
+    # Find cheapest including loyalty cards
+    all_options = {**standard_stores, **loyalty_stores}
+    cheapest = min(all_options.items(), key=lambda x: x[1])
+    most_expensive = max(standard_stores.items(), key=lambda x: x[1])
+    savings = round(most_expensive[1] - cheapest[1], 2)
+    
+    # Format display name
+    display_names = {
+        "tesco": "Tesco", "tesco_clubcard": "Tesco (Clubcard)",
+        "sainsburys": "Sainsbury's", "sainsburys_nectar": "Sainsbury's (Nectar)",
+        "aldi": "Aldi", "lidl": "Lidl", "asda": "Asda",
+        "morrisons": "Morrisons", "morrisons_more": "Morrisons (More Card)"
+    }
     
     return {
         "items": item_estimates,
-        "totals": store_totals,
+        "totals": standard_stores,
+        "loyalty_totals": loyalty_stores,
         "cheapest_store": {
-            "name": cheapest_store[0].title(),
-            "total": cheapest_store[1],
+            "name": display_names.get(cheapest[0], cheapest[0].title()),
+            "key": cheapest[0],
+            "total": cheapest[1],
+            "has_loyalty": "_" in cheapest[0],
             "savings_vs_most_expensive": savings
         },
-        "average_estimate": round(sum(store_totals.values()) / len(store_totals), 2),
-        "message": f"Shop at {cheapest_store[0].title()} to save £{savings:.2f}"
+        "average_estimate": round(sum(standard_stores.values()) / len(standard_stores), 2),
+        "message": f"Shop at {display_names.get(cheapest[0], cheapest[0].title())} to save £{savings:.2f}"
     }
 
 # Include the router in the main app
