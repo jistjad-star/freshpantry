@@ -1,147 +1,152 @@
 {
   "identity": {
-    "name": "The Emerald Pantry",
-    "persona": "Wicked Chef",
-    "vibe": "Theatrical, Magical, Fresh, Organized",
-    "description": "A utility app that feels like a spellbook for modern cooking. It combines the drama of 'Wicked' (high contrast, neon green on black) with the freshness of Green Chef ingredients."
+    "name": "E1",
+    "persona": "Creative Designer - Fresh & Organic Specialist",
+    "tone": "Fresh, Calm, Foody, Organized, Modern",
+    "theme_mode": "light"
   },
   "typography": {
-    "headings": {
-      "family": "Playfair Display, serif",
-      "weights": ["700", "900"],
-      "usage": "Use for all page titles and major section headers. Letter spacing should be tight (-0.02em).",
-      "fallback": "serif"
+    "font_family": {
+      "heading": "Playfair Display, serif",
+      "body": "Manrope, sans-serif",
+      "mono": "JetBrains Mono, monospace"
     },
-    "body": {
-      "family": "Manrope, sans-serif",
-      "weights": ["400", "500", "600"],
-      "usage": "Use for all UI text, recipes, and lists. High legibility is key.",
-      "fallback": "sans-serif"
-    },
-    "accents": {
-      "family": "Cinzel, serif",
-      "usage": "Use sparingly for 'magical' labels or special states (e.g., 'Weekly Spell', 'Potion Ingredients')."
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight leading-tight",
+      "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold tracking-normal",
+      "body_lg": "text-lg leading-relaxed",
+      "body_base": "text-base leading-relaxed text-stone-600",
+      "caption": "text-sm font-medium tracking-wide uppercase text-stone-500"
     }
   },
   "colors": {
-    "mode": "dark",
     "palette": {
-      "background": {
-        "default": "#050505",
-        "paper": "#0A0A0A",
-        "subtle": "#121212"
-      },
       "primary": {
-        "main": "#39FF14",
-        "foreground": "#000000",
-        "hover": "#32D712",
-        "description": "Elphaba's Potion Green. Use for primary CTAs, checkboxes, and active states."
+        "DEFAULT": "#4A7C59",
+        "foreground": "#FFFFFF",
+        "hover": "#3A6346",
+        "description": "Fresh Sage Green - Used for main actions, active states, and branding."
       },
       "secondary": {
-        "main": "#FFB7E3",
-        "foreground": "#000000",
-        "hover": "#FF9AD6",
-        "description": "Glinda's Bubble Pink. Use for favorites, secondary actions, or 'delight' moments."
+        "DEFAULT": "#E8E4D9",
+        "foreground": "#2C3E2C",
+        "description": "Oatmeal/Stone - Used for secondary buttons, backgrounds, and subtle highlights."
       },
       "accent": {
-        "main": "#9D00FF",
+        "DEFAULT": "#E07A5F",
         "foreground": "#FFFFFF",
-        "description": "Witch Purple. Use for tags or special highlights."
+        "description": "Terracotta - Used for alerts, 'low stock' warnings, and call-to-actions that need pop."
       },
-      "muted": {
-        "main": "#2A2A2A",
-        "foreground": "#A1A1AA"
+      "background": {
+        "DEFAULT": "#FFFFFF",
+        "alt": "#FAFAF9",
+        "description": "Pure White for cards, Warm White (Stone-50) for page background."
+      },
+      "foreground": {
+        "DEFAULT": "#1A2E1A",
+        "muted": "#576B57",
+        "description": "Deep Forest Green for text, softer green-gray for secondary text."
       },
       "border": {
-        "default": "#27272A",
-        "active": "#39FF14"
+        "DEFAULT": "#E5E7EB",
+        "focus": "#4A7C59"
+      },
+      "status": {
+        "success": "#4A7C59",
+        "warning": "#F4D35E",
+        "error": "#E07A5F",
+        "info": "#3B82F6"
       }
-    },
-    "gradients": {
-      "hero": "linear-gradient(to bottom right, #050505, #1a1a1a)",
-      "glow": "radial-gradient(circle at center, rgba(57, 255, 20, 0.15) 0%, transparent 70%)"
-    }
-  },
-  "layout": {
-    "grid_system": "Bento Grid",
-    "spacing": "Generous. Use p-6 or p-8 for cards to allow the 'magic' to breathe.",
-    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-    "radius": {
-      "default": "0.75rem",
-      "button": "0px",
-      "card": "1rem"
-    }
-  },
-  "components": {
-    "buttons": {
-      "primary": "Sharp edges (rounded-none) to mimic the angularity of the Wicked Witch. High contrast Neon Green bg with Black text. Hover: Lift + Glow.",
-      "secondary": "Pill-shaped (rounded-full) to mimic Glinda's bubbles. Pink outline or soft pink bg.",
-      "ghost": "Text only with a subtle green underline on hover."
-    },
-    "cards": {
-      "style": "Glassmorphism. bg-black/40 backdrop-blur-xl border border-white/10. Hover: border-primary/50 shadow-[0_0_15px_rgba(57,255,20,0.2)].",
-      "content_padding": "p-6"
-    },
-    "inputs": {
-      "style": "Minimalist. Dark background (bg-zinc-900) with a bottom border only (border-b-2 border-zinc-700). Focus: Border turns Neon Green.",
-      "placeholder": "text-zinc-500 italic"
-    },
-    "navigation": {
-      "style": "Floating dock or sticky top bar with glass effect.",
-      "active_state": "Text turns Neon Green + subtle glow."
     }
   },
   "visual_enhancers": {
-    "glassmorphism": "Heavy usage. The app should feel like looking into a crystal ball or potion vial.",
-    "shadows": "Colored shadows! Use shadow-green-500/20 instead of black shadows for primary elements.",
-    "textures": "Subtle noise overlay on the background to give it a 'parchment' or 'film' grain feel.",
-    "icons": "Lucide React icons. Thin strokes (1.5px). Use 'Sparkles', 'Scroll', 'Potion' metaphors where possible."
-  },
-  "media": {
-    "image_style": "Dark, moody, high contrast. Food should look vibrant against the dark background.",
-    "images": {
-      "hero_bg": {
-        "url": "https://images.unsplash.com/photo-1726241966213-3eb9a93722f9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHw0fHxmcmVzaCUyMGdyZWVuJTIwdmVnZXRhYmxlcyUyMGRhcmslMjBiYWNrZ3JvdW5kJTIwYWVzdGhldGljfGVufDB8fHx8MTc3MDU1OTY2M3ww&ixlib=rb-4.1.0&q=85",
-        "alt": "Fresh basil leaves on dark surface",
-        "usage": "Hero section background or 'Add Recipe' header"
-      },
-      "cooking_magic": {
-        "url": "https://images.unsplash.com/photo-1766232315004-25980447bb19?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1NzZ8MHwxfHNlYXJjaHwyfHxtYWdpY2FsJTIwa2l0Y2hlbiUyMGNvb2tpbmclMjBjb25jZXB0fGVufDB8fHx8MTc3MDU1OTY3MXww&ixlib=rb-4.1.0&q=85",
-        "alt": "Chef flambeing food",
-        "usage": "Empty state for 'No Recipes' or 'Cooking Mode'"
-      },
-      "ingredients_moody": {
-        "url": "https://images.unsplash.com/photo-1755406050322-36c15e00c6d3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxjb29raW5nJTIwaW5ncmVkaWVudHMlMjBmbGF0JTIwbGF5JTIwZGFyayUyMG1vb2R5fGVufDB8fHx8MTc3MDU1OTY2N3ww&ixlib=rb-4.1.0&q=85",
-        "alt": "Dark red onions and beets",
-        "usage": "Shopping List header or category background"
-      }
+    "radius": "rounded-2xl",
+    "shadows": {
+      "card": "shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+      "hover": "shadow-[0_8px_24px_rgba(74,124,89,0.12)]",
+      "dropdown": "shadow-xl border border-stone-100"
+    },
+    "textures": {
+      "noise": "opacity-20 mix-blend-multiply",
+      "glass": "bg-white/80 backdrop-blur-md border border-white/20 shadow-sm"
+    },
+    "gradients": {
+      "hero": "bg-gradient-to-b from-stone-50 to-white",
+      "subtle": "bg-gradient-to-br from-white to-stone-50"
     }
   },
-  "motion": {
-    "transitions": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    "hover_effects": "Scale up slightly (1.02) and increase brightness.",
-    "page_transition": "Fade in + Slide up (10px)."
+  "layout_strategies": {
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-12 gap-6 p-6 md:p-8",
+    "bento_cells": {
+      "hero": "col-span-full md:col-span-8 row-span-2 bg-stone-50 rounded-3xl p-8 relative overflow-hidden",
+      "stats": "col-span-6 md:col-span-4 row-span-1 bg-white rounded-3xl p-6 border border-stone-100",
+      "list": "col-span-full md:col-span-4 row-span-2 bg-white rounded-3xl p-6 border border-stone-100"
+    },
+    "spacing": {
+      "section_gap": "gap-12",
+      "container_padding": "p-6 md:p-12",
+      "internal_padding": "p-6"
+    }
   },
-  "accessibility": {
-    "contrast": "Ensure Neon Green text is only used on very dark backgrounds. For light backgrounds, use a darker green (#008000).",
-    "focus_states": "High visibility Neon Green ring offset-2."
+  "component_rules": {
+    "buttons": {
+      "primary": "bg-[#4A7C59] text-white hover:bg-[#3A6346] rounded-full px-8 py-3 font-medium transition-all shadow-sm hover:shadow-md active:scale-95",
+      "secondary": "bg-[#E8E4D9] text-[#2C3E2C] hover:bg-[#D8D4C9] rounded-full px-6 py-2 font-medium transition-all",
+      "ghost": "text-[#4A7C59] hover:bg-[#4A7C59]/10 rounded-full px-4 py-2 transition-all"
+    },
+    "cards": {
+      "base": "bg-white rounded-2xl border border-stone-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden transition-all hover:border-[#4A7C59]/30",
+      "interactive": "cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(74,124,89,0.12)]"
+    },
+    "inputs": {
+      "base": "bg-white border border-stone-200 rounded-xl px-4 py-3 text-[#1A2E1A] placeholder:text-stone-400 focus:border-[#4A7C59] focus:ring-2 focus:ring-[#4A7C59]/20 transition-all outline-none"
+    },
+    "badges": {
+      "produce": "bg-green-100 text-green-800 border border-green-200",
+      "pantry": "bg-orange-100 text-orange-800 border border-orange-200",
+      "dairy": "bg-blue-50 text-blue-800 border border-blue-100",
+      "protein": "bg-red-50 text-red-800 border border-red-100"
+    }
+  },
+  "image_assets": {
+    "hero_bg": {
+      "url": "https://images.unsplash.com/photo-1612196856228-304d9a8ed9b1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHZlZ2V0YWJsZXMlMjBpbmdyZWRpZW50cyUyMGZsYXQlMjBsYXklMjB3aGl0ZSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzcwNTYyNTAxfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Fresh vegetables on white plate",
+      "usage": "Hero section background or main dashboard visual"
+    },
+    "pantry_header": {
+      "url": "https://images.unsplash.com/photo-1758240689297-d8613ca753f3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMG1vZGVybiUyMGtpdGNoZW4lMjBjb3VudGVyJTIwYnJpZ2h0fGVufDB8fHx8MTc3MDU2MjUwNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Modern clean kitchen",
+      "usage": "Pantry page header or empty state background"
+    },
+    "empty_state": {
+      "url": "https://images.unsplash.com/photo-1598404148538-f0bc11a5515c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMHZlZ2V0YWJsZXMlMjBpbmdyZWRpZW50cyUyMGZsYXQlMjBsYXklMjB3aGl0ZSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzcwNTYyNTAxfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Carrot and pepper on table",
+      "usage": "Empty list state or 404 page"
+    },
+    "ingredients_texture": {
+      "url": "https://images.unsplash.com/photo-1574955598898-d105479382e5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwzfHxmcmVzaCUyMHZlZ2V0YWJsZXMlMjBpbmdyZWRpZW50cyUyMGZsYXQlMjBsYXklMjB3aGl0ZSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzcwNTYyNTAxfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Assorted vegetables and spices",
+      "usage": "Sidebar background or footer texture"
+    }
   },
   "instructions_to_main_agent": [
-    "1. SETUP: Install 'lucide-react' for icons. Use 'clsx' and 'tailwind-merge' for class management.",
-    "2. THEME: Implement the dark mode by default. Force the 'dark' class on the html element or use a theme provider.",
-    "3. FONTS: Import 'Playfair Display' and 'Manrope' from Google Fonts in index.css.",
-    "4. COMPONENTS: Customize Shadcn components. Remove the default 'radius-md' and apply the specific 'rounded-none' or 'rounded-xl' rules defined above.",
-    "5. LAYOUT: Build the 'Weekly Planner' using a CSS Grid that looks like a calendar but feels like a spellbook page.",
-    "6. MAGIC: Add subtle 'glow' effects behind active cards using absolute positioned divs with blur.",
-    "7. FORM: The 'Add Recipe' form should feel like writing a scroll. Use minimal borders and lots of padding."
+    "1. THEME OVERHAUL: Completely remove the 'Wicked' dark theme. Switch to the 'Fresh Greens' light theme defined in colors.",
+    "2. PANTRY FEATURE: Build the new Pantry/Inventory page using the 'Bento Grid' layout. Use the 'pantry_header' image as a subtle top banner.",
+    "3. TYPOGRAPHY: Replace 'Cinzel' with 'Playfair Display' for all H1-H3 headings. Use 'Manrope' for all body text.",
+    "4. COMPONENTS: Update all Shadcn components to match the 'component_rules'. Remove sharp edges and neon glows. Use rounded corners and soft shadows.",
+    "5. DASHBOARD: Implement the dashboard using the 'dashboard_grid' layout. It should show: Upcoming Meals, Pantry Status (Low Stock Alerts), and Quick Shopping List.",
+    "6. ALERTS: Use the 'accent' color (Terracotta) for items that are low in stock or expiring soon.",
+    "7. NAVIGATION: Ensure the navigation bar is clean, white, and uses the 'primary' color for the active state.",
+    "8. DATA-TESTID: Add 'data-testid' to all interactive elements (buttons, inputs, cards) for testing."
   ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Do not use generic centered layouts.",
-    "Create depth through layered design elements with z-index hierarchy.",
-    "Use glass-morphism effects with backdrop filters (12-24px blur).",
-    "Every interaction needs micro-animations.",
-    "Use 2-3x more spacing than feels comfortable.",
-    "Subtle grain textures and noise overlays are recommended.",
-    "Use 'sonner' for toasts."
+  "universal_guidelines": [
+    "Avoid generic centered layouts. Use asymmetry.",
+    "Use 2-3x more spacing than typical designs.",
+    "Every interaction needs micro-animations (hover, focus, active).",
+    "Do not use 'transition: all'. Animate specific properties.",
+    "Use 'sonner' for toasts.",
+    "Prioritize 'Manrope' for UI legibility."
   ]
 }
