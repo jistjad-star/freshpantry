@@ -155,20 +155,27 @@ export default function ShoppingList() {
   const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0;
 
   // Open all unchecked items in a supermarket
-  const shopAllAt = (store) => {
+  const shopAllAt = async (store) => {
     const uncheckedItems = shoppingList?.items?.filter(i => !i.checked) || [];
     if (uncheckedItems.length === 0) {
       toast.error("No items to shop for");
       return;
     }
-    // Open first item, copy rest to clipboard for convenience
-    const firstItem = uncheckedItems[0];
-    window.open(store.searchUrl(firstItem.name), '_blank');
     
-    if (uncheckedItems.length > 1) {
-      const itemList = uncheckedItems.map(i => `${i.quantity} ${i.unit} ${i.name}`.trim()).join('\n');
-      navigator.clipboard.writeText(itemList);
-      toast.success(`Opened ${store.name}. ${uncheckedItems.length - 1} more items copied to clipboard!`);
+    // Open first tab immediately (allowed by browser)
+    window.open(store.searchUrl(uncheckedItems[0].name), '_blank');
+    
+    // Open remaining tabs with small delays to avoid popup blocker
+    for (let i = 1; i < Math.min(uncheckedItems.length, 10); i++) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      window.open(store.searchUrl(uncheckedItems[i].name), '_blank');
+    }
+    
+    if (uncheckedItems.length > 10) {
+      const remaining = uncheckedItems.slice(10).map(i => i.name).join(', ');
+      toast.info(`Opened 10 tabs. Remaining: ${remaining}`, { duration: 8000 });
+    } else {
+      toast.success(`Opened ${uncheckedItems.length} items in ${store.name}`);
     }
   };
 
