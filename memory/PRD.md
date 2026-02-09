@@ -15,6 +15,8 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Manual category editing
 - [x] AI-generated recipe images
 - [x] Recipe import/export (JSON format) for sharing
+- [x] **Star Reviews** - Users can rate recipes 1-5 stars with optional comments
+- [x] **Sort by Popularity** - Recipe library can be sorted by rating (Top Rated, Newest, Default)
 
 ### Pantry Management
 - [x] Track ingredients with quantities
@@ -53,8 +55,17 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - POST /api/recipes/import-batch - Import recipes from JSON
 - POST /api/suggestions/generate-recipe - AI recipe from pantry
 - GET /api/shopping-list/estimate-costs - UK supermarket pricing
+- GET /api/recipes?sort_by=popularity - Get recipes sorted by rating
+- GET /api/recipes/{id}/reviews - Get reviews for a recipe
+- POST /api/recipes/{id}/reviews - Add a review to a recipe
 
 ## Changelog
+
+### 2025-02-09 (Session 4)
+- **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
+- **Added**: Star review system - Users can rate recipes 1-5 stars with comments
+- **Added**: Popularity sort - Recipe library can sort by Top Rated, Newest, Default
+- **Added**: Rating display on recipe cards in library view
 
 ### 2025-02-08 (Session 3)
 - **Added**: Recipe editing page (`/recipes/{id}/edit`)
@@ -79,7 +90,43 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - Weekly planner improvements
 
 ## Future Tasks
-- P2: Drag-and-drop weekly planner
+- P1: Drag-and-drop weekly planner
 - P2: Expiry date tracking
 - P2: Recipe sharing links
 - P2: PWA support
+- P2: Scan receipt to pantry
+
+## DB Schema
+
+### recipes collection
+```json
+{
+  "id": "uuid",
+  "user_id": "string",
+  "name": "string",
+  "description": "string",
+  "servings": 2,
+  "prep_time": "string",
+  "cook_time": "string",
+  "ingredients": [...],
+  "instructions": [...],
+  "categories": ["vegan", "quick-easy"],
+  "image_url": "string",
+  "average_rating": 4.5,
+  "review_count": 10,
+  "created_at": "datetime"
+}
+```
+
+### reviews collection
+```json
+{
+  "id": "uuid",
+  "recipe_id": "string",
+  "user_id": "string",
+  "user_name": "string",
+  "rating": 5,
+  "comment": "string",
+  "created_at": "datetime"
+}
+```
