@@ -260,33 +260,31 @@ async def get_user_id_or_none(request: Request) -> Optional[str]:
 
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
     """Use AI to parse raw ingredient text into structured data"""
-    if not EMERGENT_LLM_KEY:
-        logger.warning("No EMERGENT_LLM_KEY found, returning empty ingredients")
+    if not openai_client:
+        logger.warning("No OpenAI API key found, returning empty ingredients")
         return []
     
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"ingredient-parse-{uuid.uuid4()}",
-            system_message="""You are a helpful assistant that parses recipe ingredients into structured JSON format.
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": """You are a helpful assistant that parses recipe ingredients into structured JSON format.
             For each ingredient, extract:
             - name: the ingredient name (e.g., "chicken breast", "olive oil")
             - quantity: the amount (e.g., "2", "1/2", "1 cup")
             - unit: the unit of measurement (e.g., "lb", "cups", "tbsp", "pieces", "" for items like "1 onion")
             - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
             
-            Return ONLY a valid JSON array, no markdown or explanation."""
-        ).with_model("openai", "gpt-5.2")
-        
-        user_message = UserMessage(
-            text=f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"
+            Return ONLY a valid JSON array, no markdown or explanation."""},
+                {"role": "user", "content": f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"}
+            ]
         )
         
-        response = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         
         # Parse the JSON response
         import json
-        clean_response = response.strip()
+        clean_response = result.strip()
         if clean_response.startswith("```"):
             clean_response = clean_response.split("```")[1]
             if clean_response.startswith("json"):
