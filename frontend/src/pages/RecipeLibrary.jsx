@@ -68,28 +68,24 @@ export default function RecipeLibrary() {
 
   const exportRecipes = async () => {
     if (selectedForExport.length === 0) {
-      toast.error("Select recipes to export");
+      toast.error("Select recipes to share");
       return;
     }
     
     setExporting(true);
     try {
-      const response = await api.exportRecipes(selectedForExport);
-      const dataStr = JSON.stringify(response.data, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `fresh-pantry-recipes-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const response = await api.createShareLink(selectedForExport);
+      const shareUrl = `${window.location.origin}/share/${response.data.share_id}`;
       
-      toast.success(`Exported ${selectedForExport.length} recipes!`);
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success(`Share link copied! ${response.data.recipe_count} recipes`, {
+        description: shareUrl,
+        duration: 5000
+      });
       setSelectedForExport([]);
     } catch (error) {
-      toast.error("Failed to export recipes");
+      toast.error("Failed to create share link");
     } finally {
       setExporting(false);
     }
