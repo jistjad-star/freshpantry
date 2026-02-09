@@ -360,6 +360,7 @@ export default function ShoppingList() {
                   <div className="space-y-2">
                     {items.map((item) => {
                       const itemPrice = getItemPrice(item.name);
+                      const searchTerm = `${item.name}`;
                       return (
                         <div key={item.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white border border-stone-100 hover:border-[#4A7C59]/30'}`} data-testid={`item-${item.id}`}>
                           <Checkbox checked={item.checked} onCheckedChange={() => toggleItem(item.id)} className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]" />
@@ -373,6 +374,28 @@ export default function ShoppingList() {
                             <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${item.checked ? 'bg-stone-100 text-stone-400' : 'bg-blue-50 text-blue-700'}`}>
                               ~£{itemPrice.toFixed(2)}
                             </span>
+                          )}
+                          {/* Shop buttons */}
+                          {!item.checked && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-xs border-stone-200 hover:border-[#4A7C59] hover:text-[#4A7C59]">
+                                  <Store className="w-3 h-3 mr-1" /> Shop
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="bg-white" align="end">
+                                {SUPERMARKETS.map(store => (
+                                  <DropdownMenuItem 
+                                    key={store.name}
+                                    onClick={() => window.open(store.searchUrl(searchTerm), '_blank')}
+                                    className="cursor-pointer"
+                                  >
+                                    <span className={`w-2 h-2 rounded-full ${store.color} mr-2`}></span>
+                                    {store.name}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
                           <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="text-stone-400 hover:text-[#E07A5F]"><Trash2 className="w-4 h-4" /></Button>
                         </div>
