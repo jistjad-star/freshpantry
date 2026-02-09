@@ -21,6 +21,16 @@ const CATEGORIES = [
 ];
 const CATEGORY_ORDER = ["produce", "dairy", "protein", "grains", "pantry", "spices", "frozen", "other"];
 
+// UK Supermarket search URLs
+const SUPERMARKETS = [
+  { name: "Tesco", color: "bg-blue-600", searchUrl: (q) => `https://www.tesco.com/groceries/en-GB/search?query=${encodeURIComponent(q)}` },
+  { name: "Sainsbury's", color: "bg-orange-500", searchUrl: (q) => `https://www.sainsburys.co.uk/gol-ui/SearchResults/${encodeURIComponent(q)}` },
+  { name: "Asda", color: "bg-green-600", searchUrl: (q) => `https://groceries.asda.com/search/${encodeURIComponent(q)}` },
+  { name: "Morrisons", color: "bg-yellow-500", searchUrl: (q) => `https://groceries.morrisons.com/search?q=${encodeURIComponent(q)}` },
+  { name: "Aldi", color: "bg-sky-600", searchUrl: (q) => `https://groceries.aldi.co.uk/en-GB/Search?keywords=${encodeURIComponent(q)}` },
+  { name: "Ocado", color: "bg-purple-600", searchUrl: (q) => `https://www.ocado.com/search?entry=${encodeURIComponent(q)}` },
+];
+
 export default function ShoppingList() {
   const [shoppingList, setShoppingList] = useState(null);
   const [loading, setLoading] = useState(true);
