@@ -13,21 +13,14 @@ RUN yarn build
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install nginx
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
-
 # Copy backend
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 
-# Copy frontend build
-COPY --from=frontend-build /app/frontend/build /var/www/html
-
-# Copy config files
-COPY nginx.conf /etc/nginx/sites-enabled/default
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# Copy frontend build into backend static folder
+COPY --from=frontend-build /app/frontend/build ./backend/static
 
 EXPOSE 8080
-CMD ["/start.sh"]
+WORKDIR /app/backend
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
