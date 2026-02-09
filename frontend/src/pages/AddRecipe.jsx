@@ -400,7 +400,7 @@ Example:
                   className="fresh-input min-h-[200px] font-mono text-sm"
                 />
                 <Button onClick={parseFromText} disabled={loading || !recipeName.trim() || !pasteText.trim()} className="btn-primary w-full">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Parse Text</>}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract Ingredients</>}
                 </Button>
               </div>
             )}
