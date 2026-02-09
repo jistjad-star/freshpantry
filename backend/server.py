@@ -905,15 +905,31 @@ async def google_login(request: Request):
 async def google_callback(request: Request, response: Response):
     """Handle Google OAuth callback"""
     try:
+        logger.info(f"OAuth callback received. Query params: {dict(request.query_params)}")
+        
+        # Check for error from Google
+        if 'error' in request.query_params:
+            error = request.query_params.get('error')
+            logger.error(f"Google OAuth returned error: {error}")
+            return RedirectResponse(url=f"{APP_URL}?error={error}", status_code=302)
+        
         token = await oauth.google.authorize_access_token(request)
+        logger.info(f"Token received: {bool(token)}")
+        
         user_info = token.get('userinfo')
+        if not user_info:
+            # Try to get user info from id_token
+            user_info = await oauth.google.parse_id_token(token, nonce=None)
         
         if not user_info:
-            raise HTTPException(status_code=400, detail="Failed to get user info")
+            logger.error("Failed to get user info from token")
+            return RedirectResponse(url=f"{APP_URL}?error=no_user_info", status_code=302)
         
         email = user_info.get('email')
-        name = user_info.get('name')
-        picture = user_info.get('picture')
+        name = user_info.get('name', email.split('@')[0] if email else 'User')
+        picture = user_info.get('picture', '')
+        
+        logger.info(f"User authenticated: {email}")
         
         # Check if user exists
         existing_user = await db.users.find_one({"email": email}, {"_id": 0})
@@ -945,6 +961,8 @@ async def google_callback(request: Request, response: Response):
         }
         await db.user_sessions.insert_one(session_doc)
         
+        logger.info(f"Session created for user: {user_id}")
+        
         # Create redirect response with cookie
         redirect_response = RedirectResponse(url=APP_URL, status_code=302)
         redirect_response.set_cookie(
@@ -960,8 +978,8 @@ async def google_callback(request: Request, response: Response):
         return redirect_response
         
     except Exception as e:
-        logger.error(f"Google OAuth error: {e}")
-        return RedirectResponse(url=f"{APP_URL}?error=auth_failed", status_code=302)
+        logger.error(f"Google OAuth error: {e}", exc_info=True)
+        return RedirectResponse(url=f"{APP_URL}?error=auth_failed&detail={str(e)[:50]}", status_code=302)
 
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
