@@ -116,17 +116,23 @@ export default function AddRecipe() {
     setLoading(true);
     try {
       let parsedIngredients = [];
+      let estimatedPrepTime = "";
+      let estimatedCookTime = "";
       
       if (inputMode === "screenshot" && ingredientImages.length > 0) {
         // Parse from images
         for (const file of ingredientImages) {
           const response = await api.parseImage(file);
           parsedIngredients = [...parsedIngredients, ...(response.data.ingredients || [])];
+          if (response.data.prep_time) estimatedPrepTime = response.data.prep_time;
+          if (response.data.cook_time) estimatedCookTime = response.data.cook_time;
         }
       } else if (inputMode === "paste" && pasteIngredients.trim()) {
         // Parse from text
         const response = await api.parseIngredients(recipeName, pasteIngredients, "");
         parsedIngredients = response.data.ingredients || [];
+        estimatedPrepTime = response.data.prep_time || "";
+        estimatedCookTime = response.data.cook_time || "";
       }
       
       // Remove duplicates
@@ -138,6 +144,10 @@ export default function AddRecipe() {
       }, []);
       
       setIngredients(unique);
+      
+      // Auto-set times if not already set
+      if (estimatedPrepTime && !prepTime) setPrepTime(estimatedPrepTime);
+      if (estimatedCookTime && !cookTime) setCookTime(estimatedCookTime);
       
       if (unique.length > 0) {
         toast.success(`Found ${unique.length} ingredients!`);
