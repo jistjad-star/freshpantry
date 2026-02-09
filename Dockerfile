@@ -13,8 +13,8 @@ RUN yarn build
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install nginx and supervisor
-RUN apt-get update && apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
+# Install nginx
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
 
 # Copy backend
 COPY backend/requirements.txt ./
@@ -24,36 +24,35 @@ COPY backend/ ./backend/
 # Copy frontend build
 COPY --from=frontend-build /app/frontend/build /var/www/html
 
-# Nginx config
-RUN echo 'server { \n\
-    listen 8080; \n\
-    location / { \n\
-        root /var/www/html; \n\
-        try_files $uri $uri/ /index.html; \n\
-    } \n\
-    location /api { \n\
-        proxy_pass http://127.0.0.1:8001; \n\
-        proxy_set_header Host $host; \n\
-        proxy_set_header X-Real-IP $remote_addr; \n\
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \n\
-    } \n\
-}' > /etc/nginx/sites-available/default
+# Nginx config - proxy /api to backend
+RUN rm /etc/nginx/sites-enabled/default
+COPY <<EOF /etc/nginx/sites-enabled/default
+server {
+    listen 8080;
+    
+    location / {
+        root /var/www/html;
+        try_files \$uri \$uri/ /index.html;
+    }
+    
+    location /api {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+}
+EOF
 
-# Supervisor config
-RUN echo '[supervisord] \n\
-nodaemon=true \n\
-\n\
-[program:nginx] \n\
-command=nginx -g "daemon off;" \n\
-autostart=true \n\
-autorestart=true \n\
-\n\
-[program:backend] \n\
-command=uvicorn server:app --host 127.0.0.1 --port 8001 \n\
-directory=/app/backend \n\
-autostart=true \n\
-autorestart=true \n\
-' > /etc/supervisor/conf.d/app.conf
+# Startup script
+COPY <<EOF /start.sh
+#!/bin/bash
+set -e
+nginx
+cd /app/backend
+exec uvicorn server:app --host 127.0.0.1 --port 8001
+EOF
+RUN chmod +x /start.sh
 
 EXPOSE 8080
-CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["/start.sh"]
