@@ -154,6 +154,24 @@ export default function ShoppingList() {
   const checkedItems = shoppingList?.items?.filter(i => i.checked).length || 0;
   const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0;
 
+  // Open all unchecked items in a supermarket
+  const shopAllAt = (store) => {
+    const uncheckedItems = shoppingList?.items?.filter(i => !i.checked) || [];
+    if (uncheckedItems.length === 0) {
+      toast.error("No items to shop for");
+      return;
+    }
+    // Open first item, copy rest to clipboard for convenience
+    const firstItem = uncheckedItems[0];
+    window.open(store.searchUrl(firstItem.name), '_blank');
+    
+    if (uncheckedItems.length > 1) {
+      const itemList = uncheckedItems.map(i => `${i.quantity} ${i.unit} ${i.name}`.trim()).join('\n');
+      navigator.clipboard.writeText(itemList);
+      toast.success(`Opened ${store.name}. ${uncheckedItems.length - 1} more items copied to clipboard!`);
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#4A7C59] animate-spin" /></div>;
 
   const groupedItems = shoppingList?.items ? groupByCategory(shoppingList.items) : {};
@@ -166,7 +184,28 @@ export default function ShoppingList() {
             <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Shopping List</h1>
             <p className="text-stone-500">{totalItems > 0 ? `${checkedItems} of ${totalItems} items` : "No items yet"}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {totalItems > checkedItems && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="btn-primary" data-testid="shop-all-btn">
+                    <Store className="w-4 h-4 mr-2" />Shop All
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-white" align="end">
+                  {SUPERMARKETS.map(store => (
+                    <DropdownMenuItem 
+                      key={store.name}
+                      onClick={() => shopAllAt(store)}
+                      className="cursor-pointer"
+                    >
+                      <span className={`w-2 h-2 rounded-full ${store.color} mr-2`}></span>
+                      {store.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {checkedItems > 0 && (
               <>
                 <Button onClick={addToPantry} disabled={saving} className="btn-secondary" data-testid="add-to-pantry-btn">
