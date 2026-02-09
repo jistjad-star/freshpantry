@@ -1414,6 +1414,45 @@ async def scrape_recipe_url(import_data: RecipeImport):
         "cook_time": cook_time
     }
 
+# ============== FAVORITES ==============
+
+@api_router.get("/favorites")
+async def get_favorites(request: Request):
+    """Get user's favorite recipe IDs"""
+    user_id = await get_user_id_or_none(request)
+    if not user_id:
+        return {"favorites": []}
+    
+    favorites_doc = await db.favorites.find_one({"user_id": user_id}, {"_id": 0})
+    return {"favorites": favorites_doc.get("recipe_ids", []) if favorites_doc else []}
+
+@api_router.post("/favorites/{recipe_id}")
+async def add_favorite(recipe_id: str, request: Request):
+    """Add a recipe to favorites"""
+    user_id = await get_user_id_or_none(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Login required")
+    
+    await db.favorites.update_one(
+        {"user_id": user_id},
+        {"$addToSet": {"recipe_ids": recipe_id}},
+        upsert=True
+    )
+    return {"message": "Added to favorites", "recipe_id": recipe_id}
+
+@api_router.delete("/favorites/{recipe_id}")
+async def remove_favorite(recipe_id: str, request: Request):
+    """Remove a recipe from favorites"""
+    user_id = await get_user_id_or_none(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Login required")
+    
+    await db.favorites.update_one(
+        {"user_id": user_id},
+        {"$pull": {"recipe_ids": recipe_id}}
+    )
+    return {"message": "Removed from favorites", "recipe_id": recipe_id}
+
 @api_router.post("/recipes/import", response_model=Recipe)
 async def import_recipe(import_data: RecipeImport, request: Request):
     """Import a recipe from URL"""
