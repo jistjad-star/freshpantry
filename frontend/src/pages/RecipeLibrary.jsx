@@ -32,6 +32,7 @@ export default function RecipeLibrary() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedMealType, setSelectedMealType] = useState(null);
   const [viewMode, setViewMode] = useState("all");
   const [showFavorites, setShowFavorites] = useState(false);
   const [sortBy, setSortBy] = useState(null);
