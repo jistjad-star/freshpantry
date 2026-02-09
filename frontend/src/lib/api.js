@@ -31,6 +31,11 @@ export const api = {
   getSharedRecipes: (shareId) => axios.get(`${API}/recipes/shared/${shareId}`),
   importSharedRecipes: (shareId) => axios.post(`${API}/recipes/import-shared/${shareId}`),
   
+  // Favorites
+  getFavorites: () => axios.get(`${API}/favorites`),
+  addFavorite: (recipeId) => axios.post(`${API}/favorites/${recipeId}`),
+  removeFavorite: (recipeId) => axios.delete(`${API}/favorites/${recipeId}`),
+  
   // Reviews
   getReviews: (recipeId) => axios.get(`${API}/recipes/${recipeId}/reviews`),
   addReview: (recipeId, rating, comment) => axios.post(`${API}/recipes/${recipeId}/reviews`, { rating, comment }),
