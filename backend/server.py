@@ -399,43 +399,9 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
     return categories
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
-    """Generate an AI image for a recipe"""
-    if not openai_client:
-        logger.warning("No OpenAI API key found for image generation")
-        return ""
-    
-    try:
-        # Create a descriptive prompt for photorealistic food image
-        ingredient_names = [ing.get('name', '') for ing in ingredients[:5]]
-        ingredients_text = ", ".join(ingredient_names) if ingredient_names else ""
-        
-        prompt = f"Ultra realistic photograph of {recipe_name}, shot with a Canon EOS R5, 50mm lens, f/2.8 aperture. "
-        prompt += "The dish is beautifully plated on a ceramic plate, showing steam rising from the hot food. "
-        if ingredients_text:
-            prompt += f"Key ingredients visible: {ingredients_text}. "
-        prompt += "Professional food photography style, natural window lighting from the left, shallow depth of field, "
-        prompt += "rustic wooden table surface, subtle garnish, photorealistic textures showing the actual food details. "
-        prompt += "Magazine quality, mouth-watering, 8K resolution detail. No text or watermarks."
-        
-        logger.info(f"Generating image for recipe: {recipe_name}")
-        
-        response = await openai_client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="hd",
-            n=1
-        )
-        
-        if response.data and len(response.data) > 0:
-            image_url = response.data[0].url
-            logger.info(f"Successfully generated image for {recipe_name}")
-            return image_url
-        
-        return ""
-    except Exception as e:
-        logger.error(f"Error generating recipe image: {e}", exc_info=True)
-        return ""
+    """Generate an AI image for a recipe - DISABLED"""
+    # AI image generation disabled - using placeholders instead
+    return ""
 
 async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Use AI vision to extract ingredients from an image"""
