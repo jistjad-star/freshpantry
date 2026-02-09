@@ -158,7 +158,6 @@ export default function WeeklyPlanner() {
 
   const getRecipeById = (id) => recipes.find(r => r.id === id);
   const totalMeals = getTotalMeals();
-  const canAddMore = totalMeals < MAX_MEALS_PER_WEEK;
 
   // Get suggested recipes for the popover - show more with lower threshold
   const getSuggestedRecipes = () => {
