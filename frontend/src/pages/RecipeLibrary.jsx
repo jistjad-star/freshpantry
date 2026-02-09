@@ -323,11 +323,21 @@ export default function RecipeLibrary() {
         {/* All Recipes View */}
         {(viewMode === "all" || recipeGroups.length === 0) && filteredRecipes.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRecipes.map((recipe) => (
+            {filteredRecipes.map((recipe) => {
+              const isFavorite = favorites.includes(recipe.id);
+              return (
               <div key={recipe.id} className="fresh-card overflow-hidden group" data-testid={`recipe-card-${recipe.id}`}>
                 <Link to={`/recipes/${recipe.id}`}>
                   {recipe.image_url ? (
                     <div className="h-48 bg-cover bg-center transition-transform duration-300 group-hover:scale-105 relative" style={{ backgroundImage: `url(${recipe.image_url})` }}>
+                      {/* Favorite button */}
+                      <button
+                        onClick={(e) => toggleFavorite(recipe.id, e)}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+                        data-testid={`favorite-btn-${recipe.id}`}
+                      >
+                        <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-stone-400'}`} />
+                      </button>
                       {/* Category badges on image */}
                       {recipe.categories?.length > 0 && (
                         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
@@ -345,6 +355,14 @@ export default function RecipeLibrary() {
                   ) : (
                     <div className="h-48 bg-stone-100 flex items-center justify-center relative">
                       <ChefHat className="w-16 h-16 text-stone-300" />
+                      {/* Favorite button */}
+                      <button
+                        onClick={(e) => toggleFavorite(recipe.id, e)}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+                        data-testid={`favorite-btn-${recipe.id}`}
+                      >
+                        <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-stone-400'}`} />
+                      </button>
                       {/* Category badges */}
                       {recipe.categories?.length > 0 && (
                         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
