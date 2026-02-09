@@ -195,8 +195,8 @@ export default function RecipeLibrary() {
                 className="border-[#4A7C59] text-[#4A7C59]"
                 data-testid="export-recipes-btn"
               >
-                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-                Export ({selectedForExport.length})
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                Share ({selectedForExport.length})
               </Button>
             )}
             <Button 
