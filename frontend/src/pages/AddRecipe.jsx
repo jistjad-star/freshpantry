@@ -72,7 +72,7 @@ export default function AddRecipe() {
     setSourceUrl(extracted);
   };
 
-  // Handle URL import
+  // Handle URL import - populate form instead of saving directly
   const handleUrlImport = async () => {
     const cleanUrl = extractUrl(sourceUrl);
     if (!cleanUrl) {
@@ -81,9 +81,24 @@ export default function AddRecipe() {
     }
     setLoading(true);
     try {
-      const response = await api.importRecipe(cleanUrl);
-      toast.success("Recipe imported!");
-      navigate(`/recipes/${response.data.id}`);
+      const response = await api.scrapeRecipeUrl(cleanUrl);
+      const data = response.data;
+      
+      // Populate form with scraped data
+      if (data.name) setRecipeName(data.name);
+      if (data.ingredients?.length > 0) setIngredients(data.ingredients);
+      if (data.instructions?.length > 0) setInstructions(data.instructions);
+      if (data.prep_time) setPrepTime(data.prep_time);
+      if (data.cook_time) setCookTime(data.cook_time);
+      
+      toast.success(`Imported "${data.name || 'Recipe'}"! Review and save.`);
+      
+      // Jump to review step if we have ingredients
+      if (data.ingredients?.length > 0) {
+        setStep(3);
+      } else {
+        setStep(2);
+      }
     } catch (error) {
       console.error("Import error:", error);
       toast.error("Couldn't import from URL. Try screenshot or paste instead.");
