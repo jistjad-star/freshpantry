@@ -350,6 +350,7 @@ export default function WeeklyPlanner() {
                 {(weeklyPlan[day] || []).map((recipeId, i) => {
                   const recipe = getRecipeById(recipeId);
                   if (!recipe) return null;
+                  const isCooking = cookingRecipe === recipeId;
                   return (
                     <div key={`${recipeId}-${i}`} className="flex items-center gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100 group">
                       {recipe.image_url ? <div className="w-8 h-8 rounded bg-cover bg-center flex-shrink-0" style={{ backgroundImage: `url(${recipe.image_url})` }} /> : <div className="w-8 h-8 rounded bg-stone-200 flex items-center justify-center flex-shrink-0"><ChefHat className="w-4 h-4 text-stone-400" /></div>}
@@ -357,6 +358,15 @@ export default function WeeklyPlanner() {
                         <span className="text-sm text-[#1A2E1A] truncate block">{recipe.name}</span>
                         <span className="text-xs text-stone-400">{recipe.servings || 2} servings</span>
                       </div>
+                      <button 
+                        onClick={() => handleCookedThis(recipeId, day)} 
+                        disabled={isCooking}
+                        className="opacity-0 group-hover:opacity-100 text-[#4A7C59] hover:text-[#3A6C49] transition-opacity text-xs flex items-center gap-1 bg-[#4A7C59]/10 px-2 py-1 rounded-md"
+                        title="Mark as cooked & deduct from pantry"
+                      >
+                        {isCooking ? <Loader2 className="w-3 h-3 animate-spin" /> : <UtensilsCrossed className="w-3 h-3" />}
+                        Cooked
+                      </button>
                       <button onClick={() => removeRecipeFromDay(day, recipeId)} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-[#E07A5F] transition-opacity"><X className="w-4 h-4" /></button>
                     </div>
                   );
