@@ -23,9 +23,8 @@ export function AuthProvider({ children }) {
   };
 
   const login = () => {
-    // Redirect to backend Google OAuth endpoint
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
-    window.location.href = `${backendUrl}/api/auth/google/login`;
+    // Redirect to backend Google OAuth endpoint (same domain in production)
+    window.location.href = `/api/auth/google/login`;
   };
 
   const logout = async () => {
