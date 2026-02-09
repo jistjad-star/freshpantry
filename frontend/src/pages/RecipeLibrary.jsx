@@ -18,6 +18,13 @@ const CATEGORY_CONFIG = {
   'family-friendly': { label: 'Family', color: 'bg-purple-100 text-purple-700', icon: Users },
 };
 
+const MEAL_TYPE_CONFIG = {
+  'breakfast': { label: 'Breakfast', color: 'bg-yellow-100 text-yellow-700', icon: Coffee, keywords: ['breakfast', 'pancake', 'egg', 'omelette', 'toast', 'porridge', 'cereal', 'smoothie', 'muffin', 'waffle', 'bacon', 'sausage', 'hash'] },
+  'lunch': { label: 'Lunch', color: 'bg-sky-100 text-sky-700', icon: Sun, keywords: ['lunch', 'sandwich', 'salad', 'soup', 'wrap', 'bowl', 'panini', 'quesadilla'] },
+  'dinner': { label: 'Dinner', color: 'bg-indigo-100 text-indigo-700', icon: Moon, keywords: ['dinner', 'roast', 'steak', 'curry', 'pasta', 'stir fry', 'casserole', 'pie', 'lasagna', 'risotto', 'tagine', 'chili'] },
+  'snack': { label: 'Snack', color: 'bg-rose-100 text-rose-700', icon: Cookie, keywords: ['snack', 'cookie', 'cake', 'bar', 'dip', 'nuts', 'fruit', 'chips', 'popcorn', 'brownie', 'biscuit'] },
+};
+
 export default function RecipeLibrary() {
   const [recipes, setRecipes] = useState([]);
   const [recipeGroups, setRecipeGroups] = useState([]);
