@@ -75,6 +75,34 @@ export default function ShoppingList() {
     try { await api.updateShoppingList(updatedItems); } catch (error) { fetchShoppingList(); }
   };
 
+  const startEditing = (item) => {
+    setEditingItem(item.id);
+    setEditQuantity(item.quantity || "");
+    setEditUnit(item.unit || "");
+  };
+
+  const saveEdit = async (itemId) => {
+    if (!shoppingList) return;
+    const updatedItems = shoppingList.items.map(item => 
+      item.id === itemId ? { ...item, quantity: editQuantity, unit: editUnit } : item
+    );
+    setShoppingList(prev => ({ ...prev, items: updatedItems }));
+    setEditingItem(null);
+    try { 
+      await api.updateShoppingList(updatedItems); 
+      toast.success("Updated");
+    } catch (error) { 
+      fetchShoppingList(); 
+      toast.error("Failed to update");
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingItem(null);
+    setEditQuantity("");
+    setEditUnit("");
+  };
+
   const addItem = async () => {
     if (!newItem.name.trim()) { toast.error("Item name required"); return; }
     setSaving(true);
