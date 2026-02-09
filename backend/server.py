@@ -393,16 +393,15 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
 
 async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Use AI vision to extract ingredients from an image"""
-    if not EMERGENT_LLM_KEY:
-        logger.warning("No EMERGENT_LLM_KEY found")
+    if not openai_client:
+        logger.warning("No OpenAI API key found")
         return "", []
     
     try:
-        # Use GPT-5.1 for vision (recommended vision model)
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"image-parse-{uuid.uuid4()}",
-            system_message="""You are a helpful assistant that extracts recipe ingredients from images.
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": """You are a helpful assistant that extracts recipe ingredients from images.
             Look carefully at the image and extract ALL text related to ingredients.
             Parse each ingredient into structured format.
             
@@ -416,24 +415,20 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
             
             Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
             
-            Return ONLY valid JSON, no markdown code blocks."""
-        ).with_model("openai", "gpt-5.1")
-        
-        # Create image content using ImageContent class for base64 encoded images
-        image_content = ImageContent(image_base64=image_base64)
-        
-        # Create message with image attachment using file_contents
-        user_message = UserMessage(
-            text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units.",
-            file_contents=[image_content]
+            Return ONLY valid JSON, no markdown code blocks."""},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                ]}
+            ]
         )
         
-        response = await chat.send_message(user_message)
-        logger.info(f"Vision API response: {response[:500] if response else 'Empty'}")
+        result = response.choices[0].message.content
+        logger.info(f"Vision API response: {result[:500] if result else 'Empty'}")
         
         # Parse response
         import json
-        clean_response = response.strip()
+        clean_response = result.strip()
         
         # Remove markdown code blocks if present
         if "```json" in clean_response:
@@ -489,15 +484,15 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
 
 async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str]:
     """Use AI vision to extract cooking instructions from an image"""
-    if not EMERGENT_LLM_KEY:
-        logger.warning("No EMERGENT_LLM_KEY found")
+    if not openai_client:
+        logger.warning("No OpenAI API key found")
         return "", [], "", ""
     
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"instructions-parse-{uuid.uuid4()}",
-            system_message="""You are a helpful assistant that extracts cooking instructions from images.
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": """You are a helpful assistant that extracts cooking instructions from images.
             Look carefully at the image and extract ALL cooking steps/instructions.
             Also estimate the prep time and cook time based on the steps.
             
@@ -512,21 +507,19 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
             Each instruction should be a complete step. Remove step numbers from the text.
             Estimate prep_time based on chopping, mixing, preparation steps.
             Estimate cook_time based on baking, cooking, simmering steps.
-            Return ONLY valid JSON, no markdown code blocks."""
-        ).with_model("openai", "gpt-5.1")
-        
-        image_content = ImageContent(image_base64=image_base64)
-        
-        user_message = UserMessage(
-            text="Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time.",
-            file_contents=[image_content]
+            Return ONLY valid JSON, no markdown code blocks."""},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                ]}
+            ]
         )
         
-        response = await chat.send_message(user_message)
-        logger.info(f"Instructions Vision API response: {response[:500] if response else 'Empty'}")
+        result = response.choices[0].message.content
+        logger.info(f"Instructions Vision API response: {result[:500] if result else 'Empty'}")
         
         import json
-        clean_response = response.strip()
+        clean_response = result.strip()
         
         if "```json" in clean_response:
             clean_response = clean_response.split("```json")[1].split("```")[0]
