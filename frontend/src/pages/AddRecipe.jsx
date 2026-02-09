@@ -1,29 +1,21 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  PlusCircle, 
-  Link as LinkIcon, 
-  Loader2,
-  Trash2,
-  Plus,
-  ClipboardPaste,
-  Camera,
-  Upload,
-  Sparkles,
-  Leaf,
-  Fish,
-  Salad,
-  Zap,
-  Heart
-} from "lucide-react";
+import { Loader2, Trash2, Plus, Camera, Upload, Sparkles, Leaf, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import api from "@/lib/api";
+
+const RECIPE_SOURCES = [
+  { value: "green-chef", label: "Green Chef" },
+  { value: "gousto", label: "Gousto" },
+  { value: "hello-fresh", label: "Hello Fresh" },
+  { value: "other", label: "Other" },
+  { value: "url", label: "From URL" },
+];
 
 const INGREDIENT_CATEGORIES = [
   { value: "produce", label: "Produce" },
@@ -36,273 +28,123 @@ const INGREDIENT_CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-const RECIPE_CATEGORIES = [
-  { value: "vegan", label: "Vegan", icon: Leaf, color: "bg-green-100 text-green-700" },
-  { value: "vegetarian", label: "Veggie", icon: Salad, color: "bg-emerald-100 text-emerald-700" },
-  { value: "pescatarian", label: "Pescatarian", icon: Fish, color: "bg-blue-100 text-blue-700" },
-  { value: "low-fat", label: "Low Fat", icon: Heart, color: "bg-pink-100 text-pink-700" },
-  { value: "quick-easy", label: "Quick & Easy", icon: Zap, color: "bg-amber-100 text-amber-700" },
-];
-
 export default function AddRecipe() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [importUrl, setImportUrl] = useState("");
   const fileInputRef = useRef(null);
   const instructionsFileInputRef = useRef(null);
   
-  // Multiple image upload state for ingredients
-  const [imageFiles, setImageFiles] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [imageName, setImageName] = useState("");
-  const [imageServings, setImageServings] = useState(2);
-  const [imageIngredients, setImageIngredients] = useState([]);
-  const [imageRawText, setImageRawText] = useState("");
-  const [isImageParsed, setIsImageParsed] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Core state
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1: Basic Info, 2: Ingredients, 3: Instructions
   
-  // Multiple instructions image upload state
-  const [instructionsImageFiles, setInstructionsImageFiles] = useState([]);
-  const [instructionsImagePreviews, setInstructionsImagePreviews] = useState([]);
-  const [imageInstructions, setImageInstructions] = useState([]);
-  const [instructionsRawText, setInstructionsRawText] = useState("");
-  const [isInstructionsParsed, setIsInstructionsParsed] = useState(false);
-  const [instructionsLoading, setInstructionsLoading] = useState(false);
-  const [imagePrepTime, setImagePrepTime] = useState("");
-  const [imageCookTime, setImageCookTime] = useState("");
+  // Recipe data
+  const [recipeName, setRecipeName] = useState("");
+  const [source, setSource] = useState("");
+  const [sourceOther, setSourceOther] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [servings, setServings] = useState(2);
+  const [prepTime, setPrepTime] = useState("");
+  const [cookTime, setCookTime] = useState("");
   
-  // Paste form state
-  const [pasteName, setPasteName] = useState("");
-  const [pasteServings, setPasteServings] = useState(2);
+  // Ingredients
+  const [ingredients, setIngredients] = useState([]);
+  const [ingredientImages, setIngredientImages] = useState([]);
+  const [ingredientPreviews, setIngredientPreviews] = useState([]);
   const [pasteIngredients, setPasteIngredients] = useState("");
-  const [pasteInstructions, setPasteInstructions] = useState("");
-  const [parsedIngredients, setParsedIngredients] = useState([]);
-  const [parsedInstructions, setParsedInstructions] = useState([]);
-  const [isParsed, setIsParsed] = useState(false);
+  const [inputMode, setInputMode] = useState("paste"); // paste, screenshot, manual
   
-  // Manual form state
-  const [recipe, setRecipe] = useState({
-    name: "",
-    description: "",
-    servings: 2,
-    prep_time: "",
-    cook_time: "",
-    ingredients: [],
-    instructions: [],
-    image_url: ""
-  });
+  // Instructions
+  const [instructions, setInstructions] = useState([]);
+  const [instructionImages, setInstructionImages] = useState([]);
+  const [instructionPreviews, setInstructionPreviews] = useState([]);
+  const [pasteInstructions, setPasteInstructions] = useState("");
 
-  const [newIngredient, setNewIngredient] = useState({
-    name: "",
-    quantity: "",
-    unit: "",
-    category: "other"
-  });
-
-  const [newInstruction, setNewInstruction] = useState("");
-
-  // Multiple image upload handlers for ingredients
-  const handleImageSelect = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const newFiles = [...imageFiles, ...files];
-      const newPreviews = [...imagePreviews, ...files.map(f => URL.createObjectURL(f))];
-      setImageFiles(newFiles);
-      setImagePreviews(newPreviews);
-      setIsImageParsed(false);
-      // Don't clear existing ingredients - we'll merge them
-    }
-  };
-
-  const removeIngredientImage = (index) => {
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
-    if (currentImageIndex >= index && currentImageIndex > 0) {
-      setCurrentImageIndex(prev => prev - 1);
-    }
-  };
-
-  // Multiple instructions image handlers
-  const handleInstructionsImageSelect = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const newFiles = [...instructionsImageFiles, ...files];
-      const newPreviews = [...instructionsImagePreviews, ...files.map(f => URL.createObjectURL(f))];
-      setInstructionsImageFiles(newFiles);
-      setInstructionsImagePreviews(newPreviews);
-      setIsInstructionsParsed(false);
-    }
-  };
-
-  const removeInstructionsImage = (index) => {
-    setInstructionsImageFiles(prev => prev.filter((_, i) => i !== index));
-    setInstructionsImagePreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleInstructionsParse = async () => {
-    if (instructionsImageFiles.length === 0) {
-      toast.error("Please select at least one instructions image");
-      return;
-    }
-
-    setInstructionsLoading(true);
-    try {
-      let allInstructions = [];
-      let prepTime = "";
-      let cookTime = "";
-      let rawTexts = [];
-
-      // Parse each image and merge results
-      for (const file of instructionsImageFiles) {
-        const response = await api.parseInstructionsImage(file);
-        rawTexts.push(response.data.instructions_text || "");
-        allInstructions = [...allInstructions, ...(response.data.instructions || [])];
-        if (!prepTime && response.data.prep_time) prepTime = response.data.prep_time;
-        if (!cookTime && response.data.cook_time) cookTime = response.data.cook_time;
-      }
-
-      setInstructionsRawText(rawTexts.join("\n\n---\n\n"));
-      setImageInstructions(allInstructions);
-      setImagePrepTime(prepTime);
-      setImageCookTime(cookTime);
-      setIsInstructionsParsed(true);
-      
-      if (allInstructions.length > 0) {
-        const timeInfo = prepTime || cookTime 
-          ? ` (Prep: ${prepTime || 'N/A'}, Cook: ${cookTime || 'N/A'})`
-          : '';
-        toast.success(`Extracted ${allInstructions.length} steps from ${instructionsImageFiles.length} image(s)!${timeInfo}`);
-      } else {
-        toast.warning("No instructions found. Try clearer images.");
-      }
-    } catch (error) {
-      console.error("Instructions parse error:", error);
-      toast.error("Failed to extract instructions.");
-    } finally {
-      setInstructionsLoading(false);
-    }
-  };
-
-  const removeImageInstruction = (index) => {
-    setImageInstructions(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageParse = async () => {
-    if (imageFiles.length === 0) {
-      toast.error("Please select at least one image");
-      return;
-    }
-    if (!imageName.trim()) {
-      toast.error("Please enter a recipe name");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let allIngredients = [];
-      let rawTexts = [];
-
-      // Parse each image and merge results
-      for (const file of imageFiles) {
-        const response = await api.parseImage(file);
-        rawTexts.push(response.data.ingredients_text || "");
-        allIngredients = [...allIngredients, ...(response.data.ingredients || [])];
-      }
-
-      // Remove duplicate ingredients by name
-      const uniqueIngredients = allIngredients.reduce((acc, ing) => {
-        const existing = acc.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-        if (!existing) acc.push(ing);
-        return acc;
-      }, []);
-
-      setImageRawText(rawTexts.join("\n\n---\n\n"));
-      setImageIngredients(uniqueIngredients);
-      setIsImageParsed(true);
-      
-      if (uniqueIngredients.length > 0) {
-        toast.success(`Extracted ${uniqueIngredients.length} ingredients from ${imageFiles.length} image(s)!`);
-      } else {
-        toast.warning("No ingredients found. Try clearer images or use paste instead.");
-      }
-    } catch (error) {
-      console.error("Image parse error:", error);
-      toast.error("Failed to extract ingredients. Try paste instead.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveImageRecipe = async () => {
-    if (!imageName.trim()) {
-      toast.error("Recipe name is required");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const recipeData = {
-        name: imageName,
-        description: "",
-        servings: imageServings,
-        prep_time: imagePrepTime,
-        cook_time: imageCookTime,
-        ingredients: imageIngredients,
-        instructions: imageInstructions,
-        image_url: ""
-      };
-      
-      const response = await api.createRecipe(recipeData);
-      toast.success("Recipe saved!");
-      navigate(`/recipes/${response.data.id}`);
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error("Failed to save recipe");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const removeImageIngredient = (index) => {
-    setImageIngredients(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImportUrl = async () => {
-    if (!importUrl.trim()) {
+  // Handle URL import
+  const handleUrlImport = async () => {
+    if (!sourceUrl.trim()) {
       toast.error("Please enter a URL");
       return;
     }
-
     setLoading(true);
     try {
-      const response = await api.importRecipe(importUrl);
+      const response = await api.importRecipe(sourceUrl);
       toast.success("Recipe imported!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error("Import error:", error);
-      toast.error("Failed to import. Try paste instead.");
+      toast.error("Couldn't import from URL. Try screenshot or paste instead.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleParseIngredients = async () => {
-    if (!pasteName.trim()) {
-      toast.error("Please enter a recipe name");
-      return;
+  // Handle image uploads for ingredients
+  const handleIngredientImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setIngredientImages(prev => [...prev, ...files]);
+      setIngredientPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
     }
-    if (!pasteIngredients.trim()) {
-      toast.error("Please paste some ingredients");
-      return;
-    }
+  };
 
+  const removeIngredientImage = (index) => {
+    setIngredientImages(prev => prev.filter((_, i) => i !== index));
+    setIngredientPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle image uploads for instructions
+  const handleInstructionImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setInstructionImages(prev => [...prev, ...files]);
+      setInstructionPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+    }
+  };
+
+  const removeInstructionImage = (index) => {
+    setInstructionImages(prev => prev.filter((_, i) => i !== index));
+    setInstructionPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Parse ingredients from images or text
+  const parseIngredients = async () => {
+    if (!recipeName.trim()) {
+      toast.error("Enter a recipe name first");
+      return;
+    }
+    
     setLoading(true);
     try {
-      const response = await api.parseIngredients(pasteName, pasteIngredients, pasteInstructions);
-      setParsedIngredients(response.data.ingredients || []);
-      setParsedInstructions(response.data.instructions || []);
-      setIsParsed(true);
-      toast.success(`Parsed ${response.data.ingredients?.length || 0} ingredients!`);
+      let parsedIngredients = [];
+      
+      if (inputMode === "screenshot" && ingredientImages.length > 0) {
+        // Parse from images
+        for (const file of ingredientImages) {
+          const response = await api.parseImage(file);
+          parsedIngredients = [...parsedIngredients, ...(response.data.ingredients || [])];
+        }
+      } else if (inputMode === "paste" && pasteIngredients.trim()) {
+        // Parse from text
+        const response = await api.parseIngredients(recipeName, pasteIngredients, "");
+        parsedIngredients = response.data.ingredients || [];
+      }
+      
+      // Remove duplicates
+      const unique = parsedIngredients.reduce((acc, ing) => {
+        if (!acc.find(i => i.name.toLowerCase() === ing.name.toLowerCase())) {
+          acc.push(ing);
+        }
+        return acc;
+      }, []);
+      
+      setIngredients(unique);
+      
+      if (unique.length > 0) {
+        toast.success(`Found ${unique.length} ingredients!`);
+        setStep(3);
+      } else {
+        toast.error("No ingredients found. Try again.");
+      }
     } catch (error) {
       console.error("Parse error:", error);
       toast.error("Failed to parse ingredients");
@@ -311,22 +153,80 @@ export default function AddRecipe() {
     }
   };
 
-  const handleSaveParsedRecipe = async () => {
-    if (!pasteName.trim()) {
+  // Parse instructions from images or text
+  const parseInstructions = async () => {
+    setLoading(true);
+    try {
+      let parsedInstructions = [];
+      let foundPrepTime = "";
+      let foundCookTime = "";
+      
+      if (instructionImages.length > 0) {
+        for (const file of instructionImages) {
+          const response = await api.parseInstructionsImage(file);
+          parsedInstructions = [...parsedInstructions, ...(response.data.instructions || [])];
+          if (!foundPrepTime && response.data.prep_time) foundPrepTime = response.data.prep_time;
+          if (!foundCookTime && response.data.cook_time) foundCookTime = response.data.cook_time;
+        }
+      } else if (pasteInstructions.trim()) {
+        // Split by newlines and numbered steps
+        parsedInstructions = pasteInstructions
+          .split(/\n/)
+          .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
+          .filter(s => s.length > 10);
+      }
+      
+      setInstructions(parsedInstructions);
+      if (foundPrepTime) setPrepTime(foundPrepTime);
+      if (foundCookTime) setCookTime(foundCookTime);
+      
+      if (parsedInstructions.length > 0) {
+        toast.success(`Found ${parsedInstructions.length} steps!`);
+      }
+    } catch (error) {
+      console.error("Parse error:", error);
+      toast.error("Failed to parse instructions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Remove ingredient
+  const removeIngredient = (index) => {
+    setIngredients(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove instruction
+  const removeInstruction = (index) => {
+    setInstructions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Save recipe
+  const saveRecipe = async () => {
+    if (!recipeName.trim()) {
       toast.error("Recipe name is required");
       return;
     }
-
+    if (ingredients.length === 0) {
+      toast.error("Add at least one ingredient");
+      return;
+    }
+    
     setLoading(true);
     try {
+      const recipeSource = source === "other" ? sourceOther : 
+                          source === "url" ? sourceUrl : 
+                          RECIPE_SOURCES.find(s => s.value === source)?.label || "";
+      
       const recipeData = {
-        name: pasteName,
+        name: recipeName,
         description: "",
-        servings: pasteServings,
-        prep_time: "",
-        cook_time: "",
-        ingredients: parsedIngredients,
-        instructions: parsedInstructions,
+        servings,
+        prep_time: prepTime,
+        cook_time: cookTime,
+        ingredients,
+        instructions,
+        source_url: recipeSource,
         image_url: ""
       };
       
@@ -341,719 +241,370 @@ export default function AddRecipe() {
     }
   };
 
-  const removeParsedIngredient = (index) => {
-    setParsedIngredients(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const removeParsedInstruction = (index) => {
-    setParsedInstructions(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const addIngredient = () => {
-    if (!newIngredient.name.trim()) {
-      toast.error("Ingredient name is required");
-      return;
-    }
-    
-    setRecipe(prev => ({
-      ...prev,
-      ingredients: [...prev.ingredients, { ...newIngredient, checked: false }]
-    }));
-    setNewIngredient({ name: "", quantity: "", unit: "", category: "other" });
-  };
-
-  const removeIngredient = (index) => {
-    setRecipe(prev => ({
-      ...prev,
-      ingredients: prev.ingredients.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addInstruction = () => {
-    if (!newInstruction.trim()) return;
-    
-    setRecipe(prev => ({
-      ...prev,
-      instructions: [...prev.instructions, newInstruction.trim()]
-    }));
-    setNewInstruction("");
-  };
-
-  const removeInstruction = (index) => {
-    setRecipe(prev => ({
-      ...prev,
-      instructions: prev.instructions.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!recipe.name.trim()) {
-      toast.error("Recipe name is required");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await api.createRecipe(recipe);
-      toast.success("Recipe created!");
-      navigate(`/recipes/${response.data.id}`);
-    } catch (error) {
-      console.error("Create error:", error);
-      toast.error("Failed to create recipe");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const categoryColors = {
-    produce: "category-produce",
-    dairy: "category-dairy",
-    protein: "category-protein",
-    grains: "category-grains",
-    pantry: "category-pantry",
-    spices: "category-spices",
-    frozen: "category-frozen",
-    other: "category-other"
-  };
-
   return (
     <div className="min-h-screen py-8" data-testid="add-recipe-page">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">
-            Add Recipe
-          </h1>
-          <p className="text-stone-500">
-            Screenshot, paste, or enter manually
-          </p>
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 rounded-2xl bg-[#4A7C59]/10 flex items-center justify-center mx-auto mb-4">
+            <ChefHat className="w-8 h-8 text-[#4A7C59]" />
+          </div>
+          <h1 className="font-display text-2xl font-bold text-[#1A2E1A]">Add Recipe</h1>
+          <p className="text-stone-500 text-sm mt-1">Step {step} of 3</p>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="paste" className="space-y-8">
-          <TabsList className="fresh-card-static p-1 w-full grid grid-cols-2 md:grid-cols-4 h-auto">
-            <TabsTrigger 
-              value="screenshot" 
-              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
-              data-testid="tab-image"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              Screenshot
-            </TabsTrigger>
-            <TabsTrigger 
-              value="paste" 
-              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
-              data-testid="tab-paste"
-            >
-              <ClipboardPaste className="w-4 h-4 mr-2" />
-              Paste
-            </TabsTrigger>
-            <TabsTrigger 
-              value="import" 
-              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
-              data-testid="tab-import"
-            >
-              <LinkIcon className="w-4 h-4 mr-2" />
-              URL
-            </TabsTrigger>
-            <TabsTrigger 
-              value="manual"
-              className="data-[state=active]:bg-[#4A7C59]/10 data-[state=active]:text-[#4A7C59] rounded-lg py-3"
-              data-testid="tab-manual"
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Manual
-            </TabsTrigger>
-          </TabsList>
+        {/* Progress bar */}
+        <div className="flex gap-2 mb-8">
+          {[1, 2, 3].map(s => (
+            <div 
+              key={s} 
+              className={`h-1.5 flex-1 rounded-full transition-colors ${s <= step ? 'bg-[#4A7C59]' : 'bg-stone-200'}`}
+            />
+          ))}
+        </div>
 
-          {/* Screenshot Tab */}
-          <TabsContent value="screenshot" className="animate-fade-in-up">
-            <div className="fresh-card-static p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
-                <Camera className="w-5 h-5 text-[#4A7C59] mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-[#1A2E1A]">Screenshot Upload</p>
-                  <p className="text-sm text-stone-500 mt-1">
-                    Upload multiple screenshots of your recipe ingredients and our AI will extract them all.
-                  </p>
+        {/* Step 1: Basic Info */}
+        {step === 1 && (
+          <div className="fresh-card-static p-6 space-y-6 animate-fade-in-up">
+            <div className="space-y-2">
+              <Label className="text-[#1A2E1A]">Recipe Name *</Label>
+              <Input
+                placeholder="e.g., Honey Garlic Chicken"
+                value={recipeName}
+                onChange={(e) => setRecipeName(e.target.value)}
+                className="fresh-input text-lg"
+                data-testid="recipe-name-input"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#1A2E1A]">Source (optional)</Label>
+              <Select value={source} onValueChange={setSource}>
+                <SelectTrigger className="fresh-input">
+                  <SelectValue placeholder="Where is this recipe from?" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {RECIPE_SOURCES.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {source === "other" && (
+                <Input
+                  placeholder="Enter source name"
+                  value={sourceOther}
+                  onChange={(e) => setSourceOther(e.target.value)}
+                  className="fresh-input mt-2"
+                />
+              )}
+              
+              {source === "url" && (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="https://example.com/recipe"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    className="fresh-input flex-1"
+                  />
+                  <Button 
+                    onClick={handleUrlImport} 
+                    disabled={loading}
+                    className="btn-primary"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Import"}
+                  </Button>
                 </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#1A2E1A]">Servings</Label>
+                <Select value={servings.toString()} onValueChange={(v) => setServings(parseInt(v))}>
+                  <SelectTrigger className="fresh-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {[1,2,3,4,5,6,8,10,12].map(n => (
+                      <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#1A2E1A]">Prep Time</Label>
+                <Input
+                  placeholder="15 min"
+                  value={prepTime}
+                  onChange={(e) => setPrepTime(e.target.value)}
+                  className="fresh-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#1A2E1A]">Cook Time</Label>
+                <Input
+                  placeholder="30 min"
+                  value={cookTime}
+                  onChange={(e) => setCookTime(e.target.value)}
+                  className="fresh-input"
+                />
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => setStep(2)} 
+              disabled={!recipeName.trim()}
+              className="btn-primary w-full py-6"
+            >
+              Next: Add Ingredients
+            </Button>
+          </div>
+        )}
+
+        {/* Step 2: Ingredients */}
+        {step === 2 && (
+          <div className="fresh-card-static p-6 space-y-6 animate-fade-in-up">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-[#1A2E1A]">Ingredients</h2>
+              <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
+                ← Back
+              </Button>
+            </div>
+
+            {/* Input mode toggle */}
+            <div className="flex rounded-xl bg-stone-100 p-1">
+              <button
+                onClick={() => setInputMode("paste")}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  inputMode === "paste" ? "bg-white shadow text-[#1A2E1A]" : "text-stone-500"
+                }`}
+              >
+                Paste Text
+              </button>
+              <button
+                onClick={() => setInputMode("screenshot")}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  inputMode === "screenshot" ? "bg-white shadow text-[#1A2E1A]" : "text-stone-500"
+                }`}
+              >
+                Screenshot
+              </button>
+            </div>
+
+            {inputMode === "paste" ? (
+              <Textarea
+                placeholder="Paste your ingredients here...
+
+2 chicken breasts
+1 tbsp olive oil
+3 cloves garlic, minced
+2 tbsp honey"
+                value={pasteIngredients}
+                onChange={(e) => setPasteIngredients(e.target.value)}
+                className="fresh-input min-h-[200px] font-mono text-sm"
+              />
+            ) : (
+              <div className="space-y-4">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleIngredientImages}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                
+                {ingredientPreviews.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {ingredientPreviews.map((preview, i) => (
+                      <div key={i} className="relative group">
+                        <img src={preview} alt="" className="w-full h-24 object-cover rounded-lg" />
+                        <button
+                          onClick={() => removeIngredientImage(i)}
+                          className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3 text-red-500" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-24 border-2 border-dashed border-stone-300 rounded-lg flex items-center justify-center hover:border-[#4A7C59] transition-colors"
+                    >
+                      <Plus className="w-6 h-6 text-stone-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-12 border-2 border-dashed border-stone-300 rounded-xl hover:border-[#4A7C59] transition-colors"
+                  >
+                    <Camera className="w-10 h-10 text-stone-400 mx-auto mb-2" />
+                    <p className="text-stone-500">Upload ingredient screenshots</p>
+                  </button>
+                )}
+              </div>
+            )}
+
+            <Button 
+              onClick={parseIngredients} 
+              disabled={loading || (inputMode === "paste" ? !pasteIngredients.trim() : ingredientImages.length === 0)}
+              className="btn-primary w-full py-6"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <><Sparkles className="w-5 h-5 mr-2" />Parse Ingredients</>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Step 3: Review & Instructions */}
+        {step === 3 && (
+          <div className="space-y-6 animate-fade-in-up">
+            {/* Ingredients Review */}
+            <div className="fresh-card-static p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-[#1A2E1A]">
+                  Ingredients ({ingredients.length})
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
+                  ← Edit
+                </Button>
+              </div>
+              
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {ingredients.map((ing, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg">
+                    <span className="text-sm">
+                      <span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span>{" "}
+                      {ing.name}
+                    </span>
+                    <button onClick={() => removeIngredient(i)} className="text-stone-400 hover:text-red-500">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="fresh-card-static p-6 space-y-4">
+              <h2 className="font-semibold text-[#1A2E1A]">Instructions (optional)</h2>
+              
+              <div className="flex rounded-xl bg-stone-100 p-1">
+                <button
+                  onClick={() => setInputMode("paste")}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                    inputMode === "paste" ? "bg-white shadow text-[#1A2E1A]" : "text-stone-500"
+                  }`}
+                >
+                  Paste
+                </button>
+                <button
+                  onClick={() => setInputMode("screenshot")}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                    inputMode === "screenshot" ? "bg-white shadow text-[#1A2E1A]" : "text-stone-500"
+                  }`}
+                >
+                  Screenshot
+                </button>
               </div>
 
-              {!isImageParsed ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-[#1A2E1A]">Recipe Name *</Label>
-                    <Input
-                      placeholder="e.g., Honey Garlic Chicken"
-                      value={imageName}
-                      onChange={(e) => setImageName(e.target.value)}
-                      className="fresh-input"
-                      data-testid="image-recipe-name"
-                    />
-                  </div>
-
+              {inputMode === "paste" ? (
+                <Textarea
+                  placeholder="Paste instructions (optional)..."
+                  value={pasteInstructions}
+                  onChange={(e) => setPasteInstructions(e.target.value)}
+                  className="fresh-input min-h-[120px] font-mono text-sm"
+                />
+              ) : (
+                <div className="space-y-3">
                   <input
                     type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageSelect}
+                    ref={instructionsFileInputRef}
+                    onChange={handleInstructionImages}
                     accept="image/*"
                     multiple
                     className="hidden"
                   />
                   
-                  {/* Image previews grid */}
-                  {imagePreviews.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <img 
-                            src={preview} 
-                            alt={`Ingredient image ${index + 1}`} 
-                            className="w-full h-32 object-cover rounded-xl bg-stone-100"
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeIngredientImage(index)}
-                            className="absolute top-2 right-2 bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  {instructionPreviews.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {instructionPreviews.map((preview, i) => (
+                        <div key={i} className="relative group">
+                          <img src={preview} alt="" className="w-full h-20 object-cover rounded-lg" />
+                          <button
+                            onClick={() => removeInstructionImage(i)}
+                            className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                          <span className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                            {index + 1}
-                          </span>
+                            <Trash2 className="w-3 h-3 text-red-500" />
+                          </button>
                         </div>
                       ))}
-                      {/* Add more button */}
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-stone-300 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
+                      <button
+                        onClick={() => instructionsFileInputRef.current?.click()}
+                        className="h-20 border-2 border-dashed border-stone-300 rounded-lg flex items-center justify-center"
                       >
-                        <Plus className="w-6 h-6 text-stone-400" />
-                        <span className="text-xs text-stone-400 mt-1">Add more</span>
-                      </div>
+                        <Plus className="w-5 h-5 text-stone-400" />
+                      </button>
                     </div>
-                  )}
-                  
-                  {imagePreviews.length === 0 && (
-                    <div 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-stone-300 rounded-2xl p-12 text-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
-                      data-testid="image-upload-area"
+                  ) : (
+                    <button
+                      onClick={() => instructionsFileInputRef.current?.click()}
+                      className="w-full py-8 border-2 border-dashed border-stone-300 rounded-xl hover:border-[#4A7C59] transition-colors"
                     >
-                      <Upload className="w-12 h-12 text-stone-400 mx-auto mb-4" />
-                      <p className="text-stone-600 mb-2">Click to upload screenshots</p>
-                      <p className="text-sm text-stone-400">Upload multiple images - PNG, JPG up to 10MB each</p>
-                    </div>
+                      <Upload className="w-8 h-8 text-stone-400 mx-auto mb-2" />
+                      <p className="text-stone-500 text-sm">Upload instruction screenshots</p>
+                    </button>
                   )}
-
-                  <Button
-                    onClick={handleImageParse}
-                    disabled={loading || imageFiles.length === 0}
-                    className="btn-primary w-full py-6"
-                    data-testid="parse-image-btn"
-                  >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                      <><Sparkles className="w-5 h-5 mr-2" />Extract Ingredients {imageFiles.length > 0 && `(${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''})`}</>
-                    )}
-                  </Button>
-                  {imageFiles.length === 0 && (
-                    <p className="text-sm text-stone-500 text-center mt-2" data-testid="upload-helper-text">
-                      👆 Upload images above to enable extraction
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{imageName}</h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-sm text-stone-500">Serves:</span>
-                        <select
-                          value={imageServings}
-                          onChange={(e) => setImageServings(Number(e.target.value))}
-                          className="px-3 py-1 rounded-lg border border-stone-200 text-sm text-[#1A2E1A] focus:outline-none focus:ring-2 focus:ring-[#4A7C59]/20"
-                        >
-                          {[1,2,3,4,5,6,7,8,10,12].map(n => (
-                            <option key={n} value={n}>{n} {n === 1 ? 'person' : 'people'}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <Button variant="outline" onClick={() => { setIsImageParsed(false); setImageIngredients([]); setIsInstructionsParsed(false); setImageInstructions([]); }}>
-                      Start Over
-                    </Button>
-                  </div>
-
-                  {imageRawText && (
-                    <div className="p-4 rounded-xl bg-stone-50 border border-stone-200">
-                      <p className="text-xs text-stone-500 mb-2">Extracted ingredients text:</p>
-                      <p className="text-sm text-stone-600 whitespace-pre-wrap">{imageRawText}</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">
-                      Ingredients ({imageIngredients.length})
-                    </h4>
-                    {imageIngredients.length > 0 ? (
-                      <div className="space-y-2">
-                        {imageIngredients.map((ing, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
-                            <div className="flex items-center gap-3">
-                              <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>
-                                {ing.category}
-                              </span>
-                              <span className="text-[#1A2E1A]">
-                                <span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
-                              </span>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => removeImageIngredient(index)} className="text-stone-400 hover:text-[#E07A5F]">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-stone-500 text-sm">No ingredients extracted. Try a clearer image.</p>
-                    )}
-                  </div>
-
-                  {/* Instructions Image Upload Section */}
-                  <div className="border-t border-stone-200 pt-6 space-y-4">
-                    <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
-                      <Camera className="w-5 h-5 text-[#4A7C59] mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-[#1A2E1A]">Instructions Screenshot (Optional)</p>
-                        <p className="text-sm text-stone-500 mt-1">
-                          Upload a screenshot of cooking instructions to extract steps.
-                        </p>
-                      </div>
-                    </div>
-
-                    <input
-                      type="file"
-                      ref={instructionsFileInputRef}
-                      onChange={handleInstructionsImageSelect}
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                    />
-
-                    {!isInstructionsParsed ? (
-                      <div className="space-y-4">
-                        {/* Instructions image previews grid */}
-                        {instructionsImagePreviews.length > 0 && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {instructionsImagePreviews.map((preview, index) => (
-                              <div key={index} className="relative group">
-                                <img 
-                                  src={preview} 
-                                  alt={`Instructions image ${index + 1}`} 
-                                  className="w-full h-24 object-cover rounded-lg bg-stone-100"
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => removeInstructionsImage(index)}
-                                  className="absolute top-1 right-1 bg-white h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                                <span className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                                  {index + 1}
-                                </span>
-                              </div>
-                            ))}
-                            {/* Add more button */}
-                            <div 
-                              onClick={() => instructionsFileInputRef.current?.click()}
-                              className="border-2 border-dashed border-stone-300 rounded-lg h-24 flex flex-col items-center justify-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
-                            >
-                              <Plus className="w-5 h-5 text-stone-400" />
-                              <span className="text-xs text-stone-400">Add</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {instructionsImagePreviews.length === 0 && (
-                          <div 
-                            onClick={() => instructionsFileInputRef.current?.click()}
-                            className="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#4A7C59]/50 transition-colors"
-                            data-testid="instructions-upload-area"
-                          >
-                            <Upload className="w-10 h-10 text-stone-400 mx-auto mb-3" />
-                            <p className="text-stone-600 mb-1">Click to upload instructions screenshots</p>
-                            <p className="text-xs text-stone-400">Upload multiple images - PNG, JPG up to 10MB each</p>
-                          </div>
-                        )}
-
-                        {instructionsImagePreviews.length > 0 && (
-                          <Button
-                            onClick={handleInstructionsParse}
-                            disabled={instructionsLoading}
-                            className="btn-secondary w-full py-4"
-                            data-testid="parse-instructions-btn"
-                          >
-                            {instructionsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                              <><Sparkles className="w-5 h-5 mr-2" />Extract Instructions ({instructionsImageFiles.length} image{instructionsImageFiles.length > 1 ? 's' : ''})</>
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">
-                            Instructions ({imageInstructions.length})
-                          </h4>
-                          <Button variant="ghost" size="sm" onClick={() => { setIsInstructionsParsed(false); setImageInstructions([]); setInstructionsImageFiles([]); setInstructionsImagePreviews([]); setImagePrepTime(""); setImageCookTime(""); }}>
-                            Re-upload
-                          </Button>
-                        </div>
-
-                        {/* Cooking Times Display */}
-                        {(imagePrepTime || imageCookTime) && (
-                          <div className="flex gap-4 p-3 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
-                            {imagePrepTime && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-stone-500">Prep:</span>
-                                <span className="text-sm font-medium text-[#4A7C59]">{imagePrepTime}</span>
-                              </div>
-                            )}
-                            {imageCookTime && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-stone-500">Cook:</span>
-                                <span className="text-sm font-medium text-[#4A7C59]">{imageCookTime}</span>
-                              </div>
-                            )}
-                            {imagePrepTime && imageCookTime && (
-                              <div className="flex items-center gap-2 ml-auto">
-                                <span className="text-xs text-stone-500">Total:</span>
-                                <span className="text-sm font-bold text-[#1A2E1A]">
-                                  {(() => {
-                                    const parseTime = (t) => {
-                                      const match = t.match(/(\d+)/);
-                                      return match ? parseInt(match[1]) : 0;
-                                    };
-                                    const total = parseTime(imagePrepTime) + parseTime(imageCookTime);
-                                    return `${total} min`;
-                                  })()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {instructionsRawText && (
-                          <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                            <p className="text-xs text-stone-500 mb-1">Extracted text:</p>
-                            <p className="text-xs text-stone-600 whitespace-pre-wrap max-h-20 overflow-y-auto">{instructionsRawText}</p>
-                          </div>
-                        )}
-
-                        {imageInstructions.length > 0 ? (
-                          <div className="space-y-2">
-                            {imageInstructions.map((step, index) => (
-                              <div key={index} className="flex items-start gap-4 p-3 rounded-xl bg-stone-50 border border-stone-200">
-                                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-sm font-bold">{index + 1}</span>
-                                <p className="text-[#1A2E1A] flex-1 pt-0.5 text-sm">{step}</p>
-                                <Button variant="ghost" size="sm" onClick={() => removeImageInstruction(index)} className="text-stone-400 hover:text-[#E07A5F]">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-stone-500 text-sm">No instructions extracted.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <Button onClick={handleSaveImageRecipe} disabled={loading || imageIngredients.length === 0} className="btn-primary w-full py-6" data-testid="save-image-recipe-btn">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Leaf className="w-5 h-5 mr-2" />Save Recipe</>)}
-                  </Button>
                 </div>
               )}
-            </div>
-          </TabsContent>
 
-          {/* Paste Tab */}
-          <TabsContent value="paste" className="animate-fade-in-up">
-            <div className="fresh-card-static p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#4A7C59]/5 border border-[#4A7C59]/20">
-                <ClipboardPaste className="w-5 h-5 text-[#4A7C59] mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-[#1A2E1A]">Paste Ingredients</p>
-                  <p className="text-sm text-stone-500 mt-1">
-                    Copy and paste your ingredient list and we'll parse it automatically.
-                  </p>
-                </div>
-              </div>
-
-              {!isParsed ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-[#1A2E1A]">Recipe Name *</Label>
-                    <Input
-                      placeholder="e.g., Honey Garlic Chicken"
-                      value={pasteName}
-                      onChange={(e) => setPasteName(e.target.value)}
-                      className="fresh-input"
-                      data-testid="paste-recipe-name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-[#1A2E1A]">Paste Ingredients *</Label>
-                    <Textarea
-                      placeholder="2 Chicken Breasts
-1 tbsp Olive Oil
-3 cloves Garlic
-2 tbsp Honey..."
-                      value={pasteIngredients}
-                      onChange={(e) => setPasteIngredients(e.target.value)}
-                      className="fresh-input min-h-[200px] font-mono text-sm"
-                      data-testid="paste-ingredients-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-[#1A2E1A]">Instructions (optional)</Label>
-                    <Textarea
-                      placeholder="Paste cooking instructions..."
-                      value={pasteInstructions}
-                      onChange={(e) => setPasteInstructions(e.target.value)}
-                      className="fresh-input min-h-[120px] font-mono text-sm"
-                    />
-                  </div>
-
-                  <Button onClick={handleParseIngredients} disabled={loading} className="btn-primary w-full py-6" data-testid="parse-btn">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Sparkles className="w-5 h-5 mr-2" />Parse Ingredients</>)}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-display text-xl font-semibold text-[#1A2E1A]">{pasteName}</h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-sm text-stone-500">Serves:</span>
-                        <select
-                          value={pasteServings}
-                          onChange={(e) => setPasteServings(Number(e.target.value))}
-                          className="px-3 py-1 rounded-lg border border-stone-200 text-sm text-[#1A2E1A] focus:outline-none focus:ring-2 focus:ring-[#4A7C59]/20"
-                        >
-                          {[1,2,3,4,5,6,7,8,10,12].map(n => (
-                            <option key={n} value={n}>{n} {n === 1 ? 'person' : 'people'}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <Button variant="outline" onClick={() => { setIsParsed(false); setParsedIngredients([]); setParsedInstructions([]); }}>
-                      Edit
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">Ingredients ({parsedIngredients.length})</h4>
-                    {parsedIngredients.map((ing, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
-                        <div className="flex items-center gap-3">
-                          <span className={`category-badge ${categoryColors[ing.category] || categoryColors.other}`}>{ing.category}</span>
-                          <span className="text-[#1A2E1A]">
-                            <span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
-                          </span>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => removeParsedIngredient(index)} className="text-stone-400 hover:text-[#E07A5F]">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {parsedInstructions.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider">Instructions ({parsedInstructions.length})</h4>
-                      {parsedInstructions.map((step, index) => (
-                        <div key={index} className="flex items-start gap-4 p-3 rounded-xl bg-stone-50 border border-stone-200">
-                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-sm font-bold">{index + 1}</span>
-                          <p className="text-[#1A2E1A] flex-1 pt-0.5">{step}</p>
-                          <Button variant="ghost" size="sm" onClick={() => removeParsedInstruction(index)} className="text-stone-400 hover:text-[#E07A5F]">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <Button onClick={handleSaveParsedRecipe} disabled={loading || parsedIngredients.length === 0} className="btn-primary w-full py-6">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Leaf className="w-5 h-5 mr-2" />Save Recipe</>)}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Import URL Tab */}
-          <TabsContent value="import" className="animate-fade-in-up">
-            <div className="fresh-card-static p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-stone-100 border border-stone-200">
-                <LinkIcon className="w-5 h-5 text-stone-600 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-[#1A2E1A]">URL Import</p>
-                  <p className="text-sm text-stone-500 mt-1">
-                    Works with public recipe pages. For private recipes, use Screenshot or Paste instead.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label className="text-[#1A2E1A]">Recipe URL</Label>
-                <div className="flex gap-3">
-                  <Input
-                    placeholder="https://example.com/recipe/..."
-                    value={importUrl}
-                    onChange={(e) => setImportUrl(e.target.value)}
-                    className="flex-1 fresh-input"
-                    data-testid="import-url-input"
-                  />
-                  <Button onClick={handleImportUrl} disabled={loading} className="btn-primary" data-testid="import-btn">
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Sparkles className="w-4 h-4 mr-2" />Import</>)}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Manual Entry Tab */}
-          <TabsContent value="manual" className="animate-fade-in-up">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="fresh-card-static p-8 space-y-6">
-                <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">Basic Info</h2>
-                
-                <div className="grid gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[#1A2E1A]">Recipe Name *</Label>
-                    <Input
-                      placeholder="e.g., Honey Garlic Chicken"
-                      value={recipe.name}
-                      onChange={(e) => setRecipe(prev => ({ ...prev, name: e.target.value }))}
-                      className="fresh-input"
-                      data-testid="recipe-name-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-[#1A2E1A]">Description</Label>
-                    <Textarea
-                      placeholder="Brief description..."
-                      value={recipe.description}
-                      onChange={(e) => setRecipe(prev => ({ ...prev, description: e.target.value }))}
-                      className="fresh-input min-h-[100px]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-[#1A2E1A]">Servings</Label>
-                      <Input type="number" min="1" value={recipe.servings} onChange={(e) => setRecipe(prev => ({ ...prev, servings: parseInt(e.target.value) || 2 }))} className="fresh-input" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[#1A2E1A]">Prep Time</Label>
-                      <Input placeholder="15 min" value={recipe.prep_time} onChange={(e) => setRecipe(prev => ({ ...prev, prep_time: e.target.value }))} className="fresh-input" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[#1A2E1A]">Cook Time</Label>
-                      <Input placeholder="30 min" value={recipe.cook_time} onChange={(e) => setRecipe(prev => ({ ...prev, cook_time: e.target.value }))} className="fresh-input" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="fresh-card-static p-8 space-y-6">
-                <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">Ingredients</h2>
-                
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
-                    <Input placeholder="Qty" value={newIngredient.quantity} onChange={(e) => setNewIngredient(prev => ({ ...prev, quantity: e.target.value }))} className="fresh-input" />
-                  </div>
-                  <div className="col-span-2">
-                    <Input placeholder="Unit" value={newIngredient.unit} onChange={(e) => setNewIngredient(prev => ({ ...prev, unit: e.target.value }))} className="fresh-input" />
-                  </div>
-                  <div className="col-span-3">
-                    <Input placeholder="Ingredient" value={newIngredient.name} onChange={(e) => setNewIngredient(prev => ({ ...prev, name: e.target.value }))} className="fresh-input" />
-                  </div>
-                  <div className="col-span-3">
-                    <Select value={newIngredient.category} onValueChange={(value) => setNewIngredient(prev => ({ ...prev, category: value }))}>
-                      <SelectTrigger className="fresh-input"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-white">
-                        {INGREDIENT_CATEGORIES.map(cat => (<SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-1">
-                    <Button type="button" onClick={addIngredient} className="w-full h-full btn-secondary">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {recipe.ingredients.length > 0 && (
-                  <div className="space-y-2">
-                    {recipe.ingredients.map((ing, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
-                        <div className="flex items-center gap-3">
-                          <span className={`category-badge category-${ing.category}`}>{ing.category}</span>
-                          <span className="text-[#1A2E1A]">{ing.quantity} {ing.unit} {ing.name}</span>
-                        </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeIngredient(index)} className="text-stone-400 hover:text-[#E07A5F]">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="fresh-card-static p-8 space-y-6">
-                <h2 className="font-display text-xl font-semibold text-[#1A2E1A]">Instructions</h2>
-                
-                <div className="flex gap-3">
-                  <Textarea placeholder="Add a step..." value={newInstruction} onChange={(e) => setNewInstruction(e.target.value)} className="fresh-input min-h-[80px]" />
-                  <Button type="button" onClick={addInstruction} className="btn-secondary self-end">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {recipe.instructions.length > 0 && (
-                  <div className="space-y-3">
-                    {recipe.instructions.map((step, index) => (
-                      <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-stone-50 border border-stone-200">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-sm font-bold">{index + 1}</span>
-                        <p className="text-[#1A2E1A] flex-1">{step}</p>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeInstruction(index)} className="text-stone-400 hover:text-[#E07A5F]">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => navigate("/recipes")}>Cancel</Button>
-                <Button type="submit" disabled={loading} className="btn-primary px-8">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Leaf className="w-4 h-4 mr-2" />Save Recipe</>)}
+              {(pasteInstructions.trim() || instructionImages.length > 0) && instructions.length === 0 && (
+                <Button 
+                  onClick={parseInstructions} 
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Parse Instructions"}
                 </Button>
-              </div>
-            </form>
-          </TabsContent>
-        </Tabs>
+              )}
+
+              {instructions.length > 0 && (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {instructions.map((step, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg">
+                      <span className="w-6 h-6 rounded-full bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        {i + 1}
+                      </span>
+                      <p className="text-sm flex-1">{step}</p>
+                      <button onClick={() => removeInstruction(i)} className="text-stone-400 hover:text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Save Button */}
+            <Button 
+              onClick={saveRecipe} 
+              disabled={loading}
+              className="btn-primary w-full py-6"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <><Leaf className="w-5 h-5 mr-2" />Save Recipe</>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
