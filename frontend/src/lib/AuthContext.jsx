@@ -23,9 +23,9 @@ export function AuthProvider({ children }) {
   };
 
   const login = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + '/auth/callback';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    // Redirect to backend Google OAuth endpoint
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+    window.location.href = `${backendUrl}/api/auth/google/login`;
   };
 
   const logout = async () => {
@@ -37,19 +37,8 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const handleCallback = async (sessionId) => {
-    try {
-      const response = await api.createSession(sessionId);
-      setUser(response.data);
-      return true;
-    } catch (error) {
-      console.error('Auth callback error:', error);
-      return false;
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, handleCallback, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
