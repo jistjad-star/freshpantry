@@ -1,0 +1,50 @@
+name: freshpantry
+region: lon
+services:
+  # Backend Service
+  - name: backend
+    github:
+      repo: jistjad-star/freshpantry
+      branch: main
+      deploy_on_push: true
+    source_dir: backend
+    environment_slug: python
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    run_command: uvicorn server:app --host 0.0.0.0 --port 8080
+    envs:
+      - key: MONGO_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: DB_NAME
+        scope: RUN_TIME
+        value: freshpantry
+      - key: EMERGENT_LLM_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        value: ${APP_URL}
+    http_port: 8080
+    routes:
+      - path: /api
+
+  # Frontend Service
+  - name: frontend
+    github:
+      repo: jistjad-star/freshpantry
+      branch: main
+      deploy_on_push: true
+    source_dir: frontend
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    build_command: yarn install && yarn build
+    run_command: npx serve -s build -l 8080
+    envs:
+      - key: REACT_APP_BACKEND_URL
+        scope: BUILD_TIME
+        value: ${APP_URL}
+    http_port: 8080
+    routes:
+      - path: /
