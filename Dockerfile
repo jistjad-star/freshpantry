@@ -24,34 +24,9 @@ COPY backend/ ./backend/
 # Copy frontend build
 COPY --from=frontend-build /app/frontend/build /var/www/html
 
-# Nginx config - proxy /api to backend
-RUN rm /etc/nginx/sites-enabled/default
-COPY <<EOF /etc/nginx/sites-enabled/default
-server {
-    listen 8080;
-    
-    location / {
-        root /var/www/html;
-        try_files \$uri \$uri/ /index.html;
-    }
-    
-    location /api {
-        proxy_pass http://127.0.0.1:8001;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    }
-}
-EOF
-
-# Startup script
-COPY <<EOF /start.sh
-#!/bin/bash
-set -e
-nginx
-cd /app/backend
-exec uvicorn server:app --host 127.0.0.1 --port 8001
-EOF
+# Copy config files
+COPY nginx.conf /etc/nginx/sites-enabled/default
+COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 8080
