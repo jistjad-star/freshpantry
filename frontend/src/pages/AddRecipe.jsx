@@ -326,9 +326,9 @@ export default function AddRecipe() {
               {source === "url" && (
                 <div className="flex gap-2 mt-2">
                   <Input
-                    placeholder="https://example.com/recipe"
+                    placeholder="Paste URL or text containing URL"
                     value={sourceUrl}
-                    onChange={(e) => setSourceUrl(e.target.value)}
+                    onChange={handleUrlChange}
                     className="fresh-input flex-1"
                   />
                   <Button 
