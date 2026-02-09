@@ -78,19 +78,24 @@ export default function WeeklyPlanner() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [recipesRes, planRes, suggestionsRes, groupsRes] = await Promise.all([
+        // Load essential data first (fast)
+        const [recipesRes, planRes, groupsRes] = await Promise.all([
           api.getRecipes(), 
           api.getWeeklyPlan(currentWeek),
-          api.getMealSuggestions().catch(() => ({ data: { suggestions: [] } })),
           api.getRecipesGrouped().catch(() => ({ data: { groups: [] } }))
         ]);
         setRecipes(recipesRes.data || []);
-        setSuggestions(suggestionsRes.data?.suggestions || []);
         setRecipeGroups(groupsRes.data?.groups || []);
         const plan = {};
         if (planRes.data?.days) { planRes.data.days.forEach(day => { plan[day.day] = day.recipe_ids; }); }
         setWeeklyPlan(plan);
-      } catch (error) { console.error("Error:", error); } finally { setLoading(false); }
+        setLoading(false);
+        
+        // Load AI suggestions in background (slow)
+        api.getMealSuggestions().then(res => {
+          setSuggestions(res.data?.suggestions || []);
+        }).catch(() => {});
+      } catch (error) { console.error("Error:", error); setLoading(false); }
     };
     fetchData();
   }, [currentWeek]);
