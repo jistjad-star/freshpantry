@@ -118,6 +118,21 @@ export default function WeeklyPlanner() {
     setWeeklyPlan(prev => ({ ...prev, [day]: (prev[day] || []).filter(id => id !== recipeId) }));
   };
 
+  const handleCookedThis = async (recipeId, day) => {
+    setCookingRecipe(recipeId);
+    try {
+      const response = await api.cookRecipe(recipeId, 1);
+      toast.success(`Marked as cooked! ${response.data.deducted_count || 0} ingredients updated in pantry`);
+      // Remove from planner after cooking
+      removeRecipeFromDay(day, recipeId);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to mark as cooked");
+    } finally {
+      setCookingRecipe(null);
+    }
+  };
+
   const savePlan = async () => {
     setSaving(true);
     try {
