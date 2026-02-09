@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const MAX_MEALS_PER_WEEK = 7;
+const MAX_MEALS_PER_DAY = 4; // breakfast, lunch, dinner, snack
 
 export default function WeeklyPlanner() {
   const navigate = useNavigate();
@@ -102,10 +102,12 @@ export default function WeeklyPlanner() {
   }, [currentWeek]);
 
   const getTotalMeals = () => DAYS.reduce((sum, day) => sum + (weeklyPlan[day]?.length || 0), 0);
+  const getMealsForDay = (day) => (weeklyPlan[day] || []).length;
+  const canAddToDay = (day) => getMealsForDay(day) < MAX_MEALS_PER_DAY;
 
   const addRecipeToDay = (day, recipeId) => {
-    if (getTotalMeals() >= MAX_MEALS_PER_WEEK) {
-      toast.error(`Maximum ${MAX_MEALS_PER_WEEK} meals per week. Remove one to add another.`);
+    if (!canAddToDay(day)) {
+      toast.error(`Maximum ${MAX_MEALS_PER_DAY} meals per day. Remove one to add another.`);
       return;
     }
     
