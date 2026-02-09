@@ -726,14 +726,16 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
         return consolidated
     
     # Otherwise try AI for smarter consolidation
-    if not EMERGENT_LLM_KEY:
+    if not openai_client:
         return consolidated
     
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"consolidate-{uuid.uuid4()}",
-            system_message="""You are a helpful assistant that consolidates shopping list items.
+        items_text = "\n".join([f"- {item.quantity} {item.unit} {item.name} (from: {item.recipe_source or 'manual'})" for item in items])
+        
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": """You are a helpful assistant that consolidates shopping list items.
             Combine similar ingredients and ADD their quantities together.
             Example: "2 cups flour" + "1 cup flour" = "3 cups flour"
             Example: "1 onion" + "2 onions" = "3 onions"
@@ -750,19 +752,15 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
             - checked: false
             - recipe_source: string (list all source recipes) or null
             
-            No markdown or explanation, just the JSON array."""
-        ).with_model("openai", "gpt-5.2")
-        
-        items_text = "\n".join([f"- {item.quantity} {item.unit} {item.name} (from: {item.recipe_source or 'manual'})" for item in items])
-        
-        user_message = UserMessage(
-            text=f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}"
+            No markdown or explanation, just the JSON array."""},
+                {"role": "user", "content": f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}"}
+            ]
         )
         
-        response = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         
         import json
-        clean_response = response.strip()
+        clean_response = result.strip()
         if clean_response.startswith("```"):
             clean_response = clean_response.split("```")[1]
             if clean_response.startswith("json"):
