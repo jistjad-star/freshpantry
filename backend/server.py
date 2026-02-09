@@ -1137,7 +1137,18 @@ async def parse_ingredients(data: ParseIngredientsRequest):
         steps = re.split(r'\n+|\d+\.\s*', raw_instructions)
         instructions = [step.strip() for step in steps if step.strip()]
     
-    return ParseIngredientsResponse(ingredients=ingredients, instructions=instructions)
+    # Estimate cooking times
+    prep_time, cook_time = estimate_cooking_times(
+        [ing.model_dump() for ing in ingredients], 
+        data.recipe_name or ""
+    )
+    
+    return ParseIngredientsResponse(
+        ingredients=ingredients, 
+        instructions=instructions,
+        prep_time=prep_time,
+        cook_time=cook_time
+    )
 
 @api_router.post("/parse-image", response_model=ImageParseResponse)
 async def parse_image(file: UploadFile = File(...)):
