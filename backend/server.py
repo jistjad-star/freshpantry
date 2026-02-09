@@ -47,6 +47,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Health check endpoint (outside /api for DigitalOcean)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for container orchestration"""
+    db_status = "disconnected"
+    if db is not None:
+        try:
+            await client.admin.command('ping')
+            db_status = "connected"
+        except Exception:
+            db_status = "error"
+    return {"status": "ok", "database": db_status}
+
 # ============== MODELS ==============
 
 class User(BaseModel):
