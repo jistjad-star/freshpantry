@@ -216,7 +216,7 @@ export default function WeeklyPlanner() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      disabled={!canAddMore}
+                      disabled={!canAddToDay(day)}
                       className="text-[#4A7C59] hover:bg-[#4A7C59]/10 h-8 w-8 p-0"
                       data-testid={`add-meal-${day.toLowerCase()}`}
                     >
