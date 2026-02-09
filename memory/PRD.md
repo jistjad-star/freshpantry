@@ -27,9 +27,11 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ### Meal Planning
 - [x] Weekly planner (7 days)
+- [x] **Multiple recipes per day** - Up to 4 meals per day (breakfast, lunch, dinner, snack)
 - [x] "Add to Planner" button on recipe pages
 - [x] Recipe selection popup with 3 tabs (Suggested, By Ingredient, All)
 - [x] Servings display in planner
+- [x] "I Cooked This" feature - Deducts ingredients from pantry
 
 ### AI Meal Suggestions  
 - [x] Suggestions based on pantry ingredients
