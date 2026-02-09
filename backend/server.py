@@ -887,6 +887,77 @@ async def scrape_recipe_from_url(url: str) -> dict:
 
 # ============== AUTH ROUTES ==============
 
+@api_router.get("/auth/google/login")
+async def google_login(request: Request):
+    """Initiate Google OAuth login"""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+    
+    redirect_uri = f"{APP_URL}/api/auth/google/callback"
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@api_router.get("/auth/google/callback")
+async def google_callback(request: Request, response: Response):
+    """Handle Google OAuth callback"""
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get('userinfo')
+        
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Failed to get user info")
+        
+        email = user_info.get('email')
+        name = user_info.get('name')
+        picture = user_info.get('picture')
+        
+        # Check if user exists
+        existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+        
+        if existing_user:
+            user_id = existing_user["user_id"]
+            await db.users.update_one(
+                {"user_id": user_id},
+                {"$set": {"name": name, "picture": picture}}
+            )
+        else:
+            user_id = f"user_{uuid.uuid4().hex[:12]}"
+            user_doc = {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(user_doc)
+        
+        # Create session token
+        session_token = str(uuid.uuid4())
+        session_doc = {
+            "user_id": user_id,
+            "session_token": session_token,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.user_sessions.insert_one(session_doc)
+        
+        # Create redirect response with cookie
+        redirect_response = RedirectResponse(url=APP_URL, status_code=302)
+        redirect_response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/",
+            max_age=7 * 24 * 60 * 60
+        )
+        
+        return redirect_response
+        
+    except Exception as e:
+        logger.error(f"Google OAuth error: {e}")
+        return RedirectResponse(url=f"{APP_URL}?error=auth_failed", status_code=302)
+
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
     """Exchange session_id for session_token"""
