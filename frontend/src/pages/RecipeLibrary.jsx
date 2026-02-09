@@ -149,11 +149,23 @@ export default function RecipeLibrary() {
   // Get all unique categories from recipes
   const allCategories = [...new Set(recipes.flatMap(r => r.categories || []))];
 
+  // Infer meal type from recipe name
+  const getRecipeMealType = (recipe) => {
+    const nameLower = recipe.name.toLowerCase();
+    for (const [type, config] of Object.entries(MEAL_TYPE_CONFIG)) {
+      if (config.keywords.some(kw => nameLower.includes(kw))) {
+        return type;
+      }
+    }
+    return null;
+  };
+
   const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || (recipe.categories || []).includes(selectedCategory);
     const matchesFavorites = !showFavorites || favorites.includes(recipe.id);
-    return matchesSearch && matchesCategory && matchesFavorites;
+    const matchesMealType = !selectedMealType || getRecipeMealType(recipe) === selectedMealType;
+    return matchesSearch && matchesCategory && matchesFavorites && matchesMealType;
   });
 
   if (loading) {
