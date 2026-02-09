@@ -2335,10 +2335,24 @@ async def estimate_shopping_costs(request: Request):
 # Include the router in the main app
 app.include_router(api_router)
 
+# Get CORS origins from environment
+cors_origins_str = os.environ.get('CORS_ORIGINS', '')
+if cors_origins_str and cors_origins_str != '*':
+    cors_origins = [origin.strip() for origin in cors_origins_str.split(',') if origin.strip()]
+else:
+    # For production with credentials, we need specific origins
+    # Allow common Emergent preview/deployment domains
+    cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:8001",
+        "https://localhost:3000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.emergentagent\.com",  # Allow all Emergent subdomains
     allow_methods=["*"],
     allow_headers=["*"],
 )
