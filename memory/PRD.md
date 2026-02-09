@@ -70,8 +70,10 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 ## Changelog
 
 ### 2025-02-09 (Session 5 - Current)
-- **Fixed**: Shopping List Edit Feature - Added inline edit UI (pencil icon, quantity/unit inputs, save/cancel buttons) that was missing from the rendered JSX despite the handlers being defined
-- **Verified**: Shop All Button - Opens multiple browser tabs (one per unchecked item) with 300ms delays to avoid popup blockers, capped at 10 tabs
+- **Fixed**: Shopping List Edit Feature - Added inline edit UI (pencil icon, quantity/unit inputs, save/cancel buttons)
+- **Verified**: Shop All Button - Opens multiple browser tabs (one per unchecked item) at selected supermarket
+- **Added**: Multiple recipes per day in Weekly Planner - Changed from 7 meals/week limit to 4 meals/day limit
+- **Added**: Meal Type Filters in Recipe Library - Breakfast, Lunch, Dinner, Snack buttons filter by keyword matching
 
 ### 2025-02-09 (Session 4)
 - **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
