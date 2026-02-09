@@ -36,6 +36,40 @@ export default function Layout() {
   const location = useLocation();
   const { user, loading, login, logout } = useAuth();
 
+  // Show login screen if not authenticated
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center">
+        <div className="text-center">
+          <Leaf className="w-12 h-12 text-[#4A7C59] mx-auto mb-4 animate-pulse" />
+          <p className="text-stone-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 rounded-2xl bg-[#4A7C59]/10 flex items-center justify-center mx-auto mb-6">
+            <Leaf className="w-10 h-10 text-[#4A7C59]" />
+          </div>
+          <h1 className="font-display text-3xl font-semibold text-[#1A2E1A] mb-2">Fresh Pantry</h1>
+          <p className="text-stone-500 mb-8">Your Kitchen Companion - Plan meals, manage recipes, and create smart shopping lists.</p>
+          <Button
+            onClick={login}
+            className="btn-primary text-lg px-8 py-6"
+            data-testid="login-btn"
+          >
+            <LogIn className="w-5 h-5 mr-2" />
+            Sign in with Google
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAF9] flex flex-col">
       {/* Header */}
