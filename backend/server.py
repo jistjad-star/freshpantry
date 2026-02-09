@@ -1316,6 +1316,36 @@ async def create_recipe(recipe_data: RecipeCreate, request: Request):
     await db.recipes.insert_one(doc)
     return recipe
 
+@api_router.post("/recipes/scrape-url")
+async def scrape_recipe_url(import_data: RecipeImport):
+    """Scrape a recipe URL and return data without saving"""
+    scraped = await scrape_recipe_from_url(import_data.url)
+    
+    if not scraped['name']:
+        scraped['name'] = "Imported Recipe"
+    
+    ingredients = []
+    if scraped['ingredients_text']:
+        ingredients = await parse_ingredients_with_ai(scraped['ingredients_text'], scraped['name'])
+    
+    instructions = []
+    if scraped['instructions_text']:
+        instructions = [step.strip() for step in scraped['instructions_text'].split('\n') if step.strip()]
+    
+    # Estimate times from instructions
+    prep_time, cook_time = estimate_cooking_times_from_instructions(instructions, scraped['name'])
+    
+    return {
+        "name": scraped['name'],
+        "description": scraped['description'],
+        "ingredients": [ing.model_dump() for ing in ingredients],
+        "instructions": instructions,
+        "source_url": scraped['source_url'],
+        "image_url": scraped['image_url'],
+        "prep_time": prep_time,
+        "cook_time": cook_time
+    }
+
 @api_router.post("/recipes/import", response_model=Recipe)
 async def import_recipe(import_data: RecipeImport, request: Request):
     """Import a recipe from URL"""
