@@ -375,7 +375,7 @@ export default function AddRecipe() {
                 
                 {images.length > 0 && (
                   <Button onClick={parseFromScreenshots} disabled={loading || !recipeName.trim()} className="btn-primary w-full">
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Parse {images.length} Image{images.length > 1 ? 's' : ''}</>}
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract from {images.length} Image{images.length > 1 ? 's' : ''}</>}
                   </Button>
                 )}
               </div>
