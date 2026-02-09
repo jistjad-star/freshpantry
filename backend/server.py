@@ -239,12 +239,16 @@ class ParseIngredientsRequest(BaseModel):
 class ParseIngredientsResponse(BaseModel):
     ingredients: List[Ingredient]
     instructions: List[str]
+    prep_time: str = ""
+    cook_time: str = ""
 
 class ImageParseResponse(BaseModel):
     ingredients_text: str
     ingredients: List[Ingredient]
     instructions_text: str = ""
     instructions: List[str] = []
+    prep_time: str = ""
+    cook_time: str = ""
 
 # ============== AUTH HELPER FUNCTIONS ==============
 
