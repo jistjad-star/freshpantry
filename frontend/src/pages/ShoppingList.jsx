@@ -438,22 +438,57 @@ export default function ShoppingList() {
                     {items.map((item) => {
                       const itemPrice = getItemPrice(item.name);
                       const searchTerm = `${item.name}`;
+                      const isEditing = editingItem === item.id;
                       return (
                         <div key={item.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white border border-stone-100 hover:border-[#4A7C59]/30'}`} data-testid={`item-${item.id}`}>
                           <Checkbox checked={item.checked} onCheckedChange={() => toggleItem(item.id)} className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]" />
                           <div className="flex-1">
-                            <span className={item.checked ? 'line-through text-stone-400' : 'text-[#1A2E1A]'}>
-                              <span className="text-[#4A7C59] font-medium">{item.quantity} {item.unit}</span> {item.name}
-                            </span>
-                            {item.recipe_source && <span className="block text-xs text-stone-400 mt-0.5">From: {item.recipe_source}</span>}
+                            {isEditing ? (
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  value={editQuantity} 
+                                  onChange={(e) => setEditQuantity(e.target.value)} 
+                                  className="w-16 h-8 text-sm fresh-input" 
+                                  placeholder="Qty"
+                                  data-testid={`edit-quantity-${item.id}`}
+                                />
+                                <Input 
+                                  value={editUnit} 
+                                  onChange={(e) => setEditUnit(e.target.value)} 
+                                  className="w-16 h-8 text-sm fresh-input" 
+                                  placeholder="Unit"
+                                  data-testid={`edit-unit-${item.id}`}
+                                />
+                                <span className="text-[#1A2E1A]">{item.name}</span>
+                                <Button variant="ghost" size="sm" onClick={() => saveEdit(item.id)} className="text-[#4A7C59] hover:text-[#3d6a4a] h-7 px-2" data-testid={`save-edit-${item.id}`}>
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-stone-400 hover:text-stone-600 h-7 px-2" data-testid={`cancel-edit-${item.id}`}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className={item.checked ? 'line-through text-stone-400' : 'text-[#1A2E1A]'}>
+                                  <span className="text-[#4A7C59] font-medium">{item.quantity} {item.unit}</span> {item.name}
+                                </span>
+                                {item.recipe_source && <span className="block text-xs text-stone-400 mt-0.5">From: {item.recipe_source}</span>}
+                              </>
+                            )}
                           </div>
-                          {itemPrice !== null && (
+                          {itemPrice !== null && !isEditing && (
                             <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${item.checked ? 'bg-stone-100 text-stone-400' : 'bg-blue-50 text-blue-700'}`}>
                               ~£{itemPrice.toFixed(2)}
                             </span>
                           )}
+                          {/* Edit button */}
+                          {!item.checked && !isEditing && (
+                            <Button variant="ghost" size="sm" onClick={() => startEditing(item)} className="text-stone-400 hover:text-[#4A7C59]" data-testid={`edit-btn-${item.id}`}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
                           {/* Shop buttons */}
-                          {!item.checked && (
+                          {!item.checked && !isEditing && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="text-xs border-stone-200 hover:border-[#4A7C59] hover:text-[#4A7C59]">
@@ -474,7 +509,7 @@ export default function ShoppingList() {
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
-                          <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="text-stone-400 hover:text-[#E07A5F]"><Trash2 className="w-4 h-4" /></Button>
+                          {!isEditing && <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="text-stone-400 hover:text-[#E07A5F]"><Trash2 className="w-4 h-4" /></Button>}
                         </div>
                       );
                     })}
