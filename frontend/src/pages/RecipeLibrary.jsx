@@ -455,7 +455,7 @@ export default function RecipeLibrary() {
                   </div>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         ) : viewMode === "all" && (
           <div className="fresh-card-static p-12 text-center">
