@@ -357,8 +357,8 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
     """Generate an AI image for a recipe"""
-    if not EMERGENT_LLM_KEY:
-        logger.warning("No EMERGENT_LLM_KEY found for image generation")
+    if not openai_client:
+        logger.warning("No OpenAI API key found for image generation")
         return ""
     
     try:
@@ -373,17 +373,16 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
         
         logger.info(f"Generating image for recipe: {recipe_name}")
         
-        image_gen = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY)
-        images = await image_gen.generate_images(
+        response = await openai_client.images.generate(
+            model="dall-e-3",
             prompt=prompt,
-            model="gpt-image-1",
-            number_of_images=1
+            size="1024x1024",
+            quality="standard",
+            n=1
         )
         
-        if images and len(images) > 0:
-            # Convert to base64 data URL
-            image_base64 = base64.b64encode(images[0]).decode('utf-8')
-            image_url = f"data:image/png;base64,{image_base64}"
+        if response.data and len(response.data) > 0:
+            image_url = response.data[0].url
             logger.info(f"Successfully generated image for {recipe_name}")
             return image_url
         
