@@ -2,88 +2,131 @@
 The user wants to build a full-stack application that converts recipes into weekly shopping lists.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Recipe Management**: Allow users to input recipes by manual entry, pasting text, or uploading screenshots. The app should generate AI images, auto-categorize recipes (with manual override), allow scaling of servings, and group recipes by shared ingredients. Users should be able to edit saved recipes and provide star ratings.
-2.  **User Accounts & Sharing**: The app must support Google Sign-In for user accounts to store all data. Users should be able to export their recipes and import recipes from other users.
+1.  **Recipe Management**: Allow users to input recipes by manual entry, pasting text, or uploading screenshots. The app should generate AI images, auto-categorize recipes (with manual override), allow scaling of servings, and group recipes by shared ingredients. Users should be able to edit saved recipes, provide star ratings, and mark recipes as favorites.
+2.  **User Accounts & Sharing**: The app must support Google Sign-In for user accounts to store all data. Users should be able to export their recipes and import recipes from other users via shareable links.
 3.  **Pantry & Suggestions**: A pantry system to track ingredients. The app should suggest meals based on pantry items (highlighting missing ingredients) and also allow AI-generation of new recipes from pantry contents. An Eat Now feature should provide an immediate, time-of-day appropriate meal suggestion.
-4.  **Weekly Planner**: A planner to organize up to 7 meals for the week, allowing users to add recipes from their library and specify servings for each planned meal.
-5.  **Smart Shopping List**: Generate a shopping list from the weekly plan that consolidates items, subtracts available ingredients from the pantry, and provides AI-powered cost estimates for UK supermarkets, including loyalty card discounts.
-6.  **UI/UX**: A calm and foody design with a fresh greens and orange theme. The UI should be intuitive, with quick-action links, filters for suggestions (by meal type), and recipe sorting (by popularity).
+4.  **Weekly Planner**: A planner to organize up to 7 meals for the week, allowing users to add recipes from their library and specify servings. It should include an I Cooked This feature to deduct ingredients from the pantry.
+5.  **Smart Shopping List**: Generate a shopping list from the weekly plan that consolidates items, subtracts available ingredients from the pantry, and provides AI-powered cost estimates for UK supermarkets. It should also include quick links to search for items on supermarket websites and allow last-minute edits to item quantities.
+6.  **UI/UX**: A calm and foody design with a fresh greens and orange theme. The UI should be intuitive, with quick-action links, filters for suggestions (by meal type), and recipe sorting (by popularity, favorites).
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application using FastAPI, MongoDB, and React. User authentication is handled via Google Sign-In. The application has a rich feature set, including a dashboard, recipe library with import/export, recipe detail view with an add to planner dropdown, an  page, a redesigned  page with AI generation, a smart shopping list with cost estimation, a pantry, and a weekly planner. Most of the user's requested features have been implemented.
+A full-stack application using FastAPI, MongoDB, and React. The application has been successfully configured and deployed to a third-party platform (DigitalOcean), which required a significant refactor of the authentication and build process.
+
+The app now uses a custom Google OAuth2 implementation (not Emergent-managed) and the standard OpenAI Python SDK for all AI features. Key features include a dashboard, recipe library (with search, sort, and filters for categories, ratings, and favorites), recipe detail view, a redesigned single-page  form, a weekly planner with an I cooked this feature, a smart shopping list with supermarket search links, a pantry, and a recipe sharing system via generated links.
 
 **Last working item**:
-The agent was implementing a feature to allow users to add star reviews to recipes and filter the library by popularity.
+The agent was implementing two user requests: changing the terminology on the Add Recipe page and adding an edit feature to the shopping list.
 
--   **Last item agent was working**: Implementing the star review system. The backend models and API endpoints have been created in . The agent was in the middle of updating the frontend  page to display reviews and allow users to submit new ones.
--   **Status**: IN PROGRESS
+-   **Last item agent was working**: Adding the ability for users to edit the quantity of an item directly on the  page. The agent has added the necessary state, handlers, and UI elements for this functionality.
+-   **Status**: USER VERIFICATION PENDING
 -   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1**: Deployment fails due to  errors (Priority: P0 - Blocker)
--   **Issue 2**: The star review and popularity filter feature is incomplete (Priority: P1)
+-   **Issue 1**: The Shop All button functionality needs verification (Priority: P1)
+-   **Issue 2**: The new Edit Item feature on the shopping list needs verification (Priority: P0)
 
 **Issues Detail**:
 -   **Issue 1**:
-    -   **Description**: The user reported that deploying the application fails. The provided logs show multiple  errors. This indicates the JWT token is not being validated correctly in the production environment, likely due to a misconfiguration or missing environment variable (e.g., ) that is present in the local sandbox but not in the production deployment.
-    -   **Attempted fixes**: None. An earlier health check by the deployment agent passed because it was run on the local sandbox and did not account for the production environment's configuration.
+    -   **Description**: The user reported that the Shop All button was only opening a search for a single ingredient instead of all items on the list.
+    -   **Attempted fixes**: The agent modified the  function in  to loop through all unchecked items and open each in a new tab, with a delay to prevent popup blockers.
     -   **Next debug checklist**:
-        1.  Inspect the JWT decoding and user authentication functions in  (around ).
-        2.  Verify that  and other security-related configurations are being loaded from environment variables ().
-        3.  Ensure the code has robust error handling if these critical environment variables are missing on startup.
-        4.  The fix will likely involve ensuring the code correctly reads from env vars, as the agent cannot set production variables itself.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a hard blocker preventing the application from being deployed and used in production.
-    -   **Status**: NOT STARTED
+        1.  Click the Shop All button and select a supermarket.
+        2.  Verify that multiple tabs open for each unchecked item.
+        3.  Check the browser's console for any errors, especially related to popup blocking.
+    -   **Why fix this issue and what will be achieved with the fix?**: Fulfills the user's request for a quick way to search for all shopping list items at a chosen supermarket.
+    -   **Status**: USER VERIFICATION PENDING
     -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: backend
-    -   **Blocked on other issue**: None. This issue blocks everything else.
+    -   **Should Test frontend/backend/both after fix?**: frontend
+    -   **Blocked on other issue**: None
 
 -   **Issue 2**:
-    -   **Description**: Complete the star review and popularity filter feature.
-    -   **Attempted fixes**: The agent created the backend models (), API endpoints (, and ), and started adding state, handlers, and UI to .
+    -   **Description**: The user requested the ability to edit the quantity/amount of an item directly on the shopping list page after the list has been generated.
+    -   **Attempted fixes**: The agent added state management and UI components (edit button, input field, save button) to  to allow inline editing of item quantities. The changes are local to the frontend state.
     -   **Next debug checklist**:
-        1.  In , finish wiring up the star rating input, comment box, and submit button to the state and API handlers.
-        2.  Ensure reviews are fetched and displayed correctly on page load.
-        3.  In , add a UI element (e.g., a button or dropdown) to sort recipes by popularity, which calls the API with .
-    -   **Why fix this issue and what will be achieved with the fix?**: Fulfills a direct user request for community engagement and recipe discovery.
-    -   **Status**: IN PROGRESS
+        1.  Navigate to the shopping list.
+        2.  Click the edit icon next to an item.
+        3.  Verify that an input field appears.
+        4.  Change the quantity and click the save icon.
+        5.  Confirm that the item's displayed quantity is updated.
+    -   **Why fix this issue and what will be achieved with the fix?**: Provides flexibility for users to make last-minute adjustments to their shopping list without regenerating it.
+    -   **Status**: USER VERIFICATION PENDING
     -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Should Test frontend/backend/both after fix?**: frontend
     -   **Blocked on other issue**: None
 
 **In progress Task List**:
--   **Task 1**: Complete Frontend for Star Reviews & Popularity Filter
-    -   **Where to resume**: Finish the implementation in  and then add the filter to .
-    -   **What will be achieved with this?**: Users will be able to rate recipes and sort the library by those ratings.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: None
+-   None.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks**:
-    -   **P0: Fix Deployment Auth Issue**: Resolve the  errors.
 -   **Future Tasks**:
     -   **P1: Drag-and-Drop Weekly Planner**: Make the planner UI more interactive.
-    -   **P2: Recipe Sharing Links**: Allow users to share recipes with other app users.
+    -   **P2: Whisk.com Integration**: A potential integration to provide direct add to basket functionality with UK supermarkets.
     -   **P2: Pantry Expiry Date Tracking**: Add a way to track when pantry items expire.
     -   **P2: Scan Receipt to Pantry**: A user-suggested enhancement to add items to the pantry by scanning a supermarket receipt photo.
 
 **Completed work in this session**
--   **Pantry Edit**: Implemented the ability to save edits to pantry items.
--   **Recipe Edit**: Created a flow to allow users to edit previously saved recipes.
--   **Add to Planner Dropdown**: Implemented a dropdown on the recipe detail page to add a recipe to a specific day of the week.
--   **Recipe Import/Export**: Added functionality to export and import recipes via JSON files.
--   **Cost Estimation Engine**: Built and refined a feature to estimate shopping list costs across UK supermarkets, including support for loyalty card pricing.
--   **Multiple Image Upload**: Enabled uploading multiple images for ingredient and instruction parsing.
--   **Meal Suggestion Filters**: Added filters (Breakfast, Lunch, etc.) to the meal suggestions page.
--   **Eat Now & Suggestions Page Redesign**: Implemented an Eat Now feature and completely redesigned the  page with a new, visually appealing AI-generated recipe card.
+-   **Deployment to DigitalOcean**: Successfully guided the user through deploying the app, which involved:
+    -   Creating a unified  to serve both frontend and backend.
+    -   Replacing Emergent-specific  with the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit SDK.
+    -   Replacing Emergent-managed Google Auth with a custom Google OAuth2 flow using .
+    -   Debugging and fixing numerous deployment issues related to environment variables, build dependencies (Node.js version, ), CORS, and MongoDB connection strings.
+-   **Recipe Sharing Links**: Replaced file-based import/export with a system for sharing recipes via unique, shareable URLs.
+-   **Favorites System**: Implemented a feature to heart recipes and filter the library to show only favorites.
+-   **Shopping List Enhancements**:
+    -   Added Quick Search Links to open supermarket websites with the item pre-searched.
+    -   Attempted to fix the Shop All button to open all items in new tabs.
+    -   Added an Edit Item feature for last-minute quantity changes.
+-   ** Page Redesign**: Overhauled the page into a single-page layout with clear options for input (URL, Screenshots, Paste Text) and changed parse to extract.
+-   **Cooking Time Calculation**: Implemented automatic estimation of prep and cook times based on recipe instructions.
+-   **I Cooked This Feature**: Added a button to the weekly planner that deducts a meal's ingredients from the pantry.
+-   **UI/UX Tweaks**:
+    -   Adjusted AI image generation prompts for more casual and realistic photos.
+    -   Added total cooking time to recipe cards.
+    -   Removed Made with Emergent branding from .
 
 **Earlier issues found/mentioned but not fixed**
--   The deployment blocker is the only major unresolved issue.
+-   **Issue 1: Monolithic Backend**: The  file has grown even larger and is now over 2500 lines. It urgently needs to be refactored into a modular structure (e.g., routers, models, services) to ensure future maintainability and reduce risk.
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -92,79 +135,211 @@ The agent was implementing a feature to allow users to add star reviews to recip
 
 
 **Key Technical Concepts**
--   **Backend**: FastAPI, Motor (async MongoDB), Pydantic, JWT Authentication.
+-   **Backend**: FastAPI, Motor, Pydantic, **Authlib** (for custom Google OAuth).
 -   **Frontend**: React, React Router, Context API, Tailwind CSS, Shadcn UI, .
--   **Integrations**: OpenAI (GPT-5.2 for Text/Vision,  for images) via , Emergent-managed Google Auth.
+-   **Deployment**: **DigitalOcean App Platform** using a single **Dockerfile** that serves both the Python backend and the static React frontend.
+-   **Integrations**: **OpenAI SDK** (standard Python package), Custom Google OAuth 2.0.
 
 **key DB schema**
+-   **favorites**: 
+-   **recipe_shares**: 
+-   **users**: 
 -   **recipes**: 
--   **reviews**:  (new collection)
 -   **pantry**: 
 -   **weekly_plans**: 
 
 **changes in tech stack**
--   None.
+-   **AI Integration**: Switched from  to the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit Python package.
+-   **Authentication**: Switched from Emergent-managed Google Auth to a custom-implemented Google OAuth2 flow using .
 
 **All files of reference**
--   : Contains all backend logic, including new review and deployment-critical auth logic.
--   : For the in-progress reviews feature.
--   : For the upcoming popularity filter.
--   : Recently redesigned.
--   : Updated for multi-image upload.
--   : New file for editing recipes.
--   : Contains the full product requirements and history.
+-   : Major changes for OpenAI SDK, Google OAuth, static file serving, and new API endpoints for sharing and favorites.
+-   : Completely rewritten into a single-page, multi-input form.
+-   : Updated with supermarket search links, a Shop All function, and an item edit feature.
+-   : Updated to use share links and a favorites system.
+-   : Rewritten to handle the custom Google OAuth flow.
+-   : New file to handle viewing/importing shared recipes.
+-   : New file, crucial for the DigitalOcean deployment.
+-   : New file defining the DigitalOcean deployment specification.
+-   : Updated to add usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit, , , and .
 
 **Areas that need refactoring**:
--    is critically large (>2200 lines). It urgently needs to be broken down into separate files for routes, models, and services to ensure maintainability. This technical debt is becoming a significant risk.
--   Several frontend pages (, , ) are complex and would benefit from logic extraction into custom hooks.
+-    is critically monolithic and requires immediate attention to be broken down into smaller, manageable modules (routes, models, services). This is a significant technical debt.
+-   The root directory contains now-unused deployment helper files (, ) from previous attempts, which should be cleaned up to avoid confusion.
 
 **key api endpoints**
--   : **(Failing in Production)** Endpoint for verifying user session.
--   : Adds a new review.
--   : Retrieves recipes sorted by rating.
--   : Estimates shopping costs.
--   : Edits an existing recipe.
--   : Creates a new AI recipe from pantry items.
+-   : Initiates the Google OAuth flow.
+-   : Handles the redirect from Google to create a session.
+-   : Toggles a recipe's favorite status.
+-   : Retrieves the current user's favorited recipe IDs.
+-   : Creates a shareable link for selected recipes.
+-   : Retrieves recipe data for a given share link.
+-   : Scrapes a URL and returns recipe data without saving it.
+-   : Deducts ingredients for a cooked meal from the pantry.
+-   : Health check endpoint for deployment monitoring.
 
 **Critical Info for New Agent**
--   **TOP PRIORITY (P0 - DEPLOYMENT BLOCKER):** The application cannot be deployed. User logs confirm that requests to  are returning  in the production environment. Your first task must be to diagnose and fix this authentication issue in . The likely cause is a problem with how the  environment variable is handled.
--   **Next Priority (P1):** After fixing the deployment blocker, complete the star review and popularity filter feature. The backend is mostly complete; the frontend work in  and  needs to be finished.
--   **Urgent Refactoring:** The  file is dangerously monolithic. After the critical fixes, you must propose and execute a refactoring plan to split it into smaller, manageable modules (e.g., , ).
+-   **Deployment Context**: The application is now fully configured for deployment on DigitalOcean via a . Do not use Emergent-specific deployment logic.
+-   **Authentication**: The app uses a custom Google OAuth flow. The  on the frontend calls backend endpoints () which then redirect to Google. All  auth URLs have been removed.
+-   **AI SDK**: All AI features use the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit Python package. The agent must have an  set in the environment to test these features.
+-   **Monolith Risk**: The  file is extremely large. Propose refactoring this file as a high-priority task after any immediate user requests are handled.
+-   **Testing**: The last few features ( fix and Shopping List edit) were implemented but not tested. Your first action should be to verify these.
 
 **documents and test reports created in this job**
 -   
 -   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.   - Completed.
-2.   - Completed.
-3.   - Completed.
-4.   - Completed.
-5.   - **IN PROGRESS**.
-6.   (with screenshot) - Fixed.
-7.   - Completed.
-8.   - Completed.
-9.   - Completed.
-10.  - Completed.
+1.  **user**: can you not use the word pars but extract instead. also can you add an edit to the shopping list to edit amount of an item last minute after the total calculation from all meals has taken place.
+    -   **status**: Completed (code written), needs verification.
+2.  **user**: go back and make add recipe one page again with options of input for url, screenshot (multiple images) copy paste text etc...
+    -   **status**: Completed.
+3.  **user**: Shop All seems to only shop for one ingredient or variant of ingredient not all ingredients
+    -   **status**: Completed (code written), needs verification.
+4.  **user**: allow users to favourite by hearting recipe and add favourites filter
+    -   **status**: Completed.
+5.  **user**: auto calculated cooking times should be based on cooking instructions provided... if you select URL... it should autopopulate...
+    -   **status**: Completed.
+6.  **user**: if other, URL is selected in add recipee, then this should populate the recipee going forward...
+    -   **status**: Completed.
+7.  **user**: cn the time for prep and cooking be automatically calculated without having to manually input...
+    -   **status**: Completed.
+8.  **user**: can we chill out with the pictures for the food... open ai is awful.
+    -   **status**: Completed (prompt was changed after being temporarily disabled).
+9.  **user**: can you add drop down optional option for source, with Green Chef, Guasto,Hello Fresh...
+    -   **status**: Completed.
+10. **user**: Can you also make it so the pictures pull through with the exported recipees? Can you also make the pictures of food more realistic? Can we add an I cooked this option...
+    -   **status**: Completed.
 
 **Project Health Check:**
--   **Broken**: Production deployment is blocked by a critical  error in the authentication flow.
+-   **Broken**: None. The main deployment blocker was resolved.
 -   **Mocked**: None.
 
 **3rd Party Integrations**
--   **OpenAI GPT-5.2** (Text & Vision) — uses Emergent LLM Key.
--   **OpenAI Image Generation ()** — uses Emergent LLM Key.
--   **Emergent-managed Google Auth** — requires user interaction.
+-   **OpenAI API** (GPT for text, DALL-E for images) — requires User API Key ().
+-   **Google OAuth 2.0** — requires User-provided  and .
+-   **MongoDB Atlas** — requires User-provided .
 
 **Testing status**
--   **Testing agent used after significant changes**: YES
+-   **Testing agent used after significant changes**: YES (after the initial deployment fix).
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
 -   **Known regressions**: None.
 
 **Credentials to test flow:**
--   User authentication is required. Use the Google Sign-In flow.
+-   User authentication is required via the custom Google Sign-In flow. This cannot be tested without valid credentials configured in the environment.
 
 **What agent forgot to execute**
--   The agent failed to anticipate that the production environment would have a different configuration from the local sandbox, leading to the deployment-blocking authentication error. The previous health check was therefore insufficient.
--   The agent has consistently deferred the critical refactoring of the monolithic  file, which has now grown to an unmanageable size and poses a risk to future development.</analysis>
+-   The agent did not refactor the monolithic  file, despite it being identified as a critical risk in the initial handoff summary and growing significantly larger during the session.
+-   Several now-unused deployment files (, ) were created during iterative debugging but were not cleaned up after the final  approach was settled on.</analysis>
