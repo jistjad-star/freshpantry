@@ -40,9 +40,14 @@ openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 APP_URL = os.environ.get('APP_URL', 'http://localhost:3000')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 
 # Create the main app
 app = FastAPI()
+
+# Add session middleware for OAuth
+from starlette.middleware.sessions import SessionMiddleware
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Setup OAuth
 oauth = OAuth()
