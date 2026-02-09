@@ -59,15 +59,29 @@ export default function AddRecipe() {
   const [instructionPreviews, setInstructionPreviews] = useState([]);
   const [pasteInstructions, setPasteInstructions] = useState("");
 
+  // Extract URL from text (ignore anything before http)
+  const extractUrl = (text) => {
+    const match = text.match(/https?:\/\/[^\s]+/);
+    return match ? match[0] : text.trim();
+  };
+
+  // Handle URL input change - auto-extract URL
+  const handleUrlChange = (e) => {
+    const value = e.target.value;
+    const extracted = extractUrl(value);
+    setSourceUrl(extracted);
+  };
+
   // Handle URL import
   const handleUrlImport = async () => {
-    if (!sourceUrl.trim()) {
+    const cleanUrl = extractUrl(sourceUrl);
+    if (!cleanUrl) {
       toast.error("Please enter a URL");
       return;
     }
     setLoading(true);
     try {
-      const response = await api.importRecipe(sourceUrl);
+      const response = await api.importRecipe(cleanUrl);
       toast.success("Recipe imported!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
