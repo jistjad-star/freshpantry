@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 
 // Configure axios to send cookies
@@ -24,6 +24,11 @@ export const api = {
   updateRecipeCategories: (id, categories) => axios.put(`${API}/recipes/${id}/categories`, { categories }),
   exportRecipes: (recipeIds) => axios.post(`${API}/recipes/export`, { recipe_ids: recipeIds }),
   importRecipes: (recipes) => axios.post(`${API}/recipes/import-batch`, { recipes }),
+  
+  // Share Links
+  createShareLink: (recipeIds) => axios.post(`${API}/recipes/share`, { recipe_ids: recipeIds }),
+  getSharedRecipes: (shareId) => axios.get(`${API}/recipes/shared/${shareId}`),
+  importSharedRecipes: (shareId) => axios.post(`${API}/recipes/import-shared/${shareId}`),
   
   // Reviews
   getReviews: (recipeId) => axios.get(`${API}/recipes/${recipeId}/reviews`),
