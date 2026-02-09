@@ -405,14 +405,17 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
         return ""
     
     try:
-        # Create a descriptive prompt for the food image
+        # Create a descriptive prompt for photorealistic food image
         ingredient_names = [ing.get('name', '') for ing in ingredients[:5]]
         ingredients_text = ", ".join(ingredient_names) if ingredient_names else ""
         
-        prompt = f"Professional food photography of {recipe_name}, a delicious home-cooked dish"
+        prompt = f"Ultra realistic photograph of {recipe_name}, shot with a Canon EOS R5, 50mm lens, f/2.8 aperture. "
+        prompt += "The dish is beautifully plated on a ceramic plate, showing steam rising from the hot food. "
         if ingredients_text:
-            prompt += f" featuring {ingredients_text}"
-        prompt += ". Appetizing, well-plated, natural lighting, top-down or 45-degree angle, clean white plate, rustic wooden table background."
+            prompt += f"Key ingredients visible: {ingredients_text}. "
+        prompt += "Professional food photography style, natural window lighting from the left, shallow depth of field, "
+        prompt += "rustic wooden table surface, subtle garnish, photorealistic textures showing the actual food details. "
+        prompt += "Magazine quality, mouth-watering, 8K resolution detail. No text or watermarks."
         
         logger.info(f"Generating image for recipe: {recipe_name}")
         
@@ -420,7 +423,7 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
             model="dall-e-3",
             prompt=prompt,
             size="1024x1024",
-            quality="standard",
+            quality="hd",
             n=1
         )
         
