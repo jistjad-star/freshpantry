@@ -557,14 +557,23 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
 
 async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict]) -> List[dict]:
     """Use AI to suggest meals based on available pantry ingredients"""
-    if not EMERGENT_LLM_KEY or not pantry_items or not recipes:
+    if not openai_client or not pantry_items or not recipes:
         return []
     
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"meal-suggest-{uuid.uuid4()}",
-            system_message="""You are a helpful meal planning assistant.
+        # Format pantry items
+        pantry_text = "\n".join([f"- {item.get('name', '')} ({item.get('quantity', '')} {item.get('unit', '')})" for item in pantry_items])
+        
+        # Format recipes
+        recipes_text = ""
+        for r in recipes:
+            ing_list = ", ".join([ing.get('name', '') for ing in r.get('ingredients', [])])
+            recipes_text += f"\nRecipe ID: {r.get('id')}\nName: {r.get('name')}\nIngredients: {ing_list}\n"
+        
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": """You are a helpful meal planning assistant.
             Given a list of pantry items and available recipes, suggest which recipes can be made.
             Consider partial matches - a recipe is still good if most ingredients are available.
             
@@ -581,20 +590,8 @@ async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict
             ]
             
             Sort by match_percentage descending. Include all recipes with at least 50% match.
-            Return ONLY valid JSON, no markdown code blocks."""
-        ).with_model("openai", "gpt-5.2")
-        
-        # Format pantry items
-        pantry_text = "\n".join([f"- {item.get('name', '')} ({item.get('quantity', '')} {item.get('unit', '')})" for item in pantry_items])
-        
-        # Format recipes
-        recipes_text = ""
-        for r in recipes:
-            ing_list = ", ".join([ing.get('name', '') for ing in r.get('ingredients', [])])
-            recipes_text += f"\nRecipe ID: {r.get('id')}\nName: {r.get('name')}\nIngredients: {ing_list}\n"
-        
-        user_message = UserMessage(
-            text=f"""My pantry has:
+            Return ONLY valid JSON, no markdown code blocks."""},
+                {"role": "user", "content": f"""My pantry has:
 {pantry_text}
 
 Available recipes:
@@ -602,13 +599,14 @@ Available recipes:
 
 Suggest ALL recipes, even if missing several ingredients. Include recipes with at least 20% match.
 Clearly list what ingredients are missing for each recipe.
-Sort by match percentage (highest first)."""
+Sort by match percentage (highest first)."""}
+            ]
         )
         
-        response = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         
         import json
-        clean_response = response.strip()
+        clean_response = result.strip()
         
         if "```json" in clean_response:
             clean_response = clean_response.split("```json")[1].split("```")[0]
