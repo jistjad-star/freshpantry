@@ -330,7 +330,19 @@ export default function RecipeLibrary() {
                   </Link>
                   <div className="flex items-center gap-4 text-sm text-stone-500 mb-4">
                     <div className="flex items-center gap-1"><Users className="w-4 h-4" /><span>{recipe.servings}</span></div>
-                    {recipe.prep_time && <div className="flex items-center gap-1"><Clock className="w-4 h-4" /><span>{recipe.prep_time}</span></div>}
+                    {(recipe.prep_time || recipe.cook_time) && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          {(() => {
+                            const prep = parseInt(recipe.prep_time) || 0;
+                            const cook = parseInt(recipe.cook_time) || 0;
+                            const total = prep + cook;
+                            return total > 0 ? `${total} min` : recipe.prep_time || recipe.cook_time;
+                          })()}
+                        </span>
+                      </div>
+                    )}
                     <span className="text-[#4A7C59]">{recipe.ingredients?.length || 0} ingredients</span>
                   </div>
                   {/* Rating display */}
