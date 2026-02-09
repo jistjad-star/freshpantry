@@ -2324,8 +2324,6 @@ cors_origins_str = os.environ.get('CORS_ORIGINS', '')
 if cors_origins_str and cors_origins_str != '*':
     cors_origins = [origin.strip() for origin in cors_origins_str.split(',') if origin.strip()]
 else:
-    # For production with credentials, we need specific origins
-    # Allow common Emergent preview/deployment domains
     cors_origins = [
         "http://localhost:3000",
         "http://localhost:8001",
@@ -2336,10 +2334,28 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=cors_origins,
-    allow_origin_regex=r"https://.*\.emergentagent\.com",  # Allow all Emergent subdomains
+    allow_origin_regex=r"https://.*\.(emergentagent\.com|ondigitalocean\.app)",
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static frontend files in production
+static_dir = ROOT_DIR / "static"
+if static_dir.exists():
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+    
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(static_dir / "index.html")
+    
+    @app.get("/{path:path}")
+    async def serve_static(path: str):
+        file_path = static_dir / path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        # For SPA routing, return index.html for non-file paths
+        return FileResponse(static_dir / "index.html")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
