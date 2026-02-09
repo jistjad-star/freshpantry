@@ -485,7 +485,17 @@ export default function RecipeDetail() {
                   
                   {recipe.prep_time && <div className="flex items-center gap-2 text-stone-500"><Clock className="w-4 h-4" /><span>Prep: {recipe.prep_time}</span></div>}
                   {recipe.cook_time && <div className="flex items-center gap-2 text-stone-500"><Clock className="w-4 h-4" /><span>Cook: {recipe.cook_time}</span></div>}
-                  {recipe.source_url && <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#4A7C59] hover:underline"><ExternalLink className="w-4 h-4" /><span>Source</span></a>}
+                  {recipe.source_url && (
+                    recipe.source_url.startsWith('http') ? (
+                      <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#4A7C59] hover:underline">
+                        <ExternalLink className="w-4 h-4" /><span>View Original</span>
+                      </a>
+                    ) : (
+                      <div className="flex items-center gap-2 text-stone-500">
+                        <ExternalLink className="w-4 h-4" /><span>From: {recipe.source_url}</span>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
