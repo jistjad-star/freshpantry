@@ -348,6 +348,71 @@ def estimate_cooking_times(ingredients: List[dict], recipe_name: str = "") -> tu
     
     return prep_time, cook_time
 
+def estimate_cooking_times_from_instructions(instructions: List[str], recipe_name: str = "") -> tuple[str, str]:
+    """Estimate prep and cook time based on cooking instructions"""
+    if not instructions:
+        return "", ""
+    
+    all_text = ' '.join(instructions).lower()
+    
+    prep_minutes = 0
+    cook_minutes = 0
+    
+    # Look for explicit time mentions in instructions
+    import re
+    
+    # Find all time mentions (e.g., "15 minutes", "1 hour", "30 mins")
+    time_patterns = [
+        r'(\d+)\s*(?:hour|hr)s?',  # hours
+        r'(\d+)\s*(?:minute|min)s?',  # minutes
+    ]
+    
+    # Prep keywords
+    prep_keywords = ['chop', 'dice', 'slice', 'mince', 'peel', 'cut', 'prepare', 'mix', 'combine', 'whisk', 'beat', 'marinate']
+    # Cook keywords
+    cook_keywords = ['cook', 'bake', 'roast', 'fry', 'boil', 'simmer', 'grill', 'sauté', 'saute', 'heat', 'oven', 'pan', 'pot']
+    
+    # Count prep vs cook steps
+    prep_steps = 0
+    cook_steps = 0
+    
+    for step in instructions:
+        step_lower = step.lower()
+        if any(kw in step_lower for kw in prep_keywords):
+            prep_steps += 1
+        if any(kw in step_lower for kw in cook_keywords):
+            cook_steps += 1
+        
+        # Extract times from this step
+        for match in re.finditer(r'(\d+)\s*(?:hour|hr)s?', step_lower):
+            hours = int(match.group(1))
+            if any(kw in step_lower for kw in cook_keywords):
+                cook_minutes += hours * 60
+            else:
+                prep_minutes += hours * 60
+        
+        for match in re.finditer(r'(\d+)\s*(?:minute|min)s?', step_lower):
+            mins = int(match.group(1))
+            if any(kw in step_lower for kw in cook_keywords):
+                cook_minutes += mins
+            else:
+                prep_minutes += mins
+    
+    # If no explicit times found, estimate based on steps
+    if prep_minutes == 0:
+        prep_minutes = max(prep_steps * 5, 10)  # ~5 min per prep step, min 10
+    if cook_minutes == 0:
+        cook_minutes = max(cook_steps * 8, 15)  # ~8 min per cook step, min 15
+    
+    # Cap reasonable values
+    prep_minutes = min(prep_minutes, 60)
+    cook_minutes = min(cook_minutes, 180)
+    
+    prep_time = f"{prep_minutes} min"
+    cook_time = f"{cook_minutes} min"
+    
+    return prep_time, cook_time
+
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
     """Use AI to parse raw ingredient text into structured data"""
     if not openai_client:
