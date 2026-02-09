@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, Leaf, Fish, Salad, Zap, Heart, Download, Upload, Check, Star, ArrowUpDown } from "lucide-react";
+import { Search, ChefHat, Clock, Users, Trash2, PlusCircle, Loader2, Layers, Leaf, Fish, Salad, Zap, Heart, Share2, Upload, Check, Star, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
