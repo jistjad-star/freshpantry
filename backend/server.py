@@ -1202,11 +1202,14 @@ async def parse_ingredients(data: ParseIngredientsRequest):
         steps = re.split(r'\n+|\d+\.\s*', raw_instructions)
         instructions = [step.strip() for step in steps if step.strip()]
     
-    # Estimate cooking times
-    prep_time, cook_time = estimate_cooking_times(
-        [ing.model_dump() for ing in ingredients], 
-        data.recipe_name or ""
-    )
+    # Estimate cooking times - prefer instructions-based if available
+    if instructions:
+        prep_time, cook_time = estimate_cooking_times_from_instructions(instructions, data.recipe_name or "")
+    else:
+        prep_time, cook_time = estimate_cooking_times(
+            [ing.model_dump() for ing in ingredients], 
+            data.recipe_name or ""
+        )
     
     return ParseIngredientsResponse(
         ingredients=ingredients, 
