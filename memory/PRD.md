@@ -14,13 +14,14 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy)
 - [x] Manual category editing
 - [x] AI-generated recipe images
-- [x] Recipe import/export (JSON format) for sharing
+- [x] Recipe sharing via unique shareable links
 - [x] **Star Reviews** - Users can rate recipes 1-5 stars with optional comments
 - [x] **Sort by Popularity** - Recipe library can be sorted by rating (Top Rated, Newest, Default)
+- [x] **Favorites System** - Heart recipes and filter to show only favorites
 
 ### Pantry Management
 - [x] Track ingredients with quantities
-- [x] Auto-deduct when cooking recipes
+- [x] Auto-deduct when cooking recipes ("I Cooked This" feature)
 - [x] Low-stock alerts (staples only)
 - [x] Save button for editing pantry item quantities
 
@@ -42,6 +43,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **UK Cost Estimates** with supermarket comparison
 - [x] Best value shop recommendation (Tesco, Sainsbury's, Aldi, Lidl, Asda, Morrisons)
 - [x] Export to clipboard/PDF
+- [x] **Supermarket Quick Search Links** - Shop individual items at supermarket websites
+- [x] **Shop All Button** - Open all unchecked items in chosen supermarket (multiple tabs)
+- [x] **Edit Item Quantity** - Inline editing of quantity/unit after list generation
 
 ## Tech Stack
 - Frontend: React 19, Tailwind CSS, Shadcn/UI
