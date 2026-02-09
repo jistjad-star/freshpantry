@@ -399,9 +399,27 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
     return categories
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
-    """Generate an AI image for a recipe - DISABLED"""
-    # AI image generation disabled - using placeholders instead
-    return ""
+    """Generate a casual food image for a recipe"""
+    if not openai_client:
+        return ""
+    
+    try:
+        prompt = f"Simple overhead photo of {recipe_name} on a kitchen table, home-cooked style, casual lighting, no garnish, realistic everyday meal"
+        
+        response = await openai_client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1
+        )
+        
+        if response.data and len(response.data) > 0:
+            return response.data[0].url
+        return ""
+    except Exception as e:
+        logger.error(f"Error generating recipe image: {e}")
+        return ""
 
 async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Use AI vision to extract ingredients from an image"""
