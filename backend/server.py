@@ -2365,16 +2365,24 @@ if static_dir.exists():
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
     
+    # Mount static files for assets (js, css, images)
+    app.mount("/static", StaticFiles(directory=static_dir / "static"), name="static_assets")
+    
     @app.get("/")
     async def serve_root():
         return FileResponse(static_dir / "index.html")
     
+    # Catch-all for SPA routing - but exclude /api and /health
     @app.get("/{path:path}")
-    async def serve_static(path: str):
+    async def serve_spa(path: str):
+        # Don't catch API or health routes
+        if path.startswith("api") or path == "health":
+            return {"detail": "Not found"}
+        
         file_path = static_dir / path
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
-        # For SPA routing, return index.html for non-file paths
+        # For SPA routing, return index.html
         return FileResponse(static_dir / "index.html")
 
 @app.on_event("shutdown")
