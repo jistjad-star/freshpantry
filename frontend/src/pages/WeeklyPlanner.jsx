@@ -182,15 +182,7 @@ export default function WeeklyPlanner() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Weekly Plan</h1>
-            <div className="flex items-center gap-3">
-              <p className="text-stone-500">{totalMeals} of {MAX_MEALS_PER_WEEK} meals planned</p>
-              {totalMeals >= MAX_MEALS_PER_WEEK && (
-                <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                  <AlertCircle className="w-3 h-3" />
-                  Week full
-                </span>
-              )}
-            </div>
+            <p className="text-stone-500">{totalMeals} meals planned</p>
           </div>
           <div className="flex items-center gap-3">
             <Button onClick={savePlan} disabled={saving} variant="outline" className="border-stone-200">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Plan"}</Button>
