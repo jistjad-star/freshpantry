@@ -272,9 +272,40 @@ export default function RecipeLibrary() {
           </div>
         </div>
 
+        {/* Meal Type Filters */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="text-sm text-stone-500 self-center mr-2">Meal:</span>
+          <button
+            onClick={() => setSelectedMealType(null)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              !selectedMealType ? 'bg-[#4A7C59] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+            }`}
+            data-testid="meal-filter-all"
+          >
+            All
+          </button>
+          {Object.entries(MEAL_TYPE_CONFIG).map(([type, config]) => {
+            const Icon = config.icon;
+            return (
+              <button
+                key={type}
+                onClick={() => setSelectedMealType(selectedMealType === type ? null : type)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  selectedMealType === type ? config.color + ' ring-2 ring-offset-1' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                }`}
+                data-testid={`meal-filter-${type}`}
+              >
+                {Icon && <Icon className="w-3.5 h-3.5" />}
+                {config.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Category Filters */}
         {allCategories.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
+            <span className="text-sm text-stone-500 self-center mr-2">Diet:</span>
             <button
               onClick={() => setSelectedCategory(null)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
