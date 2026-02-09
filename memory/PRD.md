@@ -99,11 +99,12 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - Weekly planner improvements
 
 ## Future Tasks
+- P1: **Backend Refactoring** - server.py is >2500 lines and needs to be split into modules (routes, models, services)
 - P1: Drag-and-drop weekly planner
-- P2: Expiry date tracking
-- P2: Recipe sharing links
+- P2: Expiry date tracking for pantry items
+- P2: Whisk.com Integration for direct "add to basket"
 - P2: PWA support
-- P2: Scan receipt to pantry
+- P2: Scan receipt to pantry (OCR)
 
 ## DB Schema
 
