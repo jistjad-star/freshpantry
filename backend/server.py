@@ -2123,6 +2123,126 @@ async def import_recipes_batch(data: RecipeImportBatchRequest, request: Request)
         "message": f"Successfully imported {len(imported)} recipes"
     }
 
+# ============== RECIPE SHARE LINKS ==============
+
+class ShareRecipesRequest(BaseModel):
+    recipe_ids: List[str]
+
+@api_router.post("/recipes/share")
+async def create_share_link(data: ShareRecipesRequest, request: Request):
+    """Create a shareable link for recipes"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get recipes to share
+    recipes_to_share = []
+    for recipe_id in data.recipe_ids:
+        query = {"id": recipe_id}
+        if user_id:
+            query["user_id"] = user_id
+        
+        recipe = await db.recipes.find_one(query, {"_id": 0})
+        if recipe:
+            share_recipe = {
+                "name": recipe.get("name"),
+                "description": recipe.get("description", ""),
+                "servings": recipe.get("servings", 2),
+                "prep_time": recipe.get("prep_time", ""),
+                "cook_time": recipe.get("cook_time", ""),
+                "ingredients": recipe.get("ingredients", []),
+                "instructions": recipe.get("instructions", []),
+                "categories": recipe.get("categories", []),
+                "image_url": recipe.get("image_url"),
+            }
+            recipes_to_share.append(share_recipe)
+    
+    if not recipes_to_share:
+        raise HTTPException(status_code=404, detail="No recipes found")
+    
+    # Create share document
+    share_id = str(uuid.uuid4())[:8]
+    share_doc = {
+        "share_id": share_id,
+        "recipes": recipes_to_share,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user_id,
+        "access_count": 0
+    }
+    await db.shared_recipes.insert_one(share_doc)
+    
+    return {
+        "share_id": share_id,
+        "recipe_count": len(recipes_to_share),
+        "message": "Share link created!"
+    }
+
+@api_router.get("/recipes/shared/{share_id}")
+async def get_shared_recipes(share_id: str):
+    """Get recipes from a share link"""
+    share_doc = await db.shared_recipes.find_one({"share_id": share_id}, {"_id": 0})
+    
+    if not share_doc:
+        raise HTTPException(status_code=404, detail="Share link not found or expired")
+    
+    # Increment access count
+    await db.shared_recipes.update_one(
+        {"share_id": share_id},
+        {"$inc": {"access_count": 1}}
+    )
+    
+    return {
+        "recipes": share_doc.get("recipes", []),
+        "count": len(share_doc.get("recipes", [])),
+        "shared_at": share_doc.get("created_at")
+    }
+
+@api_router.post("/recipes/import-shared/{share_id}")
+async def import_shared_recipes(share_id: str, request: Request):
+    """Import recipes from a share link into user's library"""
+    user_id = await get_user_id_or_none(request)
+    
+    share_doc = await db.shared_recipes.find_one({"share_id": share_id}, {"_id": 0})
+    
+    if not share_doc:
+        raise HTTPException(status_code=404, detail="Share link not found")
+    
+    imported = []
+    for recipe_data in share_doc.get("recipes", []):
+        try:
+            ingredients = []
+            for ing in recipe_data.get("ingredients", []):
+                ingredients.append(Ingredient(
+                    name=ing.get("name", ""),
+                    quantity=str(ing.get("quantity", "")),
+                    unit=ing.get("unit", ""),
+                    category=ing.get("category", "other")
+                ))
+            
+            recipe = Recipe(
+                name=recipe_data.get("name", "Imported Recipe"),
+                description=recipe_data.get("description", ""),
+                servings=recipe_data.get("servings", 2),
+                prep_time=recipe_data.get("prep_time", ""),
+                cook_time=recipe_data.get("cook_time", ""),
+                ingredients=ingredients,
+                instructions=recipe_data.get("instructions", []),
+                categories=recipe_data.get("categories", []),
+                image_url=recipe_data.get("image_url"),
+                user_id=user_id
+            )
+            
+            doc = recipe.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.recipes.insert_one(doc)
+            imported.append({"name": recipe.name, "id": recipe.id})
+        except Exception as e:
+            logger.error(f"Failed to import shared recipe: {e}")
+    
+    return {
+        "imported": imported,
+        "count": len(imported),
+        "message": f"Successfully imported {len(imported)} recipes!"
+    }
+
 # ============== AI RECIPE GENERATION FROM PANTRY ==============
 
 class GenerateRecipeRequest(BaseModel):
