@@ -11,6 +11,7 @@ import WeeklyPlanner from "@/pages/WeeklyPlanner";
 import ShoppingList from "@/pages/ShoppingList";
 import Pantry from "@/pages/Pantry";
 import MealSuggestions from "@/pages/MealSuggestions";
+import SharedRecipes from "@/pages/SharedRecipes";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
 import Layout from "@/components/Layout";
@@ -27,6 +28,7 @@ function AppRouter() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/share/:shareId" element={<SharedRecipes />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="add-recipe" element={<AddRecipe />} />
