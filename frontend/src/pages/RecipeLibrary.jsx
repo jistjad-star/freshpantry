@@ -21,10 +21,12 @@ const CATEGORY_CONFIG = {
 export default function RecipeLibrary() {
   const [recipes, setRecipes] = useState([]);
   const [recipeGroups, setRecipeGroups] = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [viewMode, setViewMode] = useState("all");
+  const [showFavorites, setShowFavorites] = useState(false);
   const [sortBy, setSortBy] = useState(null);
   const [selectedForExport, setSelectedForExport] = useState([]);
   const [exporting, setExporting] = useState(false);
@@ -35,16 +37,36 @@ export default function RecipeLibrary() {
 
   const fetchRecipes = async () => {
     try {
-      const [recipesRes, groupsRes] = await Promise.all([
+      const [recipesRes, groupsRes, favoritesRes] = await Promise.all([
         api.getRecipes(sortBy),
-        api.getRecipesGrouped()
+        api.getRecipesGrouped(),
+        api.getFavorites().catch(() => ({ data: { favorites: [] } }))
       ]);
       setRecipes(recipesRes.data || []);
       setRecipeGroups(groupsRes.data?.groups || []);
+      setFavorites(favoritesRes.data?.favorites || []);
     } catch (error) {
       console.error("Error fetching recipes:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFavorite = async (recipeId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isFavorite = favorites.includes(recipeId);
+    try {
+      if (isFavorite) {
+        await api.removeFavorite(recipeId);
+        setFavorites(prev => prev.filter(id => id !== recipeId));
+      } else {
+        await api.addFavorite(recipeId);
+        setFavorites(prev => [...prev, recipeId]);
+      }
+    } catch (error) {
+      toast.error("Failed to update favorite");
     }
   };
 
