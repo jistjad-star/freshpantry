@@ -144,7 +144,8 @@ export default function RecipeLibrary() {
   const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || (recipe.categories || []).includes(selectedCategory);
-    return matchesSearch && matchesCategory;
+    const matchesFavorites = !showFavorites || favorites.includes(recipe.id);
+    return matchesSearch && matchesCategory && matchesFavorites;
   });
 
   if (loading) {
@@ -159,7 +160,21 @@ export default function RecipeLibrary() {
             <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Recipes</h1>
             <p className="text-stone-500">{filteredRecipes.length} of {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Favorites filter */}
+            <button
+              onClick={() => setShowFavorites(!showFavorites)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                showFavorites 
+                  ? 'bg-red-50 border-red-200 text-red-600' 
+                  : 'bg-white border-stone-200 text-stone-500 hover:border-red-200 hover:text-red-500'
+              }`}
+              data-testid="favorites-filter-btn"
+            >
+              <Heart className={`w-4 h-4 ${showFavorites ? 'fill-red-500' : ''}`} />
+              Favorites {favorites.length > 0 && `(${favorites.length})`}
+            </button>
+            
             {/* Sort dropdown */}
             <div className="flex items-center gap-1.5 bg-stone-50 rounded-lg p-1 border border-stone-200">
               <button
