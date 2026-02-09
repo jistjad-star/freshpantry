@@ -19,6 +19,7 @@ export const api = {
   createRecipe: (data) => axios.post(`${API}/recipes`, data),
   updateRecipe: (id, data) => axios.put(`${API}/recipes/${id}`, data),
   importRecipe: (url) => axios.post(`${API}/recipes/import`, { url }),
+  scrapeRecipeUrl: (url) => axios.post(`${API}/recipes/scrape-url`, { url }),
   deleteRecipe: (id) => axios.delete(`${API}/recipes/${id}`),
   generateRecipeImage: (id) => axios.post(`${API}/recipes/${id}/generate-image`),
   updateRecipeCategories: (id, categories) => axios.put(`${API}/recipes/${id}/categories`, { categories }),
