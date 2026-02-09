@@ -305,6 +305,49 @@ async def get_user_id_or_none(request: Request) -> Optional[str]:
 
 # ============== HELPER FUNCTIONS ==============
 
+def estimate_cooking_times(ingredients: List[dict], recipe_name: str = "") -> tuple[str, str]:
+    """Estimate prep and cook time based on ingredients and recipe name"""
+    ingredient_count = len(ingredients)
+    name_lower = recipe_name.lower()
+    
+    # Base prep time: 5 min + 2 min per ingredient (capped)
+    prep_minutes = min(5 + (ingredient_count * 2), 30)
+    
+    # Base cook time based on recipe type
+    cook_minutes = 20  # default
+    
+    # Quick items
+    if any(kw in name_lower for kw in ['salad', 'sandwich', 'smoothie', 'toast']):
+        prep_minutes = min(prep_minutes, 10)
+        cook_minutes = 0
+    # Medium cook time
+    elif any(kw in name_lower for kw in ['stir fry', 'stir-fry', 'pasta', 'omelette', 'scrambled', 'pancake']):
+        cook_minutes = 15
+    # Longer cook time
+    elif any(kw in name_lower for kw in ['roast', 'bake', 'casserole', 'lasagna', 'pie', 'cake']):
+        cook_minutes = 45
+    # Slow cook
+    elif any(kw in name_lower for kw in ['slow', 'braise', 'stew']):
+        cook_minutes = 120
+    # Grilled/fried
+    elif any(kw in name_lower for kw in ['grill', 'fried', 'fry', 'sear']):
+        cook_minutes = 20
+    # Soup/curry
+    elif any(kw in name_lower for kw in ['soup', 'curry', 'chili', 'chilli']):
+        cook_minutes = 30
+    
+    # Check ingredients for hints
+    ing_text = ' '.join([i.get('name', '').lower() for i in ingredients])
+    if 'chicken breast' in ing_text or 'beef' in ing_text:
+        cook_minutes = max(cook_minutes, 25)
+    if 'whole chicken' in ing_text:
+        cook_minutes = max(cook_minutes, 60)
+    
+    prep_time = f"{prep_minutes} min" if prep_minutes > 0 else ""
+    cook_time = f"{cook_minutes} min" if cook_minutes > 0 else ""
+    
+    return prep_time, cook_time
+
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
     """Use AI to parse raw ingredient text into structured data"""
     if not openai_client:
