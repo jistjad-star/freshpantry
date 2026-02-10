@@ -77,9 +77,13 @@ export default function Pantry() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [essentialsDialogOpen, setEssentialsDialogOpen] = useState(false);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [expiryDialogOpen, setExpiryDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [alertItem, setAlertItem] = useState(null);
+  const [expiryItem, setExpiryItem] = useState(null);
   const [selectedEssentials, setSelectedEssentials] = useState([]);
+  const [expiringItems, setExpiringItems] = useState([]);
+  const [expiredItems, setExpiredItems] = useState([]);
   
   // New item form
   const [newItem, setNewItem] = useState({
@@ -88,7 +92,8 @@ export default function Pantry() {
     unit: "",
     category: "other",
     min_threshold: "",
-    typical_purchase: ""
+    typical_purchase: "",
+    expiry_date: ""
   });
 
   useEffect(() => {
