@@ -179,14 +179,15 @@ export default function AddRecipe() {
       toast.error("Enter a recipe name first");
       return;
     }
-    if (!pasteText.trim()) {
-      toast.error("Paste some text first");
+    if (!pasteIngredients.trim()) {
+      toast.error("Paste some ingredients first");
       return;
     }
     
     setLoading(true);
     try {
-      const response = await api.parseIngredients(recipeName, pasteText, pasteText);
+      // Send ingredients and instructions separately
+      const response = await api.parseIngredients(recipeName, pasteIngredients, pasteInstructions);
       
       setIngredients(response.data.ingredients || []);
       setInstructions(response.data.instructions || []);
