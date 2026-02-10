@@ -875,7 +875,8 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
         recipes_sharing_multiple = [rid for rid, count in related_recipes.items() if count >= 2]
         
         # Count expiring ingredients used
-        expiring_used = len(recipe_ings & expiring_ingredients) if prioritize_expiring else 0
+        expiring_used_list = list(recipe_ings & expiring_ingredients) if prioritize_expiring else []
+        expiring_used = len(expiring_used_list)
         
         # Calculate composite score
         # Weights: match_pct (40%) + shared_ingredients (25%) + related_recipes_with_2+ (25%) + expiring (10%)
@@ -894,6 +895,7 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
             "shared_ingredient_count": shared_count,
             "related_recipe_count": len(recipes_sharing_multiple),
             "expiring_ingredients_used": expiring_used if prioritize_expiring else None,
+            "expiring_ingredients_list": expiring_used_list if prioritize_expiring else [],
             "composite_score": composite_score,
             "recommendation": get_recommendation(match_pct, shared_count, len(recipes_sharing_multiple), expiring_used if prioritize_expiring else 0)
         })
