@@ -278,14 +278,13 @@ export default function MealSuggestions() {
                       </div>
                     </div>
                   )}
-                    </div>
-                    {generatedRecipe.missing_ingredients?.length > 0 && (
-                      <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        You may need: {generatedRecipe.missing_ingredients.join(", ")}
-                      </p>
-                    )}
-                  </div>
+                  
+                  {generatedRecipe.missing_ingredients?.length > 0 && (
+                    <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      You may need: {generatedRecipe.missing_ingredients.join(", ")}
+                    </p>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-3">
                     <Button 
