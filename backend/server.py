@@ -12,9 +12,8 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from bs4 import BeautifulSoup
-# Emergent integrations for AI
-from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent
-from emergentintegrations.llm.openai.image_generation import OpenAIImageGeneration
+# Standard OpenAI SDK
+from openai import AsyncOpenAI
 import base64
 import re
 from authlib.integrations.starlette_client import OAuth
@@ -41,12 +40,14 @@ except Exception as e:
     client = None
     db = None
 
-# Emergent LLM Key for AI features
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
-if EMERGENT_LLM_KEY:
-    logger.info("Emergent LLM Key found - AI features enabled")
+# OpenAI API Key for AI features
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+if OPENAI_API_KEY:
+    logger.info("OpenAI API Key found - AI features enabled")
+    openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 else:
-    logger.warning("No EMERGENT_LLM_KEY found - AI features disabled")
+    logger.warning("No OPENAI_API_KEY found - AI features disabled")
+    openai_client = None
 
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
