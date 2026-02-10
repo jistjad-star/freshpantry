@@ -94,13 +94,20 @@ export default function WeeklyPlanner() {
         setLoading(false);
         
         // Load AI suggestions in background (slow)
-        api.getMealSuggestions().then(res => {
+        api.getMealSuggestions(null, false).then(res => {
           setSuggestions(res.data?.suggestions || []);
         }).catch(() => {});
       } catch (error) { console.error("Error:", error); setLoading(false); }
     };
     fetchData();
   }, [currentWeek]);
+
+  // Refetch suggestions when showExpiring changes
+  useEffect(() => {
+    api.getMealSuggestions(null, showExpiring).then(res => {
+      setSuggestions(res.data?.suggestions || []);
+    }).catch(() => {});
+  }, [showExpiring]);
 
   const getTotalMeals = () => DAYS.reduce((sum, day) => sum + (weeklyPlan[day]?.length || 0), 0);
   const getMealsForDay = (day) => (weeklyPlan[day] || []).length;
