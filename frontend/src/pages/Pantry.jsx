@@ -638,6 +638,65 @@ export default function Pantry() {
             </Button>
           </div>
         )}
+
+        {/* Alert Dialog */}
+        <Dialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
+          <DialogContent className="bg-white border-stone-200 max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-[#1A2E1A] font-display flex items-center gap-2">
+                <Bell className="w-5 h-5 text-[#4A7C59]" />
+                Set Low Stock Alert
+              </DialogTitle>
+              <DialogDescription className="text-stone-500">
+                {alertItem && `Alert when ${alertItem.name} drops below a certain amount`}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {alertItem && (
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label className="text-[#1A2E1A]">Alert when below</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      defaultValue={alertItem.min_threshold || 0}
+                      id="alert-threshold-input"
+                      placeholder="0"
+                      className="fresh-input flex-1"
+                      data-testid="alert-threshold-input"
+                    />
+                    <span className="text-stone-500">{alertItem.unit}</span>
+                  </div>
+                  <p className="text-xs text-stone-400">
+                    Current quantity: {alertItem.quantity} {alertItem.unit}
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const input = document.getElementById('alert-threshold-input');
+                      if (input) updateItemAlert(alertItem.id, 0);
+                    }}
+                    className="flex-1"
+                  >
+                    Remove Alert
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const input = document.getElementById('alert-threshold-input');
+                      if (input) updateItemAlert(alertItem.id, input.value);
+                    }}
+                    className="flex-1 btn-primary"
+                  >
+                    Save Alert
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
