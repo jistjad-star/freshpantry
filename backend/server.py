@@ -3021,7 +3021,7 @@ IMPORTANT:
 - Infer reasonable units from context"""
 
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=OPENAI_API_KEY,
             session_id=f"receipt_{uuid.uuid4().hex[:8]}",
             system_message=system_message
         ).with_model("openai", "gpt-4o-mini")
@@ -3745,7 +3745,7 @@ Return ONLY valid JSON, no markdown."""
             expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and should be used:\n{expiring_text}"
         
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=OPENAI_API_KEY,
             session_id=f"generate_{uuid.uuid4().hex[:8]}",
             system_message=system_msg
         ).with_model("openai", "gpt-4o-mini")
