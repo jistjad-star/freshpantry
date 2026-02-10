@@ -418,6 +418,170 @@ export default function Pantry() {
               Add from Shopping List
             </Button>
             
+            {/* Receipt Scan Dialog */}
+            <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50" data-testid="scan-receipt-btn">
+                  <Receipt className="w-4 h-4 mr-2" />
+                  Scan Receipt
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white border-stone-200 max-w-lg max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-[#1A2E1A] font-display flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-orange-500" />
+                    Scan Receipt to Pantry
+                  </DialogTitle>
+                  <DialogDescription className="text-stone-500">
+                    Upload a photo or PDF of your supermarket receipt to quickly add items
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 pt-4">
+                  {/* Upload Area */}
+                  {extractedItems.length === 0 && (
+                    <div className="border-2 border-dashed border-stone-200 rounded-xl p-8 text-center hover:border-orange-300 transition-colors">
+                      <input
+                        ref={receiptInputRef}
+                        type="file"
+                        accept="image/*,application/pdf"
+                        capture="environment"
+                        onChange={handleReceiptUpload}
+                        className="hidden"
+                        id="receipt-upload"
+                      />
+                      
+                      {scanningReceipt ? (
+                        <div className="py-4">
+                          <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-3" />
+                          <p className="text-orange-600 font-medium">Scanning receipt...</p>
+                          <p className="text-sm text-stone-500 mt-1">Extracting items with AI</p>
+                        </div>
+                      ) : (
+                        <>
+                          <FileImage className="w-12 h-12 text-stone-300 mx-auto mb-4" />
+                          <p className="text-stone-600 mb-4">Drop a receipt here or click to upload</p>
+                          <div className="flex flex-wrap justify-center gap-3">
+                            <label htmlFor="receipt-upload">
+                              <Button 
+                                variant="outline" 
+                                className="border-orange-300 text-orange-600 hover:bg-orange-50 cursor-pointer"
+                                onClick={() => receiptInputRef.current?.click()}
+                                data-testid="upload-receipt-btn"
+                              >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Upload Image/PDF
+                              </Button>
+                            </label>
+                            <label htmlFor="receipt-upload">
+                              <Button 
+                                className="bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
+                                onClick={() => {
+                                  receiptInputRef.current?.setAttribute('capture', 'environment');
+                                  receiptInputRef.current?.click();
+                                }}
+                                data-testid="camera-receipt-btn"
+                              >
+                                <Camera className="w-4 h-4 mr-2" />
+                                Take Photo
+                              </Button>
+                            </label>
+                          </div>
+                          <p className="text-xs text-stone-400 mt-4">
+                            Supports: JPEG, PNG, PDF receipts from any supermarket
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Extracted Items */}
+                  {extractedItems.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-[#1A2E1A]">
+                          Found {extractedItems.length} items
+                        </p>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedExtractedItems(extractedItems.map((_, i) => i))}
+                            className="text-xs"
+                          >
+                            Select All
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedExtractedItems([])}
+                            className="text-xs"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="max-h-[300px] overflow-y-auto space-y-2">
+                        {extractedItems.map((item, index) => {
+                          const catInfo = CATEGORIES.find(c => c.value === item.category);
+                          const isSelected = selectedExtractedItems.includes(index);
+                          return (
+                            <label
+                              key={index}
+                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'border-orange-400 bg-orange-50' 
+                                  : 'border-stone-200 hover:border-orange-200'
+                              }`}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleExtractedItem(index)}
+                                className="border-stone-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                              />
+                              <span className="text-lg">{catInfo?.emoji || '📦'}</span>
+                              <div className="flex-1">
+                                <p className="font-medium text-[#1A2E1A]">{item.name}</p>
+                                <p className="text-xs text-stone-500">
+                                  {item.quantity} {item.unit} • {catInfo?.label || 'Other'}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setExtractedItems([]);
+                            setSelectedExtractedItems([]);
+                          }}
+                          className="flex-1"
+                        >
+                          Scan Another
+                        </Button>
+                        <Button
+                          onClick={addExtractedItemsToPantry}
+                          disabled={saving || selectedExtractedItems.length === 0}
+                          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                          data-testid="add-receipt-items-btn"
+                        >
+                          {saving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            `Add ${selectedExtractedItems.length} Items`
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            
             {/* Essentials Dialog */}
             <Dialog open={essentialsDialogOpen} onOpenChange={setEssentialsDialogOpen}>
               <DialogTrigger asChild>
