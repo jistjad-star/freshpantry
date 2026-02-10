@@ -401,9 +401,9 @@ export default function MealSuggestions() {
                         
                         {/* Show expiring ingredients used */}
                         {suggestion.expiring_ingredients_used > 0 && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 flex items-center gap-1">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 flex items-center gap-1" title={suggestion.expiring_ingredients_list?.join(', ')}>
                             <CalendarClock className="w-3 h-3" />
-                            Uses {suggestion.expiring_ingredients_used} expiring
+                            Uses {suggestion.expiring_ingredients_used} expiring: {suggestion.expiring_ingredients_list?.slice(0, 2).join(', ')}{suggestion.expiring_ingredients_list?.length > 2 ? '...' : ''}
                           </span>
                         )}
                         
