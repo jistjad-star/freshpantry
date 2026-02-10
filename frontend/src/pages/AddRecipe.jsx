@@ -615,11 +615,38 @@ Example:
                 </div>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
                   {ingredients.map((ing, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg">
-                      <span className="text-sm">
-                        <span className="text-[#4A7C59] font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
-                      </span>
-                      <button onClick={() => setIngredients(prev => prev.filter((_, idx) => idx !== i))} className="text-stone-400 hover:text-red-500">
+                    <div key={i} className="flex items-center gap-2 p-2 bg-stone-50 rounded-lg">
+                      <Input
+                        value={ing.quantity}
+                        onChange={(e) => {
+                          const updated = [...ingredients];
+                          updated[i] = { ...ing, quantity: e.target.value };
+                          setIngredients(updated);
+                        }}
+                        className="fresh-input w-16 text-sm"
+                        placeholder="Qty"
+                      />
+                      <Input
+                        value={ing.unit}
+                        onChange={(e) => {
+                          const updated = [...ingredients];
+                          updated[i] = { ...ing, unit: e.target.value };
+                          setIngredients(updated);
+                        }}
+                        className="fresh-input w-20 text-sm"
+                        placeholder="Unit"
+                      />
+                      <Input
+                        value={ing.name}
+                        onChange={(e) => {
+                          const updated = [...ingredients];
+                          updated[i] = { ...ing, name: e.target.value };
+                          setIngredients(updated);
+                        }}
+                        className="fresh-input flex-1 min-w-[180px] text-sm"
+                        placeholder="Ingredient name"
+                      />
+                      <button onClick={() => setIngredients(prev => prev.filter((_, idx) => idx !== i))} className="text-stone-400 hover:text-red-500 p-1">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
