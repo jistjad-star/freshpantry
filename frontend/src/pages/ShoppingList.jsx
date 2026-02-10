@@ -223,6 +223,41 @@ export default function ShoppingList() {
             <p className="text-stone-500">{totalItems > 0 ? `${checkedItems} of ${totalItems} items` : "No items yet"}</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Check All / Uncheck All */}
+            {totalItems > 0 && (
+              <>
+                {checkedItems < totalItems && (
+                  <Button 
+                    variant="outline" 
+                    onClick={async () => {
+                      const allChecked = shoppingList.items.map(item => ({ ...item, checked: true }));
+                      await api.updateShoppingList(allChecked);
+                      setShoppingList(prev => ({ ...prev, items: allChecked }));
+                      toast.success("All items checked");
+                    }}
+                    className="border-[#4A7C59] text-[#4A7C59]"
+                    data-testid="check-all-btn"
+                  >
+                    <Check className="w-4 h-4 mr-2" />Check All
+                  </Button>
+                )}
+                {checkedItems > 0 && checkedItems === totalItems && (
+                  <Button 
+                    variant="outline" 
+                    onClick={async () => {
+                      const allUnchecked = shoppingList.items.map(item => ({ ...item, checked: false }));
+                      await api.updateShoppingList(allUnchecked);
+                      setShoppingList(prev => ({ ...prev, items: allUnchecked }));
+                      toast.success("All items unchecked");
+                    }}
+                    className="border-stone-200 text-stone-600"
+                    data-testid="uncheck-all-btn"
+                  >
+                    Uncheck All
+                  </Button>
+                )}
+              </>
+            )}
             {totalItems > checkedItems && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
