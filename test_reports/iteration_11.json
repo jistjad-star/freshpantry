@@ -1,0 +1,113 @@
+{
+  "summary": "Tested 7 new features for Fresh Pantry app iteration 11: Image choice Select dropdown in AddRecipe, 'Use expiring items' toggle in WeeklyPlanner, related_recipe_count filtering to 2+ shared ingredients, RecipeLibrary img tag with loading='eager', AI images stored as base64, and recipe import image conversion. All features verified working.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "AddRecipe: Image choice is now a Select dropdown (not buttons)",
+    "AddRecipe: Select dropdown has 3 options: 'AI Generate', 'Upload My Photo', 'No Photo'",
+    "AddRecipe: data-testid='image-choice-select' present on dropdown",
+    "AddRecipe: 'AI Generate' is default selection",
+    "WeeklyPlanner: 'Use expiring items' toggle in Suggested tab",
+    "WeeklyPlanner: Toggle has data-testid='planner-expiring-toggle'",
+    "WeeklyPlanner: Toggle shows 'Use expiring items' when off (gray)",
+    "WeeklyPlanner: Toggle shows 'Showing expiring items' when on (red/pink)",
+    "MealSuggestions: related_recipe_count only counts recipes sharing 2+ ingredients",
+    "MealSuggestions: API returns shared_ingredient_count, related_recipe_count, composite_score",
+    "MealSuggestions: expiring_soon=true filter works correctly",
+    "RecipeLibrary: Uses <img> tag instead of background-image (verified in code)",
+    "RecipeLibrary: img has loading='eager' attribute (line 436)",
+    "RecipeLibrary: img has onError fallback handler (line 438)",
+    "Backend: generate_recipe_image converts AI images to base64 data URLs",
+    "Backend: import_shared_recipes downloads and converts images to base64",
+    "Backend: Recipe creation with skip_image_generation=true works",
+    "Backend: Recipe creation with own base64 image works",
+    "Backend: /api/suggestions/meals returns composite_score field",
+    "Backend: /api/recipes/grouped endpoint works",
+    "Backend: /api/pantry/expiring-soon endpoint works"
+  ],
+  
+  "test_report_links": [
+    "/app/backend/tests/test_iteration11_features.py",
+    "/app/test_reports/pytest/pytest_results_iter11.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "Image choice Select dropdown correctly implemented with 3 options and proper data-testid",
+    "WeeklyPlanner expiring toggle correctly filters suggestions via API",
+    "related_recipe_count formula: only counts recipes where count >= 2 (line 875 in server.py)",
+    "Composite score formula: (match_pct * 0.4) + (shared_count * 8 * 0.25) + (multi_share_bonus * 0.25) + expiring_bonus",
+    "multi_share_bonus = len(recipes_sharing_multiple) * 15",
+    "RecipeLibrary uses img tag with loading='eager' and onError fallback",
+    "AI images converted to base64 data URLs for permanent storage (prevents CDN expiry)"
+  ],
+  
+  "updated_files": [
+    "/app/backend/tests/test_iteration11_features.py - Created comprehensive test file for iteration 11 features"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (all UI tests passed)"
+  },
+  
+  "seed_data_creation": "Used existing test session: test_session_1770742873843",
+  
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "All 7 features verified working: 1) AddRecipe image choice is now Select dropdown with AI Generate/Upload My Photo/No Photo options, 2) WeeklyPlanner has 'Use expiring items' toggle in Suggested tab, 3) Toggle shows 'X exp' badge when expiring filter is on, 4) related_recipe_count only counts recipes sharing 2+ ingredients, 5) RecipeLibrary uses img tag with loading='eager' and onError fallback, 6) AI images stored as base64 data URLs, 7) Recipe import converts images to base64. Test session: test_session_1770742873843",
+  
+  "features_verified": {
+    "image_choice_select_dropdown": {
+      "status": "WORKING",
+      "details": "Select dropdown with 3 options: AI Generate (default), Upload My Photo, No Photo. Has data-testid='image-choice-select'"
+    },
+    "weekly_planner_expiring_toggle": {
+      "status": "WORKING",
+      "details": "Toggle button in Suggested tab with CalendarClock icon. Shows 'Use expiring items' when off, 'Showing expiring items' when on (red background)"
+    },
+    "expiring_badge_in_suggestions": {
+      "status": "WORKING",
+      "details": "Suggestions show 'X exp' badge when using expiring filter. Badge shows expiring_ingredients_used count"
+    },
+    "related_recipe_count_2plus": {
+      "status": "WORKING",
+      "details": "related_recipe_count now only counts recipes sharing 2+ ingredients (line 875: count >= 2)"
+    },
+    "recipe_library_img_tag": {
+      "status": "WORKING",
+      "details": "Uses <img> tag with loading='eager' and onError fallback that shows ChefHat icon"
+    },
+    "ai_images_base64": {
+      "status": "WORKING",
+      "details": "generate_recipe_image downloads AI image and converts to base64 data URL for permanent storage"
+    },
+    "recipe_import_base64": {
+      "status": "WORKING",
+      "details": "import_shared_recipes downloads remote images and converts to base64 data URLs"
+    }
+  },
+  
+  "data_testid_attributes_verified": [
+    "add-recipe-page",
+    "recipe-name-input",
+    "image-choice-select",
+    "paste-ingredients-input",
+    "paste-instructions-input",
+    "weekly-planner-page",
+    "add-meal-monday",
+    "planner-expiring-toggle"
+  ]
+}
