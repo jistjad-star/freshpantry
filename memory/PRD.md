@@ -83,6 +83,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - **Added**: "Own Recipe" as first source option in Add Recipe form
 - **Added**: Source filter dropdown in Recipe Library - Filter by recipe source (Green Chef, Gousto, etc.)
 - **Added**: Clear Filters button with active filter count in Recipe Library
+- **Added**: Custom pantry alerts - Bell icon on each item to set low stock threshold
+- **Added**: Add Essentials button - Quick-add 15 common kitchen staples with pre-set alerts
+- **Fixed**: Separate ingredient/instruction inputs in AddRecipe Paste method - Prevents AI from extracting food names from instructions
 
 ### 2025-02-09 (Session 4)
 - **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
