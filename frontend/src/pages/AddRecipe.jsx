@@ -13,6 +13,7 @@ import api from "@/lib/api";
 export default function AddRecipe() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const photoInputRef = useRef(null);
   
   // Form state
