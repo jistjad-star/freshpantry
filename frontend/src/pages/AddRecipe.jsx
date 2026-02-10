@@ -236,6 +236,20 @@ export default function AddRecipe() {
                           RECIPE_SOURCES.find(s => s.value === source)?.label || 
                           (urlInput ? extractUrl(urlInput) : "");
       
+      // Handle image based on choice
+      let imageUrl = "";
+      if (imageChoice === 'own' && ownPhoto) {
+        // Upload own photo (convert to base64 for storage)
+        const reader = new FileReader();
+        imageUrl = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(ownPhoto);
+        });
+      } else if (imageChoice === 'none') {
+        imageUrl = ""; // No image
+      }
+      // If imageChoice === 'ai', leave imageUrl empty and backend will generate
+      
       const recipeData = {
         name: recipeName,
         description: "",
@@ -245,7 +259,8 @@ export default function AddRecipe() {
         ingredients,
         instructions,
         source_url: recipeSource,
-        image_url: ""
+        image_url: imageUrl,
+        skip_image_generation: imageChoice !== 'ai' // Tell backend not to generate AI image
       };
       
       const response = await api.createRecipe(recipeData);
