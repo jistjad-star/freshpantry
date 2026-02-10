@@ -10,6 +10,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] AI ingredient parsing from pasted text
 - [x] AI ingredient extraction from screenshots
 - [x] AI instruction extraction from screenshots
+- [x] **Separate ingredient/instruction inputs** - Paste method has two text areas to prevent mixing
 - [x] Recipe editing after creation
 - [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy)
 - [x] **Meal type filters** - Breakfast, Lunch, Dinner, Snack filters in recipe library
