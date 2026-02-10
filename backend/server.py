@@ -1018,16 +1018,13 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
         return consolidated
     
     # Otherwise try AI for smarter consolidation
-    if not openai_client:
+    if not llm_chat:
         return consolidated
     
     try:
         items_text = "\n".join([f"- {item.quantity} {item.unit} {item.name} (from: {item.recipe_source or 'manual'})" for item in items])
         
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": """You are a helpful assistant that consolidates shopping list items.
+        system_message = """You are a helpful assistant that consolidates shopping list items.
             Combine similar ingredients and ADD their quantities together.
             Example: "2 cups flour" + "1 cup flour" = "3 cups flour"
             Example: "1 onion" + "2 onions" = "3 onions"
@@ -1044,10 +1041,14 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
             - checked: false
             - recipe_source: string (list all source recipes) or null
             
-            No markdown or explanation, just the JSON array."""},
-                {"role": "user", "content": f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}"}
-            ]
-        )
+            No markdown or explanation, just the JSON array."""
+
+        user_message = f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}"
+        
+        response = await llm_chat.chat([
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ])
         
         result = response.choices[0].message.content
         
