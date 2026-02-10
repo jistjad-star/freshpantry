@@ -2317,32 +2317,6 @@ async def get_expiring_items(request: Request, days: int = 7):
         "expired_items": expired_items,
         "message": f"Found {len(expiring_items)} items expiring within {days} days, {len(expired_items)} already expired"
     }
-    
-    for item in pantry.get('items', []):
-        if item['quantity'] <= item.get('min_threshold', 0):
-            category = item.get('category', 'other').lower()
-            name_lower = item.get('name', '').lower()
-            
-            # Check if it's a staple category or contains staple keywords
-            is_staple = (
-                category in STAPLE_CATEGORIES or
-                any(kw in name_lower for kw in STAPLE_KEYWORDS)
-            )
-            
-            if is_staple:
-                low_stock.append(item)
-                suggested_shopping.append({
-                    "name": item['name'],
-                    "current": item['quantity'],
-                    "unit": item['unit'],
-                    "suggested_buy": item.get('typical_purchase', 1) or 1,
-                    "category": item.get('category', 'other')
-                })
-    
-    return {
-        "low_stock_items": low_stock,
-        "suggested_shopping": suggested_shopping
-    }
 
 @api_router.post("/pantry/add-from-shopping")
 async def add_from_shopping_list(request: Request):
