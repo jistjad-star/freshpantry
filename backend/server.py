@@ -905,38 +905,33 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
     fish_keywords = ['fish', 'salmon', 'tuna', 'cod', 'shrimp', 'prawn', 'seafood', 'crab', 'lobster', 'anchov', 'mackerel', 'trout']
     dairy_keywords = ['milk', 'cheese', 'cream', 'butter', 'yogurt', 'yoghurt']
     egg_keywords = ['egg']
-    # Easy to substitute ingredients (can be made vegan with simple swaps)
-    easy_swap_dairy = ['milk', 'butter', 'cream', 'yogurt', 'yoghurt']  # Easy vegan alternatives exist
-    easy_swap_egg = ['egg']  # Can use flax egg, etc.
+    
+    # Heavy meat dishes that are harder to make vegan (meat is the star)
+    heavy_meat_keywords = ['steak', 'roast beef', 'pork belly', 'lamb shank', 'ribeye', 'brisket', 'ribs']
     
     has_meat = any(kw in all_ingredients for kw in meat_keywords)
     has_fish = any(kw in all_ingredients for kw in fish_keywords)
     has_dairy = any(kw in all_ingredients for kw in dairy_keywords)
     has_egg = any(kw in all_ingredients for kw in egg_keywords)
-    has_cheese = 'cheese' in all_ingredients  # Cheese is harder to substitute well
-    
-    # Check if dairy/eggs are the ONLY non-vegan ingredients (easy swaps available)
-    only_has_easy_swaps = (
-        not has_meat and 
-        not has_fish and 
-        not has_cheese and
-        (has_dairy or has_egg)
-    )
+    is_heavy_meat = any(kw in all_ingredients for kw in heavy_meat_keywords)
     
     # Vegan: no meat, fish, dairy, eggs
     if not has_meat and not has_fish and not has_dairy and not has_egg:
         categories.append('vegan')
         categories.append('vegetarian')
-    # Can be Vegan: only has milk/butter/cream/eggs which have easy vegan swaps
-    elif only_has_easy_swaps:
-        categories.append('can-be-vegan')
-        categories.append('vegetarian')
-    # Vegetarian: no meat, no fish
+    # Vegetarian: no meat, no fish (but has dairy/eggs) - Can be Vegan with swaps
     elif not has_meat and not has_fish:
         categories.append('vegetarian')
-    # Pescatarian: has fish but no meat
+        categories.append('can-be-vegan')  # Just swap dairy/eggs for vegan alternatives
+    # Pescatarian: has fish but no meat - Can be Vegan (swap fish for tofu/banana blossom)
     elif has_fish and not has_meat:
         categories.append('pescatarian')
+        categories.append('can-be-vegan')  # Fish can be swapped
+    # Has meat but not a heavy meat dish - Can be Vegan (swap protein)
+    elif has_meat and not is_heavy_meat:
+        categories.append('can-be-vegan')  # Chicken/turkey etc can be swapped for tofu, seitan
+    # Heavy meat dishes - don't tag as can-be-vegan (meat is the star)
+    # No vegan-related category for these
     
     # Quick & Easy: based on cooking time
     def parse_time_minutes(time_str: str) -> int:
