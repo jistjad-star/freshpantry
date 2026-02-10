@@ -98,6 +98,7 @@ export default function Pantry() {
 
   useEffect(() => {
     fetchPantry();
+    fetchExpiringItems();
   }, []);
 
   const fetchPantry = async () => {
@@ -108,6 +109,16 @@ export default function Pantry() {
       console.error("Error fetching pantry:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExpiringItems = async () => {
+    try {
+      const response = await api.getExpiringItems();
+      setExpiringItems(response.data.expiring_items || []);
+      setExpiredItems(response.data.expired_items || []);
+    } catch (error) {
+      console.error("Error fetching expiring items:", error);
     }
   };
 
