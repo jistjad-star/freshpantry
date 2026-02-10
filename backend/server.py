@@ -1011,21 +1011,23 @@ RULES:
             api_key=EMERGENT_LLM_KEY,
             session_id=f"extract_{uuid.uuid4().hex[:8]}",
             system_message=system_message
-        ).with_model("openai", "gpt-4o")  # Use gpt-4o for better vision
+        ).with_model("openai", "gpt-4o-mini")  # gpt-4o-mini for vision
         
-        # Create FileContent for the image
+        # Create FileContent for the image - use proper format
         file_content = FileContent(
             content_type="image",
             file_content_base64=image_base64
         )
         
         user_message = UserMessage(
-            text="This is a recipe card or recipe image. Please carefully examine it and extract ALL ingredients you can see. Look for an ingredients list, sidebar, or any text mentioning food items with quantities. Be thorough - check all parts of the image including corners and margins.",
+            text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities.",
             file_contents=[file_content]
         )
         
+        logger.info("Sending image to vision API for ingredient extraction...")
         result = await chat.send_message(user_message)
-        logger.info(f"Vision API response: {result[:500] if result else 'Empty'}")
+        logger.info(f"Vision API response length: {len(result) if result else 0}")
+        logger.info(f"Vision API response: {result[:1000] if result else 'Empty'}")
         
         # Parse response
         import json
