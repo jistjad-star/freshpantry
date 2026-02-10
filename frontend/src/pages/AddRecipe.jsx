@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, Plus, Camera, Link2, FileText, Sparkles, ChefHat, Clock, Users } from "lucide-react";
+import { Loader2, Trash2, Plus, Camera, Link2, FileText, Sparkles, ChefHat, Clock, Users, ImageIcon, ImageOff, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 
 const RECIPE_SOURCES = [
+  { value: "own-recipe", label: "Own Recipe" },
   { value: "green-chef", label: "Green Chef" },
   { value: "gousto", label: "Gousto" },
   { value: "hello-fresh", label: "Hello Fresh" },
