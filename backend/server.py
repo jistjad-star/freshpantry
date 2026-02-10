@@ -3745,20 +3745,23 @@ Return ONLY valid JSON, no markdown."""
             ])
             expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and should be used:\n{expiring_text}"
         
-        chat = LlmChat(
-            api_key=OPENAI_API_KEY,
-            session_id=f"generate_{uuid.uuid4().hex[:8]}",
-            system_message=system_msg
-        ).with_model("openai", "gpt-4o-mini")
-        
-        user_message = UserMessage(text=f"""Create a delicious recipe using these available ingredients:
+        user_prompt = f"""Create a delicious recipe using these available ingredients:
 
 {pantry_text}{expiring_context}
 
 Make sure the recipe is practical and tasty. Use primarily ingredients from the list.
-If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil.""")
+If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil."""
         
-        result = await chat.send_message(user_message)
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=2000
+        )
+        
+        result = response.choices[0].message.content
         
         import json
         clean_response = result.strip()
