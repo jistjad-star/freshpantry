@@ -445,10 +445,17 @@ export default function Pantry() {
                         ref={receiptInputRef}
                         type="file"
                         accept="image/*,application/pdf"
-                        capture="environment"
                         onChange={handleReceiptUpload}
                         className="hidden"
                         id="receipt-upload"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleReceiptUpload}
+                        className="hidden"
+                        id="receipt-camera"
                       />
                       
                       {scanningReceipt ? (
@@ -460,35 +467,28 @@ export default function Pantry() {
                       ) : (
                         <>
                           <FileImage className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-                          <p className="text-stone-600 mb-4">Drop a receipt here or click to upload</p>
+                          <p className="text-stone-600 mb-4">Upload a receipt image, screenshot, or PDF</p>
                           <div className="flex flex-wrap justify-center gap-3">
-                            <label htmlFor="receipt-upload">
-                              <Button 
-                                variant="outline" 
-                                className="border-orange-300 text-orange-600 hover:bg-orange-50 cursor-pointer"
-                                onClick={() => receiptInputRef.current?.click()}
-                                data-testid="upload-receipt-btn"
-                              >
-                                <Upload className="w-4 h-4 mr-2" />
-                                Upload Image/PDF
-                              </Button>
-                            </label>
-                            <label htmlFor="receipt-upload">
-                              <Button 
-                                className="bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
-                                onClick={() => {
-                                  receiptInputRef.current?.setAttribute('capture', 'environment');
-                                  receiptInputRef.current?.click();
-                                }}
-                                data-testid="camera-receipt-btn"
-                              >
-                                <Camera className="w-4 h-4 mr-2" />
-                                Take Photo
-                              </Button>
-                            </label>
+                            <Button 
+                              variant="outline" 
+                              className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                              onClick={() => receiptInputRef.current?.click()}
+                              data-testid="upload-receipt-btn"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload Image/PDF
+                            </Button>
+                            <Button 
+                              className="bg-orange-500 hover:bg-orange-600 text-white"
+                              onClick={() => document.getElementById('receipt-camera')?.click()}
+                              data-testid="camera-receipt-btn"
+                            >
+                              <Camera className="w-4 h-4 mr-2" />
+                              Take Photo
+                            </Button>
                           </div>
                           <p className="text-xs text-stone-400 mt-4">
-                            Supports: JPEG, PNG, PDF receipts from any supermarket
+                            Supports: JPEG, PNG, screenshots, PDF receipts
                           </p>
                         </>
                       )}
