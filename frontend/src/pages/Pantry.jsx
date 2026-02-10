@@ -505,14 +505,13 @@ export default function Pantry() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[#1A2E1A]">Typical Purchase</Label>
+                      <Label className="text-[#1A2E1A]">Sell By Date</Label>
                       <Input
-                        type="number"
-                        placeholder="Usually buy..."
-                        value={newItem.typical_purchase}
-                        onChange={(e) => setNewItem(prev => ({ ...prev, typical_purchase: e.target.value }))}
+                        type="date"
+                        value={newItem.expiry_date}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, expiry_date: e.target.value }))}
                         className="fresh-input"
-                        data-testid="pantry-item-typical"
+                        data-testid="pantry-item-expiry"
                       />
                     </div>
                   </div>
