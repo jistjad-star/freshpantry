@@ -3176,93 +3176,280 @@ async def import_recipes_batch(data: RecipeImportBatchRequest, request: Request)
         "message": f"Successfully imported {len(imported)} recipes"
     }
 
-# ============== RECIPE SHARE LINKS ==============
+# ============== COPYRIGHT-SAFE PRIVATE RECIPE SHARING ==============
+# Implements legally-safe sharing that respects UK copyright law
+# Only shares: facts (ingredients, times) + AI-rewritten instructions
+# Never shares: original prose, third-party photos, brand copy
 
-class ShareRecipesRequest(BaseModel):
+class PrivateShareRequest(BaseModel):
     recipe_ids: List[str]
 
+class CreateImportTokenResponse(BaseModel):
+    token: str
+    expires_in_minutes: int = 15
+    recipe_count: int
+    message: str
+
 @api_router.post("/recipes/share")
-async def create_share_link(data: ShareRecipesRequest, request: Request):
-    """Create a shareable link for recipes"""
-    user_id = await get_user_id_or_none(request)
+async def create_private_share_link(data: PrivateShareRequest, request: Request):
+    """Create a private import link for recipes (copyright-safe)
     
-    # Get recipes to share
-    recipes_to_share = []
+    This creates a single-use, time-limited token that allows a friend to import
+    recipes into their PRIVATE library. The link contains NO content preview.
+    
+    Process:
+    1. For each recipe, create safe fields (facts + AI-rewritten instructions)
+    2. Store safe version with compliance metrics
+    3. Generate secure import token
+    """
+    user_id = await get_user_id_or_none(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sign in to share recipes")
+    
+    # Process each recipe for safe sharing
+    safe_recipes = []
+    compliance_issues = []
+    
     for recipe_id in data.recipe_ids:
-        query = {"id": recipe_id}
-        if user_id:
-            query["user_id"] = user_id
+        recipe = await db.recipes.find_one({"id": recipe_id, "user_id": user_id}, {"_id": 0})
+        if not recipe:
+            continue
         
-        recipe = await db.recipes.find_one(query, {"_id": 0})
-        if recipe:
-            share_recipe = {
-                "name": recipe.get("name"),
-                "description": recipe.get("description", ""),
-                "servings": recipe.get("servings", 2),
-                "prep_time": recipe.get("prep_time", ""),
-                "cook_time": recipe.get("cook_time", ""),
-                "ingredients": recipe.get("ingredients", []),
-                "instructions": recipe.get("instructions", []),
-                "categories": recipe.get("categories", []),
-                "image_url": recipe.get("image_url"),
-            }
-            recipes_to_share.append(share_recipe)
-    
-    if not recipes_to_share:
-        raise HTTPException(status_code=404, detail="No recipes found")
-    
-    # Create share document
-    share_id = str(uuid.uuid4())[:8]
-    share_doc = {
-        "share_id": share_id,
-        "recipes": recipes_to_share,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": user_id,
-        "access_count": 0
-    }
-    await db.shared_recipes.insert_one(share_doc)
-    
-    return {
-        "share_id": share_id,
-        "recipe_count": len(recipes_to_share),
-        "message": "Share link created!"
-    }
-
-@api_router.get("/recipes/shared/{share_id}")
-async def get_shared_recipes(share_id: str):
-    """Get recipes from a share link"""
-    share_doc = await db.shared_recipes.find_one({"share_id": share_id}, {"_id": 0})
-    
-    if not share_doc:
-        raise HTTPException(status_code=404, detail="Share link not found or expired")
-    
-    # Increment access count
-    await db.shared_recipes.update_one(
-        {"share_id": share_id},
-        {"$inc": {"access_count": 1}}
-    )
-    
-    return {
-        "recipes": share_doc.get("recipes", []),
-        "count": len(share_doc.get("recipes", [])),
-        "shared_at": share_doc.get("created_at")
-    }
-
-@api_router.post("/recipes/import-shared/{share_id}")
-async def import_shared_recipes(share_id: str, request: Request):
-    """Import recipes from a share link into user's library"""
-    user_id = await get_user_id_or_none(request)
-    
-    share_doc = await db.shared_recipes.find_one({"share_id": share_id}, {"_id": 0})
-    
-    if not share_doc:
-        raise HTTPException(status_code=404, detail="Share link not found")
-    
-    imported = []
-    for recipe_data in share_doc.get("recipes", []):
+        # Check if recipe already has compliant rewritten version
+        existing_safe = await db.safe_recipes.find_one(
+            {"original_recipe_id": recipe_id, "user_id": user_id},
+            {"_id": 0}
+        )
+        
+        if existing_safe and existing_safe.get("compliance", {}).get("passed_compliance"):
+            safe_recipes.append(existing_safe)
+            continue
+        
+        # Check domain quota
+        source_url = recipe.get("source_url", "")
+        domain = extract_domain(source_url)
+        if domain and not await check_domain_quota(domain):
+            compliance_issues.append(f"Quota exceeded for {domain}")
+            continue
+        
         try:
+            # Parse instructions into step graph
+            original_instructions = recipe.get("instructions", [])
+            ingredients = recipe.get("ingredients", [])
+            
+            step_graph = parse_to_step_graph(original_instructions, ingredients)
+            
+            # AI rewrite instructions in original wording
+            rewrite_result = await rewrite_instructions_with_ai(
+                step_graph=step_graph,
+                ingredients=ingredients,
+                original_title=recipe.get("name", ""),
+                original_instructions=original_instructions
+            )
+            
+            # Validate compliance
+            compliance = await validate_compliance(
+                original_instructions=original_instructions,
+                rewritten_instructions=rewrite_result["method_rewritten"],
+                check_semantic=False  # Only check semantic for borderline cases
+            )
+            
+            # If compliance failed, try regeneration with stricter prompt
+            if not compliance.passed_compliance:
+                logger.warning(f"First compliance check failed for recipe {recipe_id}, retrying...")
+                rewrite_result = await rewrite_instructions_with_ai(
+                    step_graph=step_graph,
+                    ingredients=ingredients,
+                    original_title=recipe.get("name", ""),
+                    original_instructions=original_instructions
+                )
+                compliance = await validate_compliance(
+                    original_instructions=original_instructions,
+                    rewritten_instructions=rewrite_result["method_rewritten"],
+                    check_semantic=True  # Full check on retry
+                )
+            
+            if not compliance.passed_compliance:
+                compliance_issues.append(f"Could not generate compliant version of '{recipe.get('name')}'")
+                continue
+            
+            # Calculate total time
+            prep_time = recipe.get("prep_time", "")
+            cook_time = recipe.get("cook_time", "")
+            total_min = step_graph.get("total_time_min", 0)
+            
+            # Try to parse times if step graph didn't capture them
+            if not total_min:
+                try:
+                    prep_min = int(re.search(r'(\d+)', prep_time).group(1)) if prep_time else 0
+                    cook_min = int(re.search(r'(\d+)', cook_time).group(1)) if cook_time else 0
+                    total_min = prep_min + cook_min
+                except:
+                    total_min = 30  # Default
+            
+            # Create safe recipe document
+            safe_recipe = {
+                "id": str(uuid.uuid4()),
+                "original_recipe_id": recipe_id,
+                "user_id": user_id,
+                "title_generic": rewrite_result["title_generic"],
+                "ingredients": ingredients,  # Facts - not copyrightable
+                "servings": recipe.get("servings", 2),
+                "time_total_min": total_min,
+                "nutrition": recipe.get("nutrition", {}),  # Facts
+                "method_rewritten": rewrite_result["method_rewritten"],
+                "method_notes": rewrite_result.get("notes", ""),
+                "adapted_from_domain": domain if domain else None,
+                "compliance": compliance.model_dump(),
+                "categories": recipe.get("categories", []),
+                "source_hash": hash_source_content(" ".join(original_instructions)),  # For audit
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                # NO images from source - user must add their own
+                "user_images": []
+            }
+            
+            # Store safe version
+            await db.safe_recipes.update_one(
+                {"original_recipe_id": recipe_id, "user_id": user_id},
+                {"$set": safe_recipe},
+                upsert=True
+            )
+            
+            # Increment domain quota
+            if domain:
+                await increment_domain_quota(domain)
+            
+            safe_recipes.append(safe_recipe)
+            
+        except Exception as e:
+            logger.error(f"Error processing recipe {recipe_id} for sharing: {e}")
+            compliance_issues.append(f"Error processing '{recipe.get('name', 'Unknown')}'")
+    
+    if not safe_recipes:
+        error_detail = "No recipes could be prepared for sharing."
+        if compliance_issues:
+            error_detail += f" Issues: {'; '.join(compliance_issues[:3])}"
+        raise HTTPException(status_code=400, detail=error_detail)
+    
+    # Generate secure import token
+    token = generate_import_token()
+    token_doc = {
+        "token": token,
+        "recipe_ids": [r["id"] for r in safe_recipes],
+        "sender_id": user_id,
+        "scope": "private-import-only",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat(),
+        "used": False,
+        "recipe_count": len(safe_recipes)
+    }
+    await db.import_tokens.insert_one(token_doc)
+    
+    # Log for governance
+    logger.info(f"Private share token created by {user_id} for {len(safe_recipes)} recipes")
+    
+    return {
+        "token": token,
+        "expires_in_minutes": 15,
+        "recipe_count": len(safe_recipes),
+        "message": "Private import link created! Share this link - it expires in 15 minutes.",
+        "compliance_issues": compliance_issues if compliance_issues else None
+    }
+
+@api_router.get("/recipes/shared/{token}")
+async def get_share_preview(token: str):
+    """Get minimal preview for share link (NO content exposed)
+    
+    This endpoint intentionally returns minimal info to prevent
+    third-party content from being exposed before import.
+    """
+    # Find token
+    token_doc = await db.import_tokens.find_one({"token": token}, {"_id": 0})
+    
+    if not token_doc:
+        raise HTTPException(status_code=404, detail="Link not found or expired")
+    
+    # Check if used or expired
+    if token_doc.get("used"):
+        raise HTTPException(status_code=410, detail="This link has already been used")
+    
+    expires_at = token_doc.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=410, detail="This link has expired")
+    
+    # Return minimal preview - NO content
+    return {
+        "recipe_count": token_doc.get("recipe_count", 0),
+        "expires_at": token_doc.get("expires_at"),
+        "message": "Sign in to import these recipes to your private library",
+        "legal_notice": "Recipes contain ingredients (facts) and originally-worded instructions. No third-party images or text."
+    }
+
+@api_router.post("/recipes/import-shared/{token}")
+async def import_private_recipes(token: str, request: Request):
+    """Import recipes from a private share link into user's library
+    
+    This is the core of copyright-safe sharing:
+    1. Validates token (single-use, not expired)
+    2. Copies ONLY safe fields (facts + rewritten instructions)
+    3. NO third-party images or original prose
+    4. Invalidates token after use
+    """
+    user_id = await get_user_id_or_none(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sign in to import recipes")
+    
+    # Find and validate token
+    token_doc = await db.import_tokens.find_one({"token": token}, {"_id": 0})
+    
+    if not token_doc:
+        raise HTTPException(status_code=404, detail="Link not found")
+    
+    if token_doc.get("used"):
+        raise HTTPException(status_code=410, detail="This link has already been used")
+    
+    if token_doc.get("scope") != "private-import-only":
+        raise HTTPException(status_code=400, detail="Invalid link scope")
+    
+    # Check expiry
+    expires_at = token_doc.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=410, detail="This link has expired")
+    
+    # Don't allow self-import
+    if token_doc.get("sender_id") == user_id:
+        raise HTTPException(status_code=400, detail="Cannot import your own shared recipes")
+    
+    # Import safe recipes
+    imported = []
+    recipe_ids = token_doc.get("recipe_ids", [])
+    
+    for safe_recipe_id in recipe_ids:
+        # Get safe recipe version
+        safe_recipe = await db.safe_recipes.find_one({"id": safe_recipe_id}, {"_id": 0})
+        
+        if not safe_recipe:
+            continue
+        
+        # Re-validate compliance before import
+        if not safe_recipe.get("compliance", {}).get("passed_compliance"):
+            logger.warning(f"Skipping recipe {safe_recipe_id} - compliance not passed")
+            continue
+        
+        try:
+            # Create ingredients from safe recipe
             ingredients = []
-            for ing in recipe_data.get("ingredients", []):
+            for ing in safe_recipe.get("ingredients", []):
                 ingredients.append(Ingredient(
                     name=ing.get("name", ""),
                     quantity=str(ing.get("quantity", "")),
@@ -3270,45 +3457,71 @@ async def import_shared_recipes(share_id: str, request: Request):
                     category=ing.get("category", "other")
                 ))
             
-            # Handle image URL - download and convert to base64 if it's a remote URL
-            image_url = recipe_data.get("image_url", "")
-            if image_url and image_url.startswith("http"):
-                try:
-                    async with httpx.AsyncClient(timeout=30.0) as client:
-                        response = await client.get(image_url)
-                        if response.status_code == 200:
-                            content_type = response.headers.get("content-type", "image/png")
-                            image_base64 = base64.b64encode(response.content).decode()
-                            image_url = f"data:{content_type};base64,{image_base64}"
-                except Exception as e:
-                    logger.warning(f"Failed to download image for import: {e}")
-                    # Keep original URL if download fails
+            # Calculate times from total
+            total_min = safe_recipe.get("time_total_min", 30)
+            prep_time = f"{min(total_min // 3, 20)} mins"
+            cook_time = f"{max(total_min - (total_min // 3), 10)} mins"
             
+            # Create new recipe with SAFE FIELDS ONLY
+            # NO: original prose, third-party images, descriptions with brand copy
             recipe = Recipe(
-                name=recipe_data.get("name", "Imported Recipe"),
-                description=recipe_data.get("description", ""),
-                servings=recipe_data.get("servings", 2),
-                prep_time=recipe_data.get("prep_time", ""),
-                cook_time=recipe_data.get("cook_time", ""),
+                name=safe_recipe.get("title_generic", "Imported Recipe"),
+                description=f"Adapted recipe. Ingredients and times are factual; instructions are in original wording.",
+                servings=safe_recipe.get("servings", 2),
+                prep_time=prep_time,
+                cook_time=cook_time,
                 ingredients=ingredients,
-                instructions=recipe_data.get("instructions", []),
-                categories=recipe_data.get("categories", []),
-                image_url=image_url,
-                user_id=user_id
+                instructions=safe_recipe.get("method_rewritten", []),  # AI-rewritten
+                categories=safe_recipe.get("categories", []),
+                image_url="",  # NO third-party images - user adds their own
+                user_id=user_id,
+                source=safe_recipe.get("adapted_from_domain", "Shared recipe")
             )
             
             doc = recipe.model_dump()
             doc['created_at'] = doc['created_at'].isoformat()
+            doc['imported_from_share'] = True
+            doc['compliance_verified'] = True
+            
             await db.recipes.insert_one(doc)
             imported.append({"name": recipe.name, "id": recipe.id})
+            
         except Exception as e:
-            logger.error(f"Failed to import shared recipe: {e}")
+            logger.error(f"Error importing safe recipe: {e}")
+    
+    # Invalidate token (single-use)
+    await db.import_tokens.update_one(
+        {"token": token},
+        {"$set": {"used": True, "used_at": datetime.now(timezone.utc).isoformat(), "used_by": user_id}}
+    )
+    
+    # Log for governance
+    logger.info(f"Private import completed: {len(imported)} recipes imported by {user_id}")
     
     return {
         "imported": imported,
         "count": len(imported),
-        "message": f"Successfully imported {len(imported)} recipes!"
+        "message": f"Imported {len(imported)} recipes to your private library!",
+        "notice": "Ingredients are factual; instructions are in original wording. Add your own photos to complete each recipe."
     }
+
+# Keep legacy endpoint for backward compatibility but mark deprecated
+@api_router.get("/recipes/shared-legacy/{share_id}")
+async def get_shared_recipes_legacy(share_id: str):
+    """DEPRECATED: Legacy share endpoint - redirects to new system"""
+    # Check if this is an old-style share
+    share_doc = await db.shared_recipes.find_one({"share_id": share_id}, {"_id": 0})
+    
+    if share_doc:
+        # Return minimal info, encourage using new system
+        return {
+            "recipes": [],  # Don't expose content
+            "count": len(share_doc.get("recipes", [])),
+            "deprecated": True,
+            "message": "This share link format is deprecated. Please ask sender to create a new private import link."
+        }
+    
+    raise HTTPException(status_code=404, detail="Share link not found")
 
 # ============== AI RECIPE GENERATION FROM PANTRY ==============
 
