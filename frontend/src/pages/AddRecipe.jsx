@@ -125,22 +125,34 @@ export default function AddRecipe() {
       let suggestedName = "";
       
       for (const file of images) {
+        console.log(`Processing image: ${file.name}, size: ${file.size}, type: ${file.type}`);
+        
         // Try parsing as ingredients
-        const ingResponse = await api.parseImage(file);
-        if (ingResponse.data.ingredients?.length > 0) {
-          allIngredients = [...allIngredients, ...ingResponse.data.ingredients];
+        try {
+          const ingResponse = await api.parseImage(file);
+          console.log("Ingredients response:", ingResponse.data);
+          if (ingResponse.data.ingredients?.length > 0) {
+            allIngredients = [...allIngredients, ...ingResponse.data.ingredients];
+          }
+        } catch (ingError) {
+          console.error("Error parsing ingredients:", ingError);
         }
         
         // Try parsing as instructions
-        const instResponse = await api.parseInstructionsImage(file);
-        if (instResponse.data.instructions?.length > 0) {
-          allInstructions = [...allInstructions, ...instResponse.data.instructions];
-        }
-        if (instResponse.data.prep_time) foundPrepTime = instResponse.data.prep_time;
-        if (instResponse.data.cook_time) foundCookTime = instResponse.data.cook_time;
-        // Get AI-suggested name (use first one found)
-        if (instResponse.data.suggested_name && !suggestedName) {
-          suggestedName = instResponse.data.suggested_name;
+        try {
+          const instResponse = await api.parseInstructionsImage(file);
+          console.log("Instructions response:", instResponse.data);
+          if (instResponse.data.instructions?.length > 0) {
+            allInstructions = [...allInstructions, ...instResponse.data.instructions];
+          }
+          if (instResponse.data.prep_time) foundPrepTime = instResponse.data.prep_time;
+          if (instResponse.data.cook_time) foundCookTime = instResponse.data.cook_time;
+          // Get AI-suggested name (use first one found)
+          if (instResponse.data.suggested_name && !suggestedName) {
+            suggestedName = instResponse.data.suggested_name;
+          }
+        } catch (instError) {
+          console.error("Error parsing instructions:", instError);
         }
       }
       
@@ -160,6 +172,12 @@ export default function AddRecipe() {
       // Set AI-suggested name if we don't have one yet
       if (suggestedName && !recipeName.trim()) {
         setRecipeName(suggestedName);
+      }
+      
+      // Show result message
+      if (uniqueIngredients.length === 0 && allInstructions.length === 0) {
+        toast.error("Could not extract recipe from images. Try clearer photos of the recipe card.");
+      } else if (suggestedName) {
         toast.success(`Found ${uniqueIngredients.length} ingredients, ${allInstructions.length} steps! Suggested name: "${suggestedName}"`);
       } else {
         toast.success(`Found ${uniqueIngredients.length} ingredients, ${allInstructions.length} steps!`);
@@ -167,7 +185,8 @@ export default function AddRecipe() {
       
       setIsParsed(true);
     } catch (error) {
-      toast.error("Failed to parse images");
+      console.error("Parse error:", error);
+      toast.error("Failed to parse images: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
