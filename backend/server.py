@@ -1050,7 +1050,7 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
             {"role": "user", "content": user_message}
         ])
         
-        result = response.choices[0].message.content
+        result = response.content
         
         import json
         clean_response = result.strip()
