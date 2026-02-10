@@ -1855,17 +1855,101 @@ async def parse_image(file: UploadFile = File(...)):
     
     return ImageParseResponse(ingredients_text=raw_text, ingredients=ingredients)
 
+
+async def rewrite_instructions_immediately(original_instructions: List[str], ingredients: List[dict] = None) -> List[str]:
+    """Rewrite instructions in original wording to ensure copyright safety.
+    This runs immediately after extraction, before storing."""
+    
+    if not openai_client or not original_instructions:
+        return original_instructions
+    
+    if len(original_instructions) < 2:
+        return original_instructions
+    
+    try:
+        system_prompt = """You are a culinary editor. Rewrite these cooking instructions in COMPLETELY DIFFERENT wording while keeping the same cooking steps and outcome.
+
+RULES:
+- Use DIFFERENT verbs and sentence structures than the original
+- Reorder independent prep steps where safe (e.g., preheating, chopping can be rearranged)
+- Split or combine steps differently than the original
+- Use metric measurements (g, ml) and standardize vague terms
+- Keep 6-12 concise imperative steps
+- NO phrase of 8+ consecutive words should match the original
+- Write in neutral, generic cooking instruction style
+- NO brand names, anecdotes, or personal commentary
+
+OUTPUT: Return ONLY a JSON array of rewritten instruction strings, no explanation."""
+
+        # Format original instructions for the prompt
+        original_text = "\n".join([f"{i+1}. {inst}" for i, inst in enumerate(original_instructions)])
+        
+        user_prompt = f"""Rewrite these cooking instructions in completely different wording:
+
+ORIGINAL INSTRUCTIONS:
+{original_text}
+
+Remember: Change the phrasing completely while keeping the same cooking process. Return only a JSON array of strings."""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=2000
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        # Parse JSON array
+        import json
+        if "```json" in result:
+            result = result.split("```json")[1].split("```")[0]
+        elif "```" in result:
+            result = result.split("```")[1].split("```")[0]
+        
+        result = result.strip()
+        
+        # Try to parse
+        try:
+            rewritten = json.loads(result)
+            if isinstance(rewritten, list) and len(rewritten) > 0:
+                logger.info(f"Rewrote {len(original_instructions)} instructions to {len(rewritten)} steps")
+                return rewritten
+        except json.JSONDecodeError:
+            # Try to find array in response
+            start = result.find("[")
+            end = result.rfind("]") + 1
+            if start >= 0 and end > start:
+                rewritten = json.loads(result[start:end])
+                if isinstance(rewritten, list):
+                    return rewritten
+        
+        logger.warning("Could not parse rewritten instructions, using originals")
+        return original_instructions
+        
+    except Exception as e:
+        logger.error(f"Error rewriting instructions: {e}")
+        return original_instructions
+
+
 @api_router.post("/parse-instructions-image")
 async def parse_instructions_image(file: UploadFile = File(...)):
-    """Extract cooking instructions from an uploaded image using AI vision"""
+    """Extract cooking instructions from an uploaded image using AI vision, then rewrite for copyright safety"""
     contents = await file.read()
     image_base64 = base64.b64encode(contents).decode('utf-8')
     
     raw_text, instructions, prep_time, cook_time, suggested_name = await extract_instructions_from_image(image_base64)
     
+    # IMMEDIATELY rewrite instructions for copyright safety
+    # The user never sees the original wording - only our rewritten version
+    if instructions and len(instructions) > 0:
+        instructions = await rewrite_instructions_immediately(instructions)
+    
     return {
-        "instructions_text": raw_text, 
-        "instructions": instructions,
+        "instructions_text": "",  # Don't return original text
+        "instructions": instructions,  # Rewritten instructions
         "prep_time": prep_time,
         "cook_time": cook_time,
         "suggested_name": suggested_name
