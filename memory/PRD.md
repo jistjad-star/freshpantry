@@ -16,9 +16,10 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Meal type filters** - Breakfast, Lunch, Dinner, Snack filters in recipe library
 - [x] **Source filter** - Filter recipes by source (Own Recipe, Green Chef, Gousto, etc.)
 - [x] Manual category editing
-- [x] **Photo choice when adding** - AI Generate, Upload Own Photo, or No Photo
-- [x] AI-generated recipe images
+- [x] **Photo choice dropdown** - AI Generate, Upload My Photo, or No Photo (Select dropdown)
+- [x] AI-generated recipe images (stored as base64 for permanent access)
 - [x] Recipe sharing via unique shareable links
+- [x] **Image transfer on import** - Images converted to base64 when importing shared recipes
 - [x] **Star Reviews** - Users can rate recipes 1-5 stars with optional comments
 - [x] **Sort by Popularity** - Recipe library can be sorted by rating (Top Rated, Newest, Default)
 - [x] **Favorites System** - Heart recipes and filter to show only favorites
