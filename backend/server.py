@@ -562,15 +562,12 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
 
 async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Use AI vision to extract ingredients from an image"""
-    if not openai_client:
-        logger.warning("No OpenAI API key found")
+    if not llm_chat:
+        logger.warning("No LLM API key found")
         return "", []
     
     try:
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": """You are a helpful assistant that extracts recipe ingredients from images.
+        system_message = """You are a helpful assistant that extracts recipe ingredients from images.
             Look carefully at the image and extract ALL text related to ingredients.
             Parse each ingredient into structured format.
             
@@ -584,13 +581,17 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
             
             Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
             
-            Return ONLY valid JSON, no markdown code blocks."""},
-                {"role": "user", "content": [
-                    {"type": "text", "text": "Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-                ]}
-            ]
+            Return ONLY valid JSON, no markdown code blocks."""
+
+        user_message = UserMessage(
+            content="Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units.",
+            images=[f"data:image/jpeg;base64,{image_base64}"]
         )
+        
+        response = await llm_chat.chat([
+            {"role": "system", "content": system_message},
+            user_message
+        ])
         
         result = response.choices[0].message.content
         logger.info(f"Vision API response: {result[:500] if result else 'Empty'}")
