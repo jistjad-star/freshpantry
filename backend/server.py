@@ -905,15 +905,31 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
     fish_keywords = ['fish', 'salmon', 'tuna', 'cod', 'shrimp', 'prawn', 'seafood', 'crab', 'lobster', 'anchov', 'mackerel', 'trout']
     dairy_keywords = ['milk', 'cheese', 'cream', 'butter', 'yogurt', 'yoghurt']
     egg_keywords = ['egg']
+    # Easy to substitute ingredients (can be made vegan with simple swaps)
+    easy_swap_dairy = ['milk', 'butter', 'cream', 'yogurt', 'yoghurt']  # Easy vegan alternatives exist
+    easy_swap_egg = ['egg']  # Can use flax egg, etc.
     
     has_meat = any(kw in all_ingredients for kw in meat_keywords)
     has_fish = any(kw in all_ingredients for kw in fish_keywords)
     has_dairy = any(kw in all_ingredients for kw in dairy_keywords)
     has_egg = any(kw in all_ingredients for kw in egg_keywords)
+    has_cheese = 'cheese' in all_ingredients  # Cheese is harder to substitute well
+    
+    # Check if dairy/eggs are the ONLY non-vegan ingredients (easy swaps available)
+    only_has_easy_swaps = (
+        not has_meat and 
+        not has_fish and 
+        not has_cheese and
+        (has_dairy or has_egg)
+    )
     
     # Vegan: no meat, fish, dairy, eggs
     if not has_meat and not has_fish and not has_dairy and not has_egg:
         categories.append('vegan')
+        categories.append('vegetarian')
+    # Can be Vegan: only has milk/butter/cream/eggs which have easy vegan swaps
+    elif only_has_easy_swaps:
+        categories.append('can-be-vegan')
         categories.append('vegetarian')
     # Vegetarian: no meat, no fish
     elif not has_meat and not has_fish:
