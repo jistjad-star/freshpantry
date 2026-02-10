@@ -15,9 +15,7 @@ WORKDIR /app
 
 # Copy backend
 COPY backend/requirements.txt ./
-# Install emergentintegrations from private index, then other requirements
-RUN pip install --no-cache-dir emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 
 # Copy frontend build into backend static folder
