@@ -149,9 +149,9 @@ class TestPantryExpiryFeatures:
         item = data.get("item", data)
         item_id = item.get("id")
         
-        # Now remove expiry date by setting to null
+        # Now remove expiry date using clear_expiry_date flag
         update_response = api_client.put(f"{BASE_URL}/api/pantry/items/{item_id}", json={
-            "expiry_date": None
+            "clear_expiry_date": True
         })
         
         assert update_response.status_code == 200, f"Failed to update: {update_response.text}"
