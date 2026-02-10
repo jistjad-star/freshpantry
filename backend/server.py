@@ -427,7 +427,7 @@ def estimate_cooking_times_from_instructions(instructions: List[str], recipe_nam
 
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
     """Use AI to parse raw ingredient text into structured data"""
-    if not llm_chat:
+    if not EMERGENT_LLM_KEY:
         logger.warning("No LLM API key found, returning empty ingredients")
         return []
     
@@ -448,14 +448,14 @@ For each ingredient, extract:
 
 Return ONLY a valid JSON array, no markdown or explanation."""
 
-        user_message = f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"parse_{uuid.uuid4().hex[:8]}",
+            system_message=system_message
+        ).with_model("openai", "gpt-4o-mini")
         
-        response = await llm_chat.chat([
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
-        ])
-        
-        result = response.content
+        user_message = UserMessage(text=f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}")
+        result = await chat.send_message(user_message)
         
         # Parse the JSON response
         import json
