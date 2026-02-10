@@ -76,6 +76,10 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - **Verified**: Shop All Button - Opens multiple browser tabs (one per unchecked item) at selected supermarket
 - **Added**: Multiple recipes per day in Weekly Planner - Changed from 7 meals/week limit to 4 meals/day limit
 - **Added**: Meal Type Filters in Recipe Library - Breakfast, Lunch, Dinner, Snack buttons filter by keyword matching
+- **Added**: Photo Choice when adding recipe - AI Generate (default), Upload Own Photo, or No Photo options
+- **Added**: "Own Recipe" as first source option in Add Recipe form
+- **Added**: Source filter dropdown in Recipe Library - Filter by recipe source (Green Chef, Gousto, etc.)
+- **Added**: Clear Filters button with active filter count in Recipe Library
 
 ### 2025-02-09 (Session 4)
 - **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
