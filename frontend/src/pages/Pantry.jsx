@@ -246,6 +246,49 @@ export default function Pantry() {
     setAlertDialogOpen(true);
   };
 
+  const openExpiryDialog = (item) => {
+    setExpiryItem(item);
+    setExpiryDialogOpen(true);
+  };
+
+  const updateItemExpiry = async (itemId, expiryDate) => {
+    try {
+      await api.updatePantryItem(itemId, { expiry_date: expiryDate || null });
+      fetchPantry();
+      fetchExpiringItems();
+      setExpiryDialogOpen(false);
+      setExpiryItem(null);
+      toast.success(expiryDate ? "Expiry date set" : "Expiry date removed");
+    } catch (error) {
+      console.error("Error updating expiry:", error);
+      toast.error("Failed to update expiry date");
+    }
+  };
+
+  // Get days until expiry for an item
+  const getDaysUntilExpiry = (item) => {
+    if (!item.expiry_date) return null;
+    try {
+      const expiry = new Date(item.expiry_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      expiry.setHours(0, 0, 0, 0);
+      return Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    } catch {
+      return null;
+    }
+  };
+
+  const getExpiryStatus = (daysUntil) => {
+    if (daysUntil === null) return null;
+    if (daysUntil < 0) return { label: 'Expired', color: 'bg-red-100 text-red-700', urgent: true };
+    if (daysUntil === 0) return { label: 'Today', color: 'bg-red-100 text-red-700', urgent: true };
+    if (daysUntil === 1) return { label: 'Tomorrow', color: 'bg-orange-100 text-orange-700', urgent: true };
+    if (daysUntil <= 3) return { label: `${daysUntil} days`, color: 'bg-orange-100 text-orange-700', urgent: true };
+    if (daysUntil <= 7) return { label: `${daysUntil} days`, color: 'bg-amber-100 text-amber-700', urgent: false };
+    return { label: `${daysUntil} days`, color: 'bg-stone-100 text-stone-600', urgent: false };
+  };
+
   // Get items already in pantry to exclude from essentials
   const existingItemNames = pantry?.items?.map(i => i.name.toLowerCase()) || [];
   const availableEssentials = SUGGESTED_ESSENTIALS.filter(
