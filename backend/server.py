@@ -2414,6 +2414,192 @@ async def add_from_shopping_list(request: Request):
     
     return {"message": f"Added {added_count} items to pantry", "added": added_count}
 
+@api_router.post("/pantry/scan-receipt")
+async def scan_receipt(request: Request, file: UploadFile = File(...)):
+    """Scan a receipt image/PDF and extract items to add to pantry"""
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=503, detail="AI features not available")
+    
+    user_id = await get_user_id_or_none(request)
+    
+    # Read file contents
+    contents = await file.read()
+    
+    # Determine file type and convert to base64
+    content_type = file.content_type or ""
+    filename = file.filename or ""
+    
+    # Handle PDF by extracting text or converting first page to image
+    if content_type == "application/pdf" or filename.lower().endswith('.pdf'):
+        # For PDFs, we'll use AI to extract text from the first page
+        image_base64 = base64.b64encode(contents).decode('utf-8')
+        # Note: For PDFs, we send as-is and let the vision model handle it
+        # If it fails, we'll need to use pdf2image library
+        is_pdf = True
+    else:
+        # For images (JPEG, PNG, etc.)
+        image_base64 = base64.b64encode(contents).decode('utf-8')
+        is_pdf = False
+    
+    try:
+        system_message = """You are a helpful assistant that extracts grocery items from supermarket receipts.
+        
+Look at this receipt image/document and extract ALL grocery items purchased.
+For each item, determine:
+- name: The product name (simplified, e.g., "Milk" not "TESCO SEMI SKIMMED MILK 2L")
+- quantity: How many were bought (default 1 if not shown)
+- unit: The unit (e.g., "L", "kg", "pack", "pieces", "g" - infer from product type)
+- category: One of: produce, dairy, protein, grains, pantry, spices, frozen, other
+
+Return ONLY a valid JSON array of items, no markdown or explanation:
+[
+    {"name": "Milk", "quantity": 2, "unit": "L", "category": "dairy"},
+    {"name": "Bread", "quantity": 1, "unit": "loaf", "category": "grains"},
+    ...
+]
+
+IMPORTANT:
+- Skip non-food items (bags, vouchers, discounts)
+- Simplify product names (remove brand names, size info)
+- Group similar items together (e.g., 2x bananas = quantity: 2)
+- Infer reasonable units from context"""
+
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"receipt_{uuid.uuid4().hex[:8]}",
+            system_message=system_message
+        ).with_model("openai", "gpt-4o-mini")
+        
+        # Determine image type for data URI
+        if is_pdf:
+            image_data_uri = f"data:application/pdf;base64,{image_base64}"
+        elif content_type.startswith("image/"):
+            image_data_uri = f"data:{content_type};base64,{image_base64}"
+        else:
+            image_data_uri = f"data:image/jpeg;base64,{image_base64}"
+        
+        user_message = UserMessage(
+            text="Extract all grocery items from this receipt. List each item with quantity, unit, and category.",
+            images=[image_data_uri]
+        )
+        
+        result = await chat.send_message(user_message)
+        logger.info(f"Receipt scan response: {result[:500] if result else 'Empty'}")
+        
+        # Parse response
+        import json
+        clean_response = result.strip()
+        
+        # Remove markdown if present
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
+        clean_response = clean_response.strip()
+        
+        # Try to parse JSON
+        try:
+            items_data = json.loads(clean_response)
+        except json.JSONDecodeError:
+            # Try to find JSON array in response
+            start = clean_response.find("[")
+            end = clean_response.rfind("]") + 1
+            if start >= 0 and end > start:
+                items_data = json.loads(clean_response[start:end])
+            else:
+                logger.error(f"Could not parse receipt JSON: {clean_response}")
+                return {"extracted_items": [], "message": "Could not parse receipt. Please try a clearer image."}
+        
+        # Validate and normalize items
+        extracted_items = []
+        for item in items_data:
+            if not item.get('name'):
+                continue
+            
+            extracted_items.append({
+                "name": str(item.get('name', '')).strip().title(),
+                "quantity": float(item.get('quantity', 1)),
+                "unit": str(item.get('unit', '')).strip().lower(),
+                "category": item.get('category', 'other').lower()
+            })
+        
+        logger.info(f"Extracted {len(extracted_items)} items from receipt")
+        
+        return {
+            "extracted_items": extracted_items,
+            "message": f"Found {len(extracted_items)} items on receipt"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error scanning receipt: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing receipt: {str(e)}")
+
+@api_router.post("/pantry/add-from-receipt")
+async def add_from_receipt(request: Request):
+    """Add items extracted from a receipt scan to pantry"""
+    user_id = await get_user_id_or_none(request)
+    body = await request.json()
+    items = body.get('items', [])
+    
+    if not items:
+        raise HTTPException(status_code=400, detail="No items provided")
+    
+    # Get or create pantry
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        pantry = Pantry(user_id=user_id).model_dump()
+        pantry['created_at'] = pantry['created_at'].isoformat()
+        pantry['updated_at'] = pantry['updated_at'].isoformat()
+    
+    added_count = 0
+    updated_count = 0
+    
+    for item in items:
+        qty = float(item.get('quantity', 1))
+        name = item.get('name', '').strip()
+        
+        if not name:
+            continue
+        
+        # Check if item exists in pantry (case-insensitive)
+        existing_idx = None
+        for i, pantry_item in enumerate(pantry['items']):
+            if pantry_item['name'].lower() == name.lower():
+                existing_idx = i
+                break
+        
+        if existing_idx is not None:
+            # Update existing item
+            pantry['items'][existing_idx]['quantity'] += qty
+            pantry['items'][existing_idx]['last_updated'] = datetime.now(timezone.utc).isoformat()
+            updated_count += 1
+        else:
+            # Add new item
+            new_item = PantryItem(
+                name=name,
+                quantity=qty,
+                unit=item.get('unit', ''),
+                category=item.get('category', 'other'),
+                typical_purchase=qty
+            ).model_dump()
+            new_item['last_updated'] = new_item['last_updated'].isoformat()
+            pantry['items'].append(new_item)
+            added_count += 1
+    
+    pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+    await db.pantry.update_one(query, {"$set": pantry}, upsert=True)
+    
+    return {
+        "message": f"Added {added_count} new items, updated {updated_count} existing items",
+        "added": added_count,
+        "updated": updated_count
+    }
+
 # ============== RECIPE UPDATE/EDIT ENDPOINT ==============
 
 class RecipeUpdate(BaseModel):
