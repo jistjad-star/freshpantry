@@ -90,6 +90,10 @@ export const api = {
   addFromShopping: () => axios.post(`${API}/pantry/add-from-shopping`),
   getExpiringItems: (days = 7) => axios.get(`${API}/pantry/expiring-soon`, { params: { days } }),
   
+  // Recipe conversion
+  makeRecipeVegan: (recipeId) => axios.post(`${API}/recipes/${recipeId}/make-vegan`),
+  makeRecipeVegetarian: (recipeId) => axios.post(`${API}/recipes/${recipeId}/make-vegetarian`),
+  
   // Receipt scanning
   scanReceipt: (file) => {
     const formData = new FormData();
