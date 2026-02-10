@@ -476,7 +476,7 @@ async def rewrite_instructions_with_ai(
 ) -> dict:
     """Use AI to rewrite instructions in original wording from step graph"""
     
-    if not EMERGENT_LLM_KEY:
+    if not openai_client:
         raise HTTPException(status_code=503, detail="AI rewrite service unavailable")
     
     # Prepare step graph summary for AI
@@ -511,13 +511,16 @@ Max temperature: {step_graph.get('max_temp', 'N/A')}
 Write 6-12 original imperative steps. Reorder prep steps for efficiency. Use different phrasing than typical recipes."""
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"rewrite_{uuid.uuid4().hex[:8]}",
-            system_message=REWRITE_SYSTEM_PROMPT
-        ).with_model("openai", "gpt-4o-mini")
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": REWRITE_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=2000
+        )
         
-        result = await chat.send_message(UserMessage(text=user_prompt))
+        result = response.choices[0].message.content
         
         # Parse JSON response
         clean_response = result.strip()
