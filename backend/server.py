@@ -146,6 +146,8 @@ class RecipeCreate(BaseModel):
     instructions: List[str] = []
     categories: List[str] = []
     image_url: Optional[str] = None
+    source_url: Optional[str] = None
+    skip_image_generation: bool = False
 
 class RecipeImport(BaseModel):
     url: str
