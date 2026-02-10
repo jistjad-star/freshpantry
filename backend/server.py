@@ -980,47 +980,46 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
     
     try:
         system_message = """You are an expert at reading recipe cards and extracting ingredients.
-            
-IMPORTANT: Look VERY carefully at the entire image. Recipe cards often have:
-- Ingredient lists on the left or right side
-- Small text that may be hard to read
-- Multiple columns of ingredients
-- Ingredients mixed with measurements
 
-Your task: Find and extract EVERY ingredient visible, even if partially obscured.
+Your task: Extract ALL ingredients from this image.
 
-Return as JSON with format:
+Common recipe card formats:
+- Meal kit cards (Green Chef, HelloFresh, Gousto): Usually have ingredients in a list on one side
+- Magazine/book recipes: May have ingredients in columns or boxes
+- Handwritten recipes: May be less structured
+
+Return ONLY valid JSON with this exact format:
 {
-    "raw_text": "ALL text you can see related to ingredients, exactly as written",
+    "raw_text": "list all ingredient text you see",
     "ingredients": [
-        {"name": "ingredient name", "quantity": "amount as string", "unit": "unit", "category": "category"}
+        {"name": "chicken breast", "quantity": "2", "unit": "pieces", "category": "protein"},
+        {"name": "olive oil", "quantity": "1", "unit": "tbsp", "category": "pantry"}
     ]
 }
 
 Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
 
-RULES:
-- Extract ALL ingredients, even if you're not 100% certain
-- If quantity is unclear, estimate or leave as empty string
-- Include garnishes, seasonings, and optional ingredients
-- Look for ingredients in photo captions, sidebars, and margins
-- Return ONLY valid JSON, no markdown code blocks
-- If you see a recipe card, look for the ingredient section specifically"""
+Rules:
+- Extract EVERY ingredient visible
+- If no quantity shown, leave quantity empty
+- Simplify names (e.g., "boneless skinless chicken breast" -> "chicken breast")
+- Include garnishes and seasonings
+- Return valid JSON only, no markdown"""
 
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"extract_{uuid.uuid4().hex[:8]}",
             system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")  # gpt-4o-mini for vision
+        ).with_model("openai", "gpt-4o-mini")
         
-        # Create FileContent for the image - use proper format
+        # Create FileContent for the image
         file_content = FileContent(
             content_type="image",
             file_content_base64=image_base64
         )
         
         user_message = UserMessage(
-            text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities.",
+            text="Extract all ingredients from this recipe card image. Return as JSON.",
             file_contents=[file_content]
         )
         
