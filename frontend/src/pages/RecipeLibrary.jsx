@@ -150,6 +150,9 @@ export default function RecipeLibrary() {
 
   // Get all unique categories from recipes
   const allCategories = [...new Set(recipes.flatMap(r => r.categories || []))];
+  
+  // Get all unique sources from recipes
+  const allSources = [...new Set(recipes.map(r => r.source_url).filter(Boolean))];
 
   // Infer meal type from recipe name
   const getRecipeMealType = (recipe) => {
@@ -167,8 +170,12 @@ export default function RecipeLibrary() {
     const matchesCategory = !selectedCategory || (recipe.categories || []).includes(selectedCategory);
     const matchesFavorites = !showFavorites || favorites.includes(recipe.id);
     const matchesMealType = !selectedMealType || getRecipeMealType(recipe) === selectedMealType;
-    return matchesSearch && matchesCategory && matchesFavorites && matchesMealType;
+    const matchesSource = !selectedSource || recipe.source_url === selectedSource;
+    return matchesSearch && matchesCategory && matchesFavorites && matchesMealType && matchesSource;
   });
+  
+  // Count active filters for badge
+  const activeFilterCount = [selectedMealType, selectedCategory, selectedSource, showFavorites].filter(Boolean).length;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#4A7C59] animate-spin" /></div>;
