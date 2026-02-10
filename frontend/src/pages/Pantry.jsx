@@ -269,7 +269,7 @@ export default function Pantry() {
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               onClick={addFromShopping}
               disabled={saving}
@@ -279,6 +279,85 @@ export default function Pantry() {
               <ShoppingCart className="w-4 h-4 mr-2" />
               Add from Shopping List
             </Button>
+            
+            {/* Essentials Dialog */}
+            <Dialog open={essentialsDialogOpen} onOpenChange={setEssentialsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10" data-testid="add-essentials-btn">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Add Essentials
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white border-stone-200 max-w-md max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-[#1A2E1A] font-display">Add Kitchen Essentials</DialogTitle>
+                  <DialogDescription className="text-stone-500">
+                    Quick-add common pantry staples with pre-set alerts
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-3 pt-4">
+                  {availableEssentials.length > 0 ? (
+                    <>
+                      {availableEssentials.map(essential => {
+                        const catInfo = CATEGORIES.find(c => c.value === essential.category);
+                        return (
+                          <label 
+                            key={essential.name} 
+                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                              selectedEssentials.includes(essential.name) 
+                                ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
+                                : 'border-stone-200 hover:border-[#4A7C59]/50'
+                            }`}
+                          >
+                            <Checkbox 
+                              checked={selectedEssentials.includes(essential.name)}
+                              onCheckedChange={(checked) => {
+                                setSelectedEssentials(prev => 
+                                  checked 
+                                    ? [...prev, essential.name]
+                                    : prev.filter(n => n !== essential.name)
+                                );
+                              }}
+                              className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]"
+                            />
+                            <span className="text-lg">{catInfo?.emoji}</span>
+                            <div className="flex-1">
+                              <p className="font-medium text-[#1A2E1A]">{essential.name}</p>
+                              <p className="text-xs text-stone-500">
+                                {essential.typical_purchase} {essential.unit} • Alert at {essential.min_threshold} {essential.unit}
+                              </p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                      
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setSelectedEssentials(availableEssentials.map(e => e.name))}
+                          className="flex-1"
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          onClick={addEssentials}
+                          disabled={saving || selectedEssentials.length === 0}
+                          className="flex-1 btn-primary"
+                        >
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : `Add ${selectedEssentials.length} Items`}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-6">
+                      <Check className="w-10 h-10 text-[#4A7C59] mx-auto mb-2" />
+                      <p className="text-stone-500">You have all essentials in your pantry!</p>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
