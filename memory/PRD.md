@@ -27,6 +27,8 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Auto-deduct when cooking recipes ("I Cooked This" feature)
 - [x] Low-stock alerts (staples only)
 - [x] Save button for editing pantry item quantities
+- [x] **Custom alerts per item** - Bell icon to set low stock threshold for any item
+- [x] **Add Essentials** - Quick-add 15 common pantry staples with pre-set alerts
 
 ### Meal Planning
 - [x] Weekly planner (7 days)
