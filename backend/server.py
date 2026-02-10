@@ -654,15 +654,12 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
 
 async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str]:
     """Use AI vision to extract cooking instructions from an image"""
-    if not openai_client:
-        logger.warning("No OpenAI API key found")
+    if not llm_chat:
+        logger.warning("No LLM API key found")
         return "", [], "", ""
     
     try:
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": """You are a helpful assistant that extracts cooking instructions from images.
+        system_message = """You are a helpful assistant that extracts cooking instructions from images.
             Look carefully at the image and extract ALL cooking steps/instructions.
             Also estimate the prep time and cook time based on the steps.
             
@@ -677,15 +674,19 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
             Each instruction should be a complete step. Remove step numbers from the text.
             Estimate prep_time based on chopping, mixing, preparation steps.
             Estimate cook_time based on baking, cooking, simmering steps.
-            Return ONLY valid JSON, no markdown code blocks."""},
-                {"role": "user", "content": [
-                    {"type": "text", "text": "Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-                ]}
-            ]
+            Return ONLY valid JSON, no markdown code blocks."""
+
+        user_message = UserMessage(
+            content="Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time.",
+            images=[f"data:image/jpeg;base64,{image_base64}"]
         )
         
-        result = response.choices[0].message.content
+        response = await llm_chat.chat([
+            {"role": "system", "content": system_message},
+            user_message
+        ])
+        
+        result = response.content
         logger.info(f"Instructions Vision API response: {result[:500] if result else 'Empty'}")
         
         import json
