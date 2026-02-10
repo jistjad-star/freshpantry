@@ -34,9 +34,10 @@ except Exception as e:
     client = None
     db = None
 
-# OpenAI API Key
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+# Emergent AI integrations
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY') or os.environ.get('OPENAI_API_KEY')
+llm_chat = LlmChat(api_key=EMERGENT_LLM_KEY) if EMERGENT_LLM_KEY else None
+image_generator = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY) if EMERGENT_LLM_KEY else None
 
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
