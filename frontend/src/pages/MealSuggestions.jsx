@@ -361,7 +361,7 @@ export default function MealSuggestions() {
                       <h3 className="font-semibold text-[#1A2E1A] group-hover:text-orange-600 transition-colors">
                         {suggestion.recipe_name}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           suggestion.match_percentage >= 80 
                             ? 'bg-green-100 text-green-700' 
@@ -371,6 +371,23 @@ export default function MealSuggestions() {
                         }`}>
                           {suggestion.match_percentage >= 80 ? 'Ready to cook!' : `${suggestion.match_percentage}% match`}
                         </span>
+                        
+                        {/* Show shared ingredients info */}
+                        {suggestion.shared_ingredient_count >= 2 && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
+                            <Layers className="w-3 h-3" />
+                            Shares {suggestion.shared_ingredient_count} with other recipes
+                          </span>
+                        )}
+                        
+                        {/* Show expiring ingredients used */}
+                        {suggestion.expiring_ingredients_used > 0 && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 flex items-center gap-1">
+                            <CalendarClock className="w-3 h-3" />
+                            Uses {suggestion.expiring_ingredients_used} expiring
+                          </span>
+                        )}
+                        
                         {suggestion.missing_ingredients?.length > 0 && (
                           <span className="text-xs text-stone-400">
                             Missing: {suggestion.missing_ingredients.slice(0, 2).join(", ")}
@@ -378,6 +395,9 @@ export default function MealSuggestions() {
                           </span>
                         )}
                       </div>
+                      {suggestion.recommendation && (
+                        <p className="text-xs text-stone-500 mt-1 italic">{suggestion.recommendation}</p>
+                      )}
                     </div>
                     <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-orange-500 transition-colors" />
                   </div>
