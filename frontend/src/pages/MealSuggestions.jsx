@@ -46,16 +46,20 @@ export default function MealSuggestions() {
   const [suggestions, setSuggestions] = useState([]);
   const [message, setMessage] = useState("");
   const [mealTypeFilter, setMealTypeFilter] = useState(getMealTypeByTime());
+  const [expiringSoonFilter, setExpiringSoonFilter] = useState(false);
   
   // AI Generated Recipe State
   const [generatingRecipe, setGeneratingRecipe] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [savingRecipe, setSavingRecipe] = useState(false);
 
-  const fetchSuggestions = async (mealType = "all") => {
+  const fetchSuggestions = async (mealType = "all", expiringSoon = false) => {
     setLoading(true);
     try {
-      const response = await api.getMealSuggestions(mealType !== "all" ? mealType : null);
+      const response = await api.getMealSuggestions(
+        mealType !== "all" ? mealType : null,
+        expiringSoon
+      );
       setSuggestions(response.data.suggestions || []);
       setMessage(response.data.message || "");
     } catch (error) {
@@ -69,12 +73,12 @@ export default function MealSuggestions() {
   useEffect(() => {
     // Auto-generate a recipe on first load
     generateAIRecipe();
-    fetchSuggestions(mealTypeFilter);
+    fetchSuggestions(mealTypeFilter, expiringSoonFilter);
   }, []);
 
   useEffect(() => {
-    fetchSuggestions(mealTypeFilter);
-  }, [mealTypeFilter]);
+    fetchSuggestions(mealTypeFilter, expiringSoonFilter);
+  }, [mealTypeFilter, expiringSoonFilter]);
 
   const generateAIRecipe = async () => {
     setGeneratingRecipe(true);
