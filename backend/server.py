@@ -1086,17 +1086,33 @@ Rules:
             logger.warning("No ingredients found, trying fallback extraction...")
             return await extract_ingredients_fallback(image_base64)
         
-        # Ensure all required fields exist and handle null values
+        # Deduplicate and filter ingredients
+        seen_names = set()
         ingredients = []
+        
         for ing in ingredients_data:
-            # Handle null/None values by converting to empty strings
-            name = ing.get("name") or "Unknown"
+            name = ing.get("name") or ""
             quantity = ing.get("quantity")
             unit = ing.get("unit")
             category = ing.get("category") or "other"
             
-            # Convert None to empty string for quantity and unit
-            quantity_str = str(quantity) if quantity is not None else ""
+            # Skip items without a name
+            if not name or name.lower() == "unknown":
+                continue
+            
+            # Skip items without a quantity (likely from cooking steps, not ingredients list)
+            quantity_str = str(quantity).strip() if quantity is not None else ""
+            if not quantity_str:
+                logger.debug(f"Skipping ingredient without quantity: {name}")
+                continue
+            
+            # Skip duplicates (case-insensitive)
+            name_lower = name.lower().strip()
+            if name_lower in seen_names:
+                logger.debug(f"Skipping duplicate ingredient: {name}")
+                continue
+            seen_names.add(name_lower)
+            
             unit_str = str(unit) if unit is not None else ""
             
             ingredients.append(Ingredient(
