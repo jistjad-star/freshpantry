@@ -1840,13 +1840,14 @@ async def parse_instructions_image(file: UploadFile = File(...)):
     contents = await file.read()
     image_base64 = base64.b64encode(contents).decode('utf-8')
     
-    raw_text, instructions, prep_time, cook_time = await extract_instructions_from_image(image_base64)
+    raw_text, instructions, prep_time, cook_time, suggested_name = await extract_instructions_from_image(image_base64)
     
     return {
         "instructions_text": raw_text, 
         "instructions": instructions,
         "prep_time": prep_time,
-        "cook_time": cook_time
+        "cook_time": cook_time,
+        "suggested_name": suggested_name
     }
 
 # ---- Meal Suggestions Route ----
