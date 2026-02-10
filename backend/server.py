@@ -1171,11 +1171,11 @@ RULES:
         # Ensure all instructions are strings
         instructions = [str(inst) for inst in instructions if inst]
         
-        logger.info(f"Extracted {len(instructions)} instructions from image, prep: {prep_time}, cook: {cook_time}")
-        return raw_text, instructions, prep_time, cook_time
+        logger.info(f"Extracted {len(instructions)} instructions from image, prep: {prep_time}, cook: {cook_time}, suggested_name: {suggested_name}")
+        return raw_text, instructions, prep_time, cook_time, suggested_name
     except Exception as e:
         logger.error(f"Error extracting instructions from image: {e}", exc_info=True)
-        return "", [], "", ""
+        return "", [], "", "", ""
 
 async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict]) -> List[dict]:
     """Use AI to suggest meals based on available pantry ingredients"""
