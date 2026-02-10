@@ -89,6 +89,13 @@ export default function Pantry() {
   const [expiringItems, setExpiringItems] = useState([]);
   const [expiredItems, setExpiredItems] = useState([]);
   
+  // Receipt scanning state
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [scanningReceipt, setScanningReceipt] = useState(false);
+  const [extractedItems, setExtractedItems] = useState([]);
+  const [selectedExtractedItems, setSelectedExtractedItems] = useState([]);
+  const receiptInputRef = useRef(null);
+  
   // New item form
   const [newItem, setNewItem] = useState({
     name: "",
@@ -124,6 +131,66 @@ export default function Pantry() {
     } catch (error) {
       console.error("Error fetching expiring items:", error);
     }
+  };
+  
+  // Receipt scanning functions
+  const handleReceiptUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setScanningReceipt(true);
+    setExtractedItems([]);
+    setSelectedExtractedItems([]);
+    
+    try {
+      const response = await api.scanReceipt(file);
+      const items = response.data.extracted_items || [];
+      setExtractedItems(items);
+      setSelectedExtractedItems(items.map((_, i) => i)); // Select all by default
+      
+      if (items.length === 0) {
+        toast.error("No items found on receipt. Try a clearer image.");
+      } else {
+        toast.success(`Found ${items.length} items on receipt!`);
+      }
+    } catch (error) {
+      console.error("Error scanning receipt:", error);
+      toast.error("Failed to scan receipt. Please try again.");
+    } finally {
+      setScanningReceipt(false);
+      if (receiptInputRef.current) receiptInputRef.current.value = '';
+    }
+  };
+  
+  const addExtractedItemsToPantry = async () => {
+    if (selectedExtractedItems.length === 0) {
+      toast.error("Select at least one item to add");
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const itemsToAdd = selectedExtractedItems.map(i => extractedItems[i]);
+      const response = await api.addFromReceipt(itemsToAdd);
+      toast.success(`Added ${response.data.added} new items, updated ${response.data.updated} existing`);
+      setReceiptDialogOpen(false);
+      setExtractedItems([]);
+      setSelectedExtractedItems([]);
+      fetchPantry();
+    } catch (error) {
+      console.error("Error adding items:", error);
+      toast.error("Failed to add items to pantry");
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  const toggleExtractedItem = (index) => {
+    setSelectedExtractedItems(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
   };
 
   const addItem = async () => {
