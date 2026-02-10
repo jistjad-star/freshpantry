@@ -342,9 +342,49 @@ export default function RecipeLibrary() {
           </div>
         )}
 
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-          <Input placeholder="Search recipes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 fresh-input h-12" data-testid="search-recipes-input" />
+        {/* Source Filter & Search Row */}
+        <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+            <Input placeholder="Search recipes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 fresh-input h-12" data-testid="search-recipes-input" />
+          </div>
+          
+          {/* Source Filter Dropdown */}
+          {allSources.length > 0 && (
+            <Select value={selectedSource || "all"} onValueChange={(v) => setSelectedSource(v === "all" ? null : v)}>
+              <SelectTrigger className="fresh-input w-[180px] h-12" data-testid="source-filter">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-stone-400" />
+                  <SelectValue placeholder="All Sources" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">All Sources</SelectItem>
+                {allSources.map(source => (
+                  <SelectItem key={source} value={source}>{source}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          
+          {/* Clear All Filters */}
+          {activeFilterCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedMealType(null);
+                setSelectedCategory(null);
+                setSelectedSource(null);
+                setShowFavorites(false);
+              }}
+              className="border-stone-200 text-stone-500 h-12"
+              data-testid="clear-filters-btn"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear ({activeFilterCount})
+            </Button>
+          )}
         </div>
 
         {/* Grouped View */}
