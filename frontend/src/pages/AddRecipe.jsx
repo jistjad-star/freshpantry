@@ -283,27 +283,21 @@ export default function AddRecipe() {
               data-testid="recipe-name-input"
             />
             
-            {/* Optional Source */}
+            {/* Own Recipe Checkbox */}
             <div className="mt-4 flex items-center gap-3">
-              <Label className="text-stone-500 text-sm">Source (optional):</Label>
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger className="fresh-input w-[180px]">
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {RECIPE_SOURCES.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {source === "other" && (
-                <Input
-                  placeholder="Enter source"
-                  value={sourceOther}
-                  onChange={(e) => setSourceOther(e.target.value)}
-                  className="fresh-input w-[150px]"
-                />
-              )}
+              <Checkbox
+                id="own-recipe"
+                checked={isOwnRecipe}
+                onCheckedChange={setIsOwnRecipe}
+                className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]"
+                data-testid="own-recipe-checkbox"
+              />
+              <Label 
+                htmlFor="own-recipe" 
+                className="text-stone-600 text-sm cursor-pointer"
+              >
+                This is my own recipe
+              </Label>
             </div>
             
             {/* Photo Choice - Always Visible */}
