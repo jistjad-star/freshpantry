@@ -174,6 +174,64 @@ export default function Pantry() {
     }
   };
 
+  const addEssentials = async () => {
+    if (selectedEssentials.length === 0) {
+      toast.error("Select at least one essential");
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      for (const essential of selectedEssentials) {
+        const item = SUGGESTED_ESSENTIALS.find(e => e.name === essential);
+        if (item) {
+          await api.addPantryItem({
+            name: item.name,
+            quantity: item.typical_purchase,
+            unit: item.unit,
+            category: item.category,
+            min_threshold: item.min_threshold,
+            typical_purchase: item.typical_purchase
+          });
+        }
+      }
+      
+      toast.success(`Added ${selectedEssentials.length} essentials to pantry`);
+      setSelectedEssentials([]);
+      setEssentialsDialogOpen(false);
+      fetchPantry();
+    } catch (error) {
+      console.error("Error adding essentials:", error);
+      toast.error("Failed to add essentials");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateItemAlert = async (itemId, minThreshold) => {
+    try {
+      await api.updatePantryItem(itemId, { min_threshold: parseFloat(minThreshold) || 0 });
+      fetchPantry();
+      setAlertDialogOpen(false);
+      setAlertItem(null);
+      toast.success("Alert updated");
+    } catch (error) {
+      console.error("Error updating alert:", error);
+      toast.error("Failed to update alert");
+    }
+  };
+
+  const openAlertDialog = (item) => {
+    setAlertItem(item);
+    setAlertDialogOpen(true);
+  };
+
+  // Get items already in pantry to exclude from essentials
+  const existingItemNames = pantry?.items?.map(i => i.name.toLowerCase()) || [];
+  const availableEssentials = SUGGESTED_ESSENTIALS.filter(
+    e => !existingItemNames.includes(e.name.toLowerCase())
+  );
+
   const groupByCategory = (items) => {
     return items.reduce((acc, item) => {
       const cat = item.category || 'other';
