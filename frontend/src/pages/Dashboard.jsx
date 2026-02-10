@@ -265,7 +265,7 @@ export default function Dashboard() {
           {[
             { label: "Recipes", value: recipes.length, icon: BookOpen, color: "text-[#4A7C59]", path: "/recipes" },
             { label: "To Shop", value: uncheckedItems, icon: ShoppingCart, color: "text-[#E07A5F]", path: "/shopping-list" },
-            { label: "Low Stock", value: lowStock.length, icon: AlertTriangle, color: "text-amber-500", path: "/pantry" },
+            { label: "Expiring", value: expiringItems.length + expiredItems.length, icon: CalendarClock, color: expiringItems.length + expiredItems.length > 0 ? "text-orange-500" : "text-stone-400", path: "/pantry" },
             { label: "This Week", value: "0", icon: Calendar, color: "text-blue-500", path: "/planner" },
           ].map((stat, i) => (
             <Link 
