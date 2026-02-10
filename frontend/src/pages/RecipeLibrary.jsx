@@ -107,17 +107,29 @@ export default function RecipeLibrary() {
     setExporting(true);
     try {
       const response = await api.createShareLink(selectedForExport);
-      const shareUrl = `${window.location.origin}/share/${response.data.share_id}`;
+      const shareUrl = `${window.location.origin}/share/${response.data.token}`;
       
       // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
-      toast.success(`Share link copied! ${response.data.recipe_count} recipes`, {
-        description: shareUrl,
-        duration: 5000
+      toast.success(`Private share link created!`, {
+        description: `${response.data.recipe_count} recipes • Link expires in 15 minutes`,
+        duration: 6000
       });
+      
+      // Show compliance issues if any
+      if (response.data.compliance_issues && response.data.compliance_issues.length > 0) {
+        setTimeout(() => {
+          toast.warning("Some recipes couldn't be shared", {
+            description: response.data.compliance_issues.slice(0, 2).join("; "),
+            duration: 5000
+          });
+        }, 500);
+      }
+      
       setSelectedForExport([]);
     } catch (error) {
-      toast.error("Failed to create share link");
+      const errorMsg = error.response?.data?.detail || "Failed to create share link";
+      toast.error(errorMsg);
     } finally {
       setExporting(false);
     }
