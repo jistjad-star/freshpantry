@@ -1125,7 +1125,7 @@ RULES:
             api_key=EMERGENT_LLM_KEY,
             session_id=f"instructions_{uuid.uuid4().hex[:8]}",
             system_message=system_message
-        ).with_model("openai", "gpt-4o")  # Use gpt-4o for better vision
+        ).with_model("openai", "gpt-4o-mini")  # gpt-4o-mini for vision
         
         # Create FileContent for the image
         file_content = FileContent(
@@ -1134,12 +1134,14 @@ RULES:
         )
         
         user_message = UserMessage(
-            text="This is a recipe card. Please carefully examine it and extract ALL cooking instructions/steps. Look for a method section, numbered steps, or any text describing how to cook this dish. Also suggest a creative name for this dish based on what you see.",
+            text="Extract cooking instructions from this recipe image. List every step and suggest a creative name for this dish.",
             file_contents=[file_content]
         )
         
+        logger.info("Sending image to vision API for instructions extraction...")
         result = await chat.send_message(user_message)
-        logger.info(f"Instructions Vision API response: {result[:500] if result else 'Empty'}")
+        logger.info(f"Instructions Vision API response length: {len(result) if result else 0}")
+        logger.info(f"Instructions Vision API response: {result[:1000] if result else 'Empty'}")
         
         import json
         clean_response = result.strip()
