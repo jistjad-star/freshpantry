@@ -42,7 +42,8 @@ export default function AddRecipe() {
   
   // Input data
   const [urlInput, setUrlInput] = useState("");
-  const [pasteText, setPasteText] = useState("");
+  const [pasteIngredients, setPasteIngredients] = useState("");
+  const [pasteInstructions, setPasteInstructions] = useState("");
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   
