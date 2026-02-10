@@ -588,6 +588,16 @@ export default function Pantry() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => openAlertDialog(item)}
+                                className={`h-8 w-8 p-0 ${item.min_threshold > 0 ? 'text-[#4A7C59]' : 'text-stone-400'} hover:text-[#4A7C59]`}
+                                title="Set low stock alert"
+                                data-testid={`alert-item-${item.id}`}
+                              >
+                                <Bell className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setEditingItem(item.id)}
                                 className="h-8 w-8 p-0 text-stone-400 hover:text-[#4A7C59]"
                                 data-testid={`edit-item-${item.id}`}
