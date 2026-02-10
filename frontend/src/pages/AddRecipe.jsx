@@ -458,6 +458,76 @@ Example:
           {/* Parsed Results */}
           {isParsed && (
             <>
+              {/* Photo Choice */}
+              <div className="fresh-card-static p-6">
+                <Label className="text-[#1A2E1A] text-lg font-medium mb-4 block">Recipe Photo</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setImageChoice('ai')}
+                    className={`p-4 rounded-xl border-2 transition-all text-center ${
+                      imageChoice === 'ai' 
+                        ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
+                        : 'border-stone-200 hover:border-[#4A7C59]/50'
+                    }`}
+                    data-testid="image-choice-ai"
+                  >
+                    <Sparkles className={`w-6 h-6 mx-auto mb-2 ${imageChoice === 'ai' ? 'text-[#4A7C59]' : 'text-stone-400'}`} />
+                    <span className={`text-sm font-medium ${imageChoice === 'ai' ? 'text-[#4A7C59]' : 'text-stone-600'}`}>AI Generate</span>
+                    <p className="text-xs text-stone-400 mt-1">Auto-create image</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => { setImageChoice('own'); photoInputRef.current?.click(); }}
+                    className={`p-4 rounded-xl border-2 transition-all text-center ${
+                      imageChoice === 'own' 
+                        ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
+                        : 'border-stone-200 hover:border-[#4A7C59]/50'
+                    }`}
+                    data-testid="image-choice-own"
+                  >
+                    <Upload className={`w-6 h-6 mx-auto mb-2 ${imageChoice === 'own' ? 'text-[#4A7C59]' : 'text-stone-400'}`} />
+                    <span className={`text-sm font-medium ${imageChoice === 'own' ? 'text-[#4A7C59]' : 'text-stone-600'}`}>Upload Photo</span>
+                    <p className="text-xs text-stone-400 mt-1">Use your own</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => { setImageChoice('none'); removeOwnPhoto(); }}
+                    className={`p-4 rounded-xl border-2 transition-all text-center ${
+                      imageChoice === 'none' 
+                        ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
+                        : 'border-stone-200 hover:border-[#4A7C59]/50'
+                    }`}
+                    data-testid="image-choice-none"
+                  >
+                    <ImageOff className={`w-6 h-6 mx-auto mb-2 ${imageChoice === 'none' ? 'text-[#4A7C59]' : 'text-stone-400'}`} />
+                    <span className={`text-sm font-medium ${imageChoice === 'none' ? 'text-[#4A7C59]' : 'text-stone-600'}`}>No Photo</span>
+                    <p className="text-xs text-stone-400 mt-1">Skip image</p>
+                  </button>
+                </div>
+                
+                {/* Hidden photo input */}
+                <input
+                  type="file"
+                  ref={photoInputRef}
+                  onChange={handleOwnPhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                
+                {/* Own photo preview */}
+                {imageChoice === 'own' && ownPhotoPreview && (
+                  <div className="mt-4 relative inline-block">
+                    <img src={ownPhotoPreview} alt="Recipe preview" className="w-32 h-32 object-cover rounded-xl" />
+                    <button
+                      onClick={removeOwnPhoto}
+                      className="absolute -top-2 -right-2 bg-white rounded-full p-1.5 shadow hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Time & Servings */}
               <div className="fresh-card-static p-6">
                 <Label className="text-[#1A2E1A] text-lg font-medium mb-4 block">Details</Label>
