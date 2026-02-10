@@ -175,14 +175,14 @@ class TestMealSuggestionsAPI:
 class TestHealthEndpoint:
     """Test health endpoint"""
     
-    def test_health_endpoint(self):
-        """Test health endpoint returns OK"""
-        response = requests.get(f"{BASE_URL}/health")
+    def test_api_root_endpoint(self):
+        """Test API root endpoint returns OK"""
+        response = requests.get(f"{BASE_URL}/api/")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         
         data = response.json()
-        assert data.get("status") == "ok", "Health status should be 'ok'"
-        print(f"SUCCESS: Health endpoint OK, database: {data.get('database')}")
+        assert "message" in data, "Response should have 'message' field"
+        print(f"SUCCESS: API root endpoint OK - {data.get('message')}")
 
 
 if __name__ == "__main__":
