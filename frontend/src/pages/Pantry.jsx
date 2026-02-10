@@ -783,6 +783,66 @@ export default function Pantry() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Expiry Date Dialog */}
+        <Dialog open={expiryDialogOpen} onOpenChange={setExpiryDialogOpen}>
+          <DialogContent className="bg-white border-stone-200 max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-[#1A2E1A] font-display flex items-center gap-2">
+                <CalendarClock className="w-5 h-5 text-orange-500" />
+                Set Sell By Date
+              </DialogTitle>
+              <DialogDescription className="text-stone-500">
+                {expiryItem && `Track when ${expiryItem.name} expires`}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {expiryItem && (
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label className="text-[#1A2E1A]">Sell By / Use By Date</Label>
+                  <Input
+                    type="date"
+                    defaultValue={expiryItem.expiry_date ? expiryItem.expiry_date.split('T')[0] : ''}
+                    id="expiry-date-input"
+                    className="fresh-input"
+                    data-testid="expiry-date-input"
+                  />
+                  {expiryItem.expiry_date && (
+                    <p className="text-xs text-stone-400">
+                      {(() => {
+                        const daysUntil = getDaysUntilExpiry(expiryItem);
+                        if (daysUntil === null) return '';
+                        if (daysUntil < 0) return `Expired ${Math.abs(daysUntil)} days ago`;
+                        if (daysUntil === 0) return 'Expires today!';
+                        return `Expires in ${daysUntil} days`;
+                      })()}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => updateItemExpiry(expiryItem.id, null)}
+                    className="flex-1"
+                  >
+                    Remove Date
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const input = document.getElementById('expiry-date-input');
+                      if (input) updateItemExpiry(expiryItem.id, input.value);
+                    }}
+                    className="flex-1 btn-primary"
+                  >
+                    Save Date
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
