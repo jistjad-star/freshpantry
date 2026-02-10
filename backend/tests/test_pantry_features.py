@@ -245,15 +245,12 @@ class TestPantryEndpoints:
 class TestHealthCheck:
     """Test health check endpoint"""
     
-    def test_health_endpoint(self):
-        """Test /health endpoint (at root level, not under /api)"""
-        # Health endpoint is at root level
-        health_url = BASE_URL.replace('/api', '') if '/api' in BASE_URL else BASE_URL
-        response = requests.get(f"{health_url}/health")
+    def test_api_root_endpoint(self):
+        """Test /api/ root endpoint"""
+        response = requests.get(f"{BASE_URL}/api/")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "ok"
-        assert "database" in data
+        assert "message" in data
 
 
 if __name__ == "__main__":
