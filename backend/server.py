@@ -593,7 +593,7 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
             user_message
         ])
         
-        result = response.choices[0].message.content
+        result = response.content
         logger.info(f"Vision API response: {result[:500] if result else 'Empty'}")
         
         # Parse response
