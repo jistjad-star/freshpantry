@@ -12,7 +12,9 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from bs4 import BeautifulSoup
-from openai import AsyncOpenAI
+# Emergent integrations for AI
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.openai.image_generation import OpenAIImageGeneration
 import base64
 import re
 from authlib.integrations.starlette_client import OAuth
