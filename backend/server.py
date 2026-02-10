@@ -1090,28 +1090,40 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
         return "", [], "", ""
     
     try:
-        system_message = """You are a helpful assistant that extracts cooking instructions from images.
-            Look carefully at the image and extract ALL cooking steps/instructions.
-            Also estimate the prep time and cook time based on the steps.
+        system_message = """You are an expert at reading recipe cards and extracting cooking instructions.
             
-            Return as JSON with format:
-            {
-                "raw_text": "all the instruction text you can see",
-                "instructions": ["Step 1 text", "Step 2 text", "Step 3 text", ...],
-                "prep_time": "estimated prep time (e.g., '15 min', '20 min')",
-                "cook_time": "estimated cook time (e.g., '30 min', '45 min')"
-            }
-            
-            Each instruction should be a complete step. Remove step numbers from the text.
-            Estimate prep_time based on chopping, mixing, preparation steps.
-            Estimate cook_time based on baking, cooking, simmering steps.
-            Return ONLY valid JSON, no markdown code blocks."""
+IMPORTANT: Look VERY carefully at the entire image. Recipe cards often have:
+- Numbered steps or instructions
+- Method/directions section
+- Tips or notes scattered around
+- Cooking times embedded in steps
+
+Your task: Find and extract EVERY cooking step visible.
+
+Return as JSON with format:
+{
+    "raw_text": "ALL instruction text you can see, exactly as written",
+    "instructions": ["Step 1 text", "Step 2 text", "Step 3 text", ...],
+    "prep_time": "estimated prep time (e.g., '15 min')",
+    "cook_time": "estimated cook time (e.g., '30 min')",
+    "suggested_name": "A creative name for this dish based on the main ingredients and cooking method"
+}
+
+RULES:
+- Extract ALL steps, even if you're not 100% certain of exact wording
+- Remove step numbers from the text but keep the order
+- Include any tips, notes, or serving suggestions as separate steps
+- Look for instructions in sidebars, margins, and photo captions
+- Estimate prep_time based on chopping, mixing, marinating steps
+- Estimate cook_time based on actual cooking/baking/simmering time
+- For suggested_name: create a descriptive, appetizing name like "Creamy Garlic Chicken Pasta" or "Spiced Lamb with Roasted Vegetables"
+- Return ONLY valid JSON, no markdown code blocks"""
 
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"instructions_{uuid.uuid4().hex[:8]}",
             system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")
+        ).with_model("openai", "gpt-4o")  # Use gpt-4o for better vision
         
         # Create FileContent for the image
         file_content = FileContent(
@@ -1120,7 +1132,7 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
         )
         
         user_message = UserMessage(
-            text="Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time.",
+            text="This is a recipe card. Please carefully examine it and extract ALL cooking instructions/steps. Look for a method section, numbered steps, or any text describing how to cook this dish. Also suggest a creative name for this dish based on what you see.",
             file_contents=[file_content]
         )
         
@@ -1154,6 +1166,7 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
         instructions = data.get("instructions", [])
         prep_time = data.get("prep_time", "")
         cook_time = data.get("cook_time", "")
+        suggested_name = data.get("suggested_name", "")
         
         # Ensure all instructions are strings
         instructions = [str(inst) for inst in instructions if inst]
