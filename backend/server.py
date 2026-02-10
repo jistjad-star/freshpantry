@@ -3020,31 +3020,32 @@ IMPORTANT:
 - Group similar items together (e.g., 2x bananas = quantity: 2)
 - Infer reasonable units from context"""
 
-        chat = LlmChat(
-            api_key=OPENAI_API_KEY,
-            session_id=f"receipt_{uuid.uuid4().hex[:8]}",
-            system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")
-        
-        # Determine content type for FileContent
-        # Use 'image' for images (vision API) or actual MIME type for PDFs
+        # Use OpenAI Vision API for receipt scanning
         if is_pdf:
-            file_content_type = "application/pdf"
-        else:
-            file_content_type = "image"  # Use 'image' for vision API
+            # For PDFs, we can't use vision directly - return error
+            return {"extracted_items": [], "message": "PDF receipts not supported yet. Please take a photo instead."}
         
-        # Create FileContent for the image/PDF
-        file_content = FileContent(
-            content_type=file_content_type,
-            file_content_base64=image_base64
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_message},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Extract all grocery items from this receipt. List each item with quantity, unit, and category."},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=2000
         )
         
-        user_message = UserMessage(
-            text="Extract all grocery items from this receipt. List each item with quantity, unit, and category.",
-            file_contents=[file_content]
-        )
-        
-        result = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         logger.info(f"Receipt scan response: {result[:500] if result else 'Empty'}")
         
         # Parse response
