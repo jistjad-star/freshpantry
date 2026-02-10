@@ -10,6 +10,7 @@ import api from "@/lib/api";
 
 const CATEGORY_CONFIG = {
   'vegan': { label: 'Vegan', color: 'bg-green-100 text-green-700', icon: Leaf },
+  'can-be-vegan': { label: 'Can be Vegan', color: 'bg-lime-100 text-lime-700', icon: Leaf },
   'vegetarian': { label: 'Veggie', color: 'bg-emerald-100 text-emerald-700', icon: Salad },
   'pescatarian': { label: 'Pescatarian', color: 'bg-blue-100 text-blue-700', icon: Fish },
   'low-fat': { label: 'Low Fat', color: 'bg-pink-100 text-pink-700', icon: Heart },
