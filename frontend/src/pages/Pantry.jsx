@@ -73,7 +73,11 @@ export default function Pantry() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [essentialsDialogOpen, setEssentialsDialogOpen] = useState(false);
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [alertItem, setAlertItem] = useState(null);
+  const [selectedEssentials, setSelectedEssentials] = useState([]);
   
   // New item form
   const [newItem, setNewItem] = useState({
