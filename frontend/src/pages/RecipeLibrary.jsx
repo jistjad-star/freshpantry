@@ -429,18 +429,28 @@ export default function RecipeLibrary() {
               <div key={recipe.id} className="fresh-card overflow-hidden group" data-testid={`recipe-card-${recipe.id}`}>
                 <Link to={`/recipes/${recipe.id}`}>
                   {recipe.image_url ? (
-                    <div className="h-48 bg-cover bg-center transition-transform duration-300 group-hover:scale-105 relative" style={{ backgroundImage: `url(${recipe.image_url})` }}>
+                    <div className="h-48 relative overflow-hidden">
+                      <img 
+                        src={recipe.image_url} 
+                        alt={recipe.name}
+                        loading="eager"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                      />
+                      <div className="w-full h-full bg-stone-100 items-center justify-center hidden">
+                        <ChefHat className="w-16 h-16 text-stone-300" />
+                      </div>
                       {/* Favorite button */}
                       <button
                         onClick={(e) => toggleFavorite(recipe.id, e)}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
                         data-testid={`favorite-btn-${recipe.id}`}
                       >
                         <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-stone-400'}`} />
                       </button>
                       {/* Category badges on image */}
                       {recipe.categories?.length > 0 && (
-                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                        <div className="absolute top-2 left-2 flex flex-wrap gap-1 z-10">
                           {recipe.categories.slice(0, 2).map(cat => {
                             const config = CATEGORY_CONFIG[cat] || { label: cat, color: 'bg-stone-100 text-stone-600' };
                             return (
