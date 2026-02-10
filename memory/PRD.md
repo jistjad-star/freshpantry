@@ -81,23 +81,12 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ## Changelog
 
-### 2025-02-09 (Session 5 - Current)
-- **Fixed**: Shopping List Edit Feature - Added inline edit UI (pencil icon, quantity/unit inputs, save/cancel buttons)
-- **Verified**: Shop All Button - Opens multiple browser tabs (one per unchecked item) at selected supermarket
-- **Added**: Multiple recipes per day in Weekly Planner - Changed from 7 meals/week limit to 4 meals/day limit
-- **Added**: Meal Type Filters in Recipe Library - Breakfast, Lunch, Dinner, Snack buttons filter by keyword matching
-- **Changed**: Photo Choice to Select dropdown - AI Generate, Upload My Photo, No Photo options
-- **Added**: "Own Recipe" as first source option in Add Recipe form
-- **Added**: Source filter dropdown in Recipe Library - Filter by recipe source (Green Chef, Gousto, etc.)
-- **Added**: Clear Filters button with active filter count in Recipe Library
-- **Added**: Custom pantry alerts - Bell icon on each item to set low stock threshold
-- **Added**: Add Essentials button - Quick-add 15 common kitchen staples with pre-set alerts
-- **Fixed**: Separate ingredient/instruction inputs in AddRecipe Paste method - Prevents AI from extracting food names from instructions
-- **Added**: Smart meal suggestions - Recipes scored by shared ingredients (2+) with other recipes
-- **Added**: "Use Expiring" filter in Meal Suggestions AND Weekly Planner - Prioritizes recipes using soon-to-expire pantry items
-- **Added**: Sell-by date tracking in Pantry - Calendar icon to set expiry dates, colored status badges
-- **Fixed**: AI images now stored as base64 data URLs - Prevents CDN URL expiry issues
-- **Fixed**: Image transfer on recipe import - Images downloaded and converted to base64
+### 2025-02-10 (Session 6 - Current)
+- **FIXED**: Photo Choice dropdown now visible immediately on Add Recipe page (was hidden until after parsing)
+- **FIXED**: Recipe grouping now shows only recipe pairs sharing 2+ ingredients (not single-ingredient groups)
+- **FIXED**: AI images use Emergent integrations library properly (OpenAIImageGeneration, LlmChat classes)
+- **Added**: "Use expiring items" toggle in Weekly Planner Suggested tab
+- **Fixed**: Images stored as base64 data URLs for permanent access (prevents CDN expiry)
 
 ### 2025-02-09 (Session 4)
 - **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
