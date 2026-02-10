@@ -2238,6 +2238,59 @@ async def get_low_stock_items(request: Request):
     
     low_stock = []
     suggested_shopping = []
+
+@api_router.get("/pantry/expiring-soon")
+async def get_expiring_items(request: Request, days: int = 7):
+    """Get pantry items that are expiring within the specified number of days"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry:
+        return {"expiring_items": [], "expired_items": []}
+    
+    today = datetime.now(timezone.utc).date()
+    expiring_items = []
+    expired_items = []
+    
+    for item in pantry.get('items', []):
+        if not item.get('expiry_date'):
+            continue
+        
+        try:
+            # Parse expiry date
+            expiry_str = item['expiry_date']
+            if 'T' in expiry_str:
+                expiry = datetime.fromisoformat(expiry_str.replace('Z', '+00:00')).date()
+            else:
+                expiry = datetime.strptime(expiry_str, '%Y-%m-%d').date()
+            
+            days_until_expiry = (expiry - today).days
+            
+            item_info = {
+                **item,
+                'expiry_date': expiry.isoformat(),
+                'days_until_expiry': days_until_expiry
+            }
+            
+            if days_until_expiry < 0:
+                expired_items.append(item_info)
+            elif days_until_expiry <= days:
+                expiring_items.append(item_info)
+        except Exception as e:
+            logger.warning(f"Could not parse expiry date for {item.get('name')}: {e}")
+            continue
+    
+    # Sort by days until expiry (soonest first)
+    expiring_items.sort(key=lambda x: x['days_until_expiry'])
+    expired_items.sort(key=lambda x: x['days_until_expiry'])
+    
+    return {
+        "expiring_items": expiring_items,
+        "expired_items": expired_items,
+        "message": f"Found {len(expiring_items)} items expiring within {days} days, {len(expired_items)} already expired"
+    }
     
     for item in pantry.get('items', []):
         if item['quantity'] <= item.get('min_threshold', 0):
