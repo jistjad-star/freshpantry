@@ -2709,7 +2709,7 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
     if not pantry or not pantry.get('items'):
         raise HTTPException(status_code=400, detail="Add items to your pantry first")
     
-    if not openai_client:
+    if not llm_chat:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
     meal_context = ""
