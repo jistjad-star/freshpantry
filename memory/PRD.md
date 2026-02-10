@@ -18,12 +18,19 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Manual category editing
 - [x] **Photo choice dropdown** - AI Generate, Upload My Photo, or No Photo (Select dropdown)
 - [x] AI-generated recipe images (stored as base64 for permanent access)
-- [x] Recipe sharing via unique shareable links
-- [x] **Image transfer on import** - Images converted to base64 when importing shared recipes
 - [x] **Star Reviews** - Users can rate recipes 1-5 stars with optional comments
 - [x] **Sort by Popularity** - Recipe library can be sorted by rating (Top Rated, Newest, Default)
 - [x] **Favorites System** - Heart recipes and filter to show only favorites
 - [x] **Select All for Export** - Button to select all visible recipes for sharing
+
+### Copyright-Safe Private Sharing (NEW - Major Feature)
+- [x] **Private Import Links** - Single-use, 15-minute tokens (not persistent URLs)
+- [x] **AI Instruction Rewriting** - Original wording generated from step graph
+- [x] **N-gram Compliance Check** - Blocks 8+ word matches, target ≤0.15 overall overlap
+- [x] **Safe Fields Only** - Shares ingredients (facts) + rewritten instructions only
+- [x] **No Third-Party Images** - Imported recipes have no images (user adds their own)
+- [x] **Domain Quotas** - Per-site limits to respect database rights
+- [x] **Legal UX** - Privacy-focused import page with copyright notices
 
 ### Pantry Management
 - [x] Track ingredients with quantities
@@ -34,12 +41,12 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Add Essentials** - Quick-add 15 common pantry staples with pre-set alerts
 - [x] **Sell-by date tracking** - Set expiry dates on items with colored status badges
 - [x] **Expiry alerts** - Red (expired/today), orange (1-3 days), amber (4-7 days)
-- [x] **Receipt Scanning** - Upload photo/PDF of receipt to extract items with AI (NEW)
+- [x] **Receipt Scanning** - Upload photo/PDF of receipt to extract items with AI
 
 ### Dashboard
-- [x] **Expiry Notification Banner** - Shows expired and expiring items with colored badges (NEW)
-- [x] **"Use Now" button** - Links to meal suggestions that use expiring items (NEW)
-- [x] **Expiring stat card** - Shows count of expiring items in dashboard stats (NEW)
+- [x] **Expiry Notification Banner** - Shows expired and expiring items with colored badges
+- [x] **"Use Now" button** - Links to meal suggestions that use expiring items
+- [x] **Expiring stat card** - Shows count of expiring items in dashboard stats
 
 ### Meal Planning
 - [x] Weekly planner (7 days)
