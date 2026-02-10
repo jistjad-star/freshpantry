@@ -584,7 +584,7 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         
         # Create FileContent for the image
         file_content = FileContent(
-            content_type="image/jpeg",
+            content_type="image",
             file_content_base64=image_base64
         )
         
@@ -684,7 +684,7 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
         
         # Create FileContent for the image
         file_content = FileContent(
-            content_type="image/jpeg",
+            content_type="image",
             file_content_base64=image_base64
         )
         
