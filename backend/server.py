@@ -2973,7 +2973,7 @@ async def add_from_shopping_list(request: Request):
 @api_router.post("/pantry/scan-receipt")
 async def scan_receipt(request: Request, file: UploadFile = File(...)):
     """Scan a receipt image/PDF and extract items to add to pantry"""
-    if not EMERGENT_LLM_KEY:
+    if not openai_client:
         raise HTTPException(status_code=503, detail="AI features not available")
     
     user_id = await get_user_id_or_none(request)
@@ -3666,7 +3666,7 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
     if not pantry or not pantry.get('items'):
         raise HTTPException(status_code=400, detail="Add items to your pantry first")
     
-    if not EMERGENT_LLM_KEY:
+    if not openai_client:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
     # Find expiring items
