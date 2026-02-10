@@ -878,10 +878,10 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
             "available_ingredients": list(available),
             "missing_ingredients": list(missing),
             "shared_ingredient_count": shared_count,
-            "related_recipe_count": len(related_recipes),
+            "related_recipe_count": len(recipes_sharing_multiple),
             "expiring_ingredients_used": expiring_used if prioritize_expiring else None,
             "composite_score": composite_score,
-            "recommendation": get_recommendation(match_pct, shared_count, len(related_recipes), expiring_used if prioritize_expiring else 0)
+            "recommendation": get_recommendation(match_pct, shared_count, len(recipes_sharing_multiple), expiring_used if prioritize_expiring else 0)
         })
     
     # Sort by composite score (highest first)
