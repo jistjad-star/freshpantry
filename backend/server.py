@@ -582,9 +582,15 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
             system_message=system_message
         ).with_model("openai", "gpt-4o-mini")
         
+        # Create FileContent for the image
+        file_content = FileContent(
+            content_type="image/jpeg",
+            file_content_base64=image_base64
+        )
+        
         user_message = UserMessage(
             text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units.",
-            images=[f"data:image/jpeg;base64,{image_base64}"]
+            file_contents=[file_content]
         )
         
         result = await chat.send_message(user_message)
