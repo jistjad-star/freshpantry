@@ -1200,25 +1200,29 @@ RULES:
 - For suggested_name: create a descriptive, appetizing name like "Creamy Garlic Chicken Pasta" or "Spiced Lamb with Roasted Vegetables"
 - Return ONLY valid JSON, no markdown code blocks"""
 
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"instructions_{uuid.uuid4().hex[:8]}",
-            system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")  # gpt-4o-mini for vision
+        logger.info("Sending image to OpenAI Vision API for instructions extraction...")
         
-        # Create FileContent for the image
-        file_content = FileContent(
-            content_type="image",
-            file_content_base64=image_base64
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_message},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Extract cooking instructions from this recipe image. List every step and suggest a creative name for this dish."},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=2000
         )
         
-        user_message = UserMessage(
-            text="Extract cooking instructions from this recipe image. List every step and suggest a creative name for this dish.",
-            file_contents=[file_content]
-        )
-        
-        logger.info("Sending image to vision API for instructions extraction...")
-        result = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         logger.info(f"Instructions Vision API response length: {len(result) if result else 0}")
         logger.info(f"Instructions Vision API response: {result[:1000] if result else 'Empty'}")
         
@@ -1243,7 +1247,7 @@ RULES:
                 data = json.loads(clean_response[start:end])
             else:
                 logger.error(f"Could not parse JSON from instructions response: {clean_response}")
-                return "", [], "", ""
+                return "", [], "", "", ""
         
         raw_text = data.get("raw_text", "")
         instructions = data.get("instructions", [])
