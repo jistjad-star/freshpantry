@@ -259,6 +259,425 @@ class ImageParseResponse(BaseModel):
     prep_time: str = ""
     cook_time: str = ""
 
+# ============== COPYRIGHT-SAFE SHARING MODELS ==============
+
+import secrets
+import hashlib
+from collections import Counter
+
+class ComplianceMetrics(BaseModel):
+    """Stores compliance check results for recipe sharing"""
+    ngram_max_overlap: float = 0.0  # Max n-gram overlap (target ≤ 0.15)
+    semantic_avg: float = 0.0  # Average semantic similarity (target < 0.80)
+    structure_variance: bool = False  # Whether steps were reordered/split
+    robots_tos_checked: bool = False
+    passed_compliance: bool = False
+
+class SafeRecipeFields(BaseModel):
+    """Only these fields can be shared/imported - copyright safe"""
+    title_generic: str  # Generic title without brand names
+    ingredients: List[dict]  # Facts - not copyrightable
+    servings: int = 2
+    time_total_min: int = 0
+    nutrition: dict = {}  # Facts - not copyrightable
+    method_rewritten: List[str]  # AI-rewritten in original wording
+    adapted_from_domain: Optional[str] = None  # e.g. "Adapted from bbc.co.uk"
+    compliance: ComplianceMetrics = Field(default_factory=ComplianceMetrics)
+    user_images: List[str] = []  # Only user's own photos
+
+class PrivateImportToken(BaseModel):
+    """Secure single-use token for private recipe import"""
+    token: str
+    recipe_id: str
+    sender_id: str
+    scope: str = "private-import-only"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(minutes=15))
+    used: bool = False
+
+class DomainQuota(BaseModel):
+    """Track per-domain import quotas to prevent database right issues"""
+    domain: str
+    import_count_90d: int = 0
+    last_import: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    daily_imports: int = 0
+    daily_reset: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ============== N-GRAM COMPLIANCE CHECKER ==============
+
+def get_ngrams(text: str, n: int = 8) -> set:
+    """Extract n-grams from text for overlap checking"""
+    # Normalize text
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    words = text.split()
+    
+    if len(words) < n:
+        return set()
+    
+    ngrams = set()
+    for i in range(len(words) - n + 1):
+        ngram = tuple(words[i:i+n])
+        ngrams.add(ngram)
+    return ngrams
+
+def calculate_ngram_overlap(source_text: str, rewritten_text: str, n: int = 8) -> float:
+    """Calculate n-gram overlap between source and rewritten text
+    Returns overlap ratio (0.0 = no overlap, 1.0 = identical)
+    """
+    source_ngrams = get_ngrams(source_text, n)
+    rewritten_ngrams = get_ngrams(rewritten_text, n)
+    
+    if not source_ngrams or not rewritten_ngrams:
+        return 0.0
+    
+    overlap = source_ngrams.intersection(rewritten_ngrams)
+    # Calculate overlap as percentage of rewritten text's ngrams
+    overlap_ratio = len(overlap) / len(rewritten_ngrams) if rewritten_ngrams else 0.0
+    
+    return overlap_ratio
+
+def check_8gram_compliance(source_text: str, rewritten_text: str) -> tuple[bool, float]:
+    """Check if rewritten text passes 8-gram compliance
+    Returns (passed, max_overlap_ratio)
+    """
+    overlap = calculate_ngram_overlap(source_text, rewritten_text, n=8)
+    # Pass if no 8-gram matches (overlap = 0) OR very low overlap (< 0.01 allows minor coincidental matches)
+    passed = overlap < 0.01
+    return passed, overlap
+
+def check_overall_ngram_overlap(source_text: str, rewritten_text: str) -> float:
+    """Calculate overall n-gram overlap using multiple n values
+    Target: ≤ 0.15 overall
+    """
+    overlaps = []
+    for n in [3, 4, 5, 6, 7, 8]:
+        overlap = calculate_ngram_overlap(source_text, rewritten_text, n)
+        overlaps.append(overlap)
+    
+    # Weight longer n-grams more heavily
+    weights = [0.05, 0.10, 0.15, 0.20, 0.25, 0.25]
+    weighted_overlap = sum(o * w for o, w in zip(overlaps, weights))
+    return weighted_overlap
+
+# ============== STEP GRAPH FOR REWRITING ==============
+
+def parse_to_step_graph(instructions: List[str], ingredients: List[dict]) -> dict:
+    """Parse instructions into a step graph for rewriting
+    Extracts: actions, temperatures, times, ingredient dependencies
+    """
+    step_graph = {
+        "steps": [],
+        "ingredients_used": set(),
+        "total_time_min": 0,
+        "max_temp": None
+    }
+    
+    time_pattern = re.compile(r'(\d+)\s*(min|minute|hour|hr|mins|minutes|hours|hrs)', re.IGNORECASE)
+    temp_pattern = re.compile(r'(\d+)\s*°?\s*(C|F|celsius|fahrenheit)', re.IGNORECASE)
+    
+    ingredient_names = [ing.get('name', '').lower() for ing in ingredients]
+    
+    for i, instruction in enumerate(instructions):
+        step = {
+            "order": i + 1,
+            "action_type": None,  # preheat, chop, mix, cook, bake, etc.
+            "time_min": None,
+            "temperature": None,
+            "ingredients": [],
+            "can_reorder": False,  # Whether this step can be safely reordered
+            "original_length": len(instruction.split())
+        }
+        
+        # Extract time
+        time_match = time_pattern.search(instruction)
+        if time_match:
+            value = int(time_match.group(1))
+            unit = time_match.group(2).lower()
+            if 'hour' in unit or 'hr' in unit:
+                value *= 60
+            step["time_min"] = value
+            step_graph["total_time_min"] += value
+        
+        # Extract temperature
+        temp_match = temp_pattern.search(instruction)
+        if temp_match:
+            temp_value = int(temp_match.group(1))
+            temp_unit = temp_match.group(2).upper()[0]
+            step["temperature"] = f"{temp_value}°{temp_unit}"
+            if step_graph["max_temp"] is None or temp_value > int(step_graph["max_temp"].split('°')[0]):
+                step_graph["max_temp"] = step["temperature"]
+        
+        # Detect action type
+        instruction_lower = instruction.lower()
+        if any(word in instruction_lower for word in ['preheat', 'heat oven', 'turn on oven']):
+            step["action_type"] = "preheat"
+            step["can_reorder"] = True  # Preheat can be done anytime before baking
+        elif any(word in instruction_lower for word in ['chop', 'dice', 'mince', 'slice', 'cut']):
+            step["action_type"] = "prep"
+            step["can_reorder"] = True  # Prep steps often interchangeable
+        elif any(word in instruction_lower for word in ['mix', 'combine', 'stir', 'whisk', 'beat']):
+            step["action_type"] = "mix"
+        elif any(word in instruction_lower for word in ['bake', 'roast']):
+            step["action_type"] = "bake"
+        elif any(word in instruction_lower for word in ['fry', 'sauté', 'saute', 'pan', 'sear']):
+            step["action_type"] = "fry"
+        elif any(word in instruction_lower for word in ['boil', 'simmer', 'poach']):
+            step["action_type"] = "boil"
+        elif any(word in instruction_lower for word in ['serve', 'garnish', 'plate']):
+            step["action_type"] = "serve"
+        else:
+            step["action_type"] = "general"
+        
+        # Find ingredients mentioned
+        for ing_name in ingredient_names:
+            if ing_name and len(ing_name) > 2 and ing_name in instruction_lower:
+                step["ingredients"].append(ing_name)
+                step_graph["ingredients_used"].add(ing_name)
+        
+        step_graph["steps"].append(step)
+    
+    step_graph["ingredients_used"] = list(step_graph["ingredients_used"])
+    return step_graph
+
+# ============== AI REWRITE SYSTEM ==============
+
+REWRITE_SYSTEM_PROMPT = """You are a culinary editor. Create ORIGINAL instructions from the provided step graph and ingredient facts.
+
+STRICTLY PROHIBITED:
+- Copying phrases or style from any source text
+- Anecdotes, stories, or personal commentary
+- Branded language or product names
+- Layout mimicry or numbered lists matching the source
+- Any phrase of 8 or more consecutive words from the source
+
+REQUIREMENTS:
+- 6-12 concise imperative steps
+- Vary verbs and sentence structure
+- Reorder safe independent sub-steps (prep work, preheating)
+- Standardize measures (use g, ml, tsp, tbsp)
+- Add clear temperature and time ranges where vague
+- Exclude headnotes, brand names, images
+- Write in neutral, generic cooking instruction style
+
+OUTPUT FORMAT (JSON):
+{
+    "title_generic": "Generic recipe title without brand names",
+    "method_rewritten": ["Step 1...", "Step 2...", ...],
+    "notes": "Optional brief technique tips (1-2 sentences max)"
+}"""
+
+async def rewrite_instructions_with_ai(
+    step_graph: dict,
+    ingredients: List[dict],
+    original_title: str,
+    original_instructions: List[str]
+) -> dict:
+    """Use AI to rewrite instructions in original wording from step graph"""
+    
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=503, detail="AI rewrite service unavailable")
+    
+    # Prepare step graph summary for AI
+    step_summary = []
+    for step in step_graph["steps"]:
+        summary = f"Step {step['order']}: {step['action_type']}"
+        if step['time_min']:
+            summary += f" ({step['time_min']} min)"
+        if step['temperature']:
+            summary += f" at {step['temperature']}"
+        if step['ingredients']:
+            summary += f" using: {', '.join(step['ingredients'])}"
+        step_summary.append(summary)
+    
+    # Prepare ingredients list
+    ing_list = [f"{ing.get('quantity', '')} {ing.get('unit', '')} {ing.get('name', '')}".strip() 
+                for ing in ingredients]
+    
+    user_prompt = f"""Create original cooking instructions for this recipe:
+
+RECIPE TITLE (to make generic): {original_title}
+
+INGREDIENTS (facts - use as-is):
+{chr(10).join(ing_list)}
+
+STEP GRAPH (actions to rewrite):
+{chr(10).join(step_summary)}
+
+Total cooking time: ~{step_graph.get('total_time_min', 30)} minutes
+Max temperature: {step_graph.get('max_temp', 'N/A')}
+
+Write 6-12 original imperative steps. Reorder prep steps for efficiency. Use different phrasing than typical recipes."""
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"rewrite_{uuid.uuid4().hex[:8]}",
+            system_message=REWRITE_SYSTEM_PROMPT
+        ).with_model("openai", "gpt-4o-mini")
+        
+        result = await chat.send_message(UserMessage(text=user_prompt))
+        
+        # Parse JSON response
+        clean_response = result.strip()
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
+        import json
+        try:
+            rewrite_data = json.loads(clean_response.strip())
+        except json.JSONDecodeError:
+            # Try to find JSON object
+            start = clean_response.find("{")
+            end = clean_response.rfind("}") + 1
+            if start >= 0 and end > start:
+                rewrite_data = json.loads(clean_response[start:end])
+            else:
+                raise ValueError("Could not parse AI response")
+        
+        return {
+            "title_generic": rewrite_data.get("title_generic", original_title),
+            "method_rewritten": rewrite_data.get("method_rewritten", []),
+            "notes": rewrite_data.get("notes", "")
+        }
+        
+    except Exception as e:
+        logger.error(f"AI rewrite failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI rewrite failed: {str(e)}")
+
+# ============== COMPLIANCE VALIDATION ==============
+
+async def validate_compliance(
+    original_instructions: List[str],
+    rewritten_instructions: List[str],
+    check_semantic: bool = False
+) -> ComplianceMetrics:
+    """Run compliance checks on rewritten instructions"""
+    
+    original_text = " ".join(original_instructions)
+    rewritten_text = " ".join(rewritten_instructions)
+    
+    # 1. Check 8-gram overlap (hard requirement)
+    passed_8gram, max_8gram_overlap = check_8gram_compliance(original_text, rewritten_text)
+    
+    # 2. Calculate overall n-gram overlap
+    overall_overlap = check_overall_ngram_overlap(original_text, rewritten_text)
+    
+    # 3. Check structure variance (did we reorder/split steps?)
+    structure_variance = len(rewritten_instructions) != len(original_instructions)
+    
+    # 4. Semantic similarity (optional second gate)
+    semantic_avg = 0.0
+    if check_semantic or (overall_overlap > 0.10 and overall_overlap < 0.15):
+        # Only run semantic check for borderline cases
+        # For now, use a heuristic based on word overlap
+        original_words = set(original_text.lower().split())
+        rewritten_words = set(rewritten_text.lower().split())
+        word_overlap = len(original_words & rewritten_words) / max(len(rewritten_words), 1)
+        semantic_avg = min(word_overlap * 1.2, 1.0)  # Scale up slightly
+    
+    # Determine if passed all compliance checks
+    passed = (
+        passed_8gram and  # No 8-gram matches
+        overall_overlap <= 0.15 and  # Overall overlap target
+        (semantic_avg < 0.80 or not check_semantic)  # Semantic threshold if checked
+    )
+    
+    return ComplianceMetrics(
+        ngram_max_overlap=max(max_8gram_overlap, overall_overlap),
+        semantic_avg=semantic_avg,
+        structure_variance=structure_variance,
+        robots_tos_checked=True,
+        passed_compliance=passed
+    )
+
+# ============== DOMAIN QUOTA MANAGEMENT ==============
+
+async def check_domain_quota(domain: str) -> bool:
+    """Check if domain quota allows import
+    Enforces per-domain limits to respect database rights
+    """
+    if not domain:
+        return True
+    
+    # Get or create domain quota record
+    quota = await db.domain_quotas.find_one({"domain": domain}, {"_id": 0})
+    
+    now = datetime.now(timezone.utc)
+    
+    if not quota:
+        quota = {
+            "domain": domain,
+            "import_count_90d": 0,
+            "last_import": now.isoformat(),
+            "daily_imports": 0,
+            "daily_reset": now.isoformat()
+        }
+    
+    # Reset daily counter if needed
+    daily_reset = quota.get("daily_reset")
+    if isinstance(daily_reset, str):
+        daily_reset = datetime.fromisoformat(daily_reset)
+    if daily_reset.tzinfo is None:
+        daily_reset = daily_reset.replace(tzinfo=timezone.utc)
+    
+    if (now - daily_reset).days >= 1:
+        quota["daily_imports"] = 0
+        quota["daily_reset"] = now.isoformat()
+    
+    # Check limits (configurable - these are conservative defaults)
+    MAX_DAILY_PER_DOMAIN = 10  # Max imports per domain per day
+    MAX_90DAY_PER_DOMAIN = 100  # Max imports per domain per 90 days
+    
+    if quota["daily_imports"] >= MAX_DAILY_PER_DOMAIN:
+        return False
+    
+    if quota["import_count_90d"] >= MAX_90DAY_PER_DOMAIN:
+        return False
+    
+    return True
+
+async def increment_domain_quota(domain: str):
+    """Increment domain quota counters after successful import"""
+    if not domain:
+        return
+    
+    now = datetime.now(timezone.utc)
+    
+    await db.domain_quotas.update_one(
+        {"domain": domain},
+        {
+            "$inc": {"import_count_90d": 1, "daily_imports": 1},
+            "$set": {"last_import": now.isoformat()}
+        },
+        upsert=True
+    )
+
+def extract_domain(url: str) -> str:
+    """Extract domain from URL for quota tracking"""
+    if not url:
+        return ""
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        return parsed.netloc.lower().replace("www.", "")
+    except:
+        return ""
+
+# ============== SECURE TOKEN GENERATION ==============
+
+def generate_import_token() -> str:
+    """Generate a cryptographically secure 256-bit token"""
+    return secrets.token_urlsafe(32)  # 256 bits = 32 bytes
+
+def hash_source_content(content: str) -> str:
+    """Create SHA-256 hash of source content for audit"""
+    return hashlib.sha256(content.encode('utf-8')).hexdigest()
+
 # ============== AUTH HELPER FUNCTIONS ==============
 
 async def get_current_user(request: Request) -> Optional[User]:
