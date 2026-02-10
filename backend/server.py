@@ -1466,7 +1466,7 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
 
 @api_router.get("/recipes/grouped")
 async def get_recipes_grouped_by_ingredients(request: Request):
-    """Get recipes grouped by shared ingredients"""
+    """Get recipe groups where recipes share 2+ ingredients together"""
     user_id = await get_user_id_or_none(request)
     
     recipe_query = {"user_id": user_id} if user_id else {}
@@ -1475,51 +1475,63 @@ async def get_recipes_grouped_by_ingredients(request: Request):
     if not recipes:
         return {"groups": [], "message": "Add some recipes first!"}
     
-    # Build ingredient -> recipes mapping
-    ingredient_to_recipes = {}
+    # Build recipe -> ingredients mapping
+    recipe_ingredients = {}
     for recipe in recipes:
+        recipe_id = recipe.get('id')
+        recipe_ings = set()
         for ing in recipe.get('ingredients', []):
             ing_name = normalize_ingredient_name(ing.get('name', ''))
             if ing_name:
-                if ing_name not in ingredient_to_recipes:
-                    ingredient_to_recipes[ing_name] = []
-                ingredient_to_recipes[ing_name].append({
-                    'id': recipe['id'],
-                    'name': recipe['name']
+                recipe_ings.add(ing_name)
+        recipe_ingredients[recipe_id] = {
+            'id': recipe_id,
+            'name': recipe.get('name', ''),
+            'ingredients': recipe_ings
+        }
+    
+    # Find recipe pairs/groups that share 2+ ingredients
+    recipe_groups = []
+    recipe_ids = list(recipe_ingredients.keys())
+    
+    for i in range(len(recipe_ids)):
+        for j in range(i + 1, len(recipe_ids)):
+            r1 = recipe_ingredients[recipe_ids[i]]
+            r2 = recipe_ingredients[recipe_ids[j]]
+            shared = r1['ingredients'] & r2['ingredients']
+            
+            # Only include if they share 2+ ingredients
+            if len(shared) >= 2:
+                recipe_groups.append({
+                    'recipes': [
+                        {'id': r1['id'], 'name': r1['name']},
+                        {'id': r2['id'], 'name': r2['name']}
+                    ],
+                    'shared_ingredients': list(shared),
+                    'shared_count': len(shared)
                 })
     
-    # Find shared ingredients (appear in 2+ recipes)
-    shared_ingredients = {
-        ing: recipes_list 
-        for ing, recipes_list in ingredient_to_recipes.items() 
-        if len(recipes_list) >= 2
-    }
+    # Sort by number of shared ingredients (most shared first)
+    recipe_groups.sort(key=lambda x: x['shared_count'], reverse=True)
     
-    # Sort by number of recipes sharing the ingredient
-    sorted_shared = sorted(
-        shared_ingredients.items(), 
-        key=lambda x: len(x[1]), 
-        reverse=True
-    )[:20]  # Top 20 shared ingredients
-    
-    # Build recipe groups
-    groups = []
-    seen_recipe_pairs = set()
-    
-    for ing_name, recipe_list in sorted_shared:
-        recipe_ids = tuple(sorted([r['id'] for r in recipe_list]))
-        if recipe_ids not in seen_recipe_pairs:
-            seen_recipe_pairs.add(recipe_ids)
-            groups.append({
-                'shared_ingredient': ing_name.title(),
-                'recipes': recipe_list,
-                'count': len(recipe_list)
-            })
+    # Merge groups with same recipes but format for display
+    # Group by shared ingredient combination for display
+    display_groups = []
+    for group in recipe_groups[:15]:  # Top 15 groups
+        shared_text = ", ".join([ing.title() for ing in group['shared_ingredients'][:3]])
+        if len(group['shared_ingredients']) > 3:
+            shared_text += f" +{len(group['shared_ingredients']) - 3}"
+        
+        display_groups.append({
+            'shared_ingredient': shared_text,
+            'recipes': group['recipes'],
+            'count': group['shared_count']
+        })
     
     return {
-        "groups": groups[:10],  # Top 10 groups
+        "groups": display_groups,
         "total_recipes": len(recipes),
-        "message": f"Found {len(groups)} ingredient groups across {len(recipes)} recipes"
+        "message": f"Found {len(display_groups)} recipe pairs sharing 2+ ingredients"
     }
 
 # ---- Recipe Routes ----
