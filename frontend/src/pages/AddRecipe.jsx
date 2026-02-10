@@ -478,71 +478,66 @@ Example:
               {/* Photo Choice */}
               <div className="fresh-card-static p-6">
                 <Label className="text-[#1A2E1A] text-lg font-medium mb-4 block">Recipe Photo</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    onClick={() => setImageChoice('ai')}
-                    className={`p-4 rounded-xl border-2 transition-all text-center ${
-                      imageChoice === 'ai' 
-                        ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
-                        : 'border-stone-200 hover:border-[#4A7C59]/50'
-                    }`}
-                    data-testid="image-choice-ai"
-                  >
-                    <Sparkles className={`w-6 h-6 mx-auto mb-2 ${imageChoice === 'ai' ? 'text-[#4A7C59]' : 'text-stone-400'}`} />
-                    <span className={`text-sm font-medium ${imageChoice === 'ai' ? 'text-[#4A7C59]' : 'text-stone-600'}`}>AI Generate</span>
-                    <p className="text-xs text-stone-400 mt-1">Auto-create image</p>
-                  </button>
+                <div className="space-y-4">
+                  <Select value={imageChoice} onValueChange={(val) => {
+                    setImageChoice(val);
+                    if (val === 'own') {
+                      photoInputRef.current?.click();
+                    } else if (val === 'none') {
+                      removeOwnPhoto();
+                    }
+                  }}>
+                    <SelectTrigger className="fresh-input" data-testid="image-choice-select">
+                      <SelectValue placeholder="Choose photo option" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="ai">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[#4A7C59]" />
+                          <span>AI Generate</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="own">
+                        <div className="flex items-center gap-2">
+                          <Upload className="w-4 h-4 text-[#4A7C59]" />
+                          <span>Upload My Photo</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <ImageOff className="w-4 h-4 text-stone-400" />
+                          <span>No Photo</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   
-                  <button
-                    onClick={() => { setImageChoice('own'); photoInputRef.current?.click(); }}
-                    className={`p-4 rounded-xl border-2 transition-all text-center ${
-                      imageChoice === 'own' 
-                        ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
-                        : 'border-stone-200 hover:border-[#4A7C59]/50'
-                    }`}
-                    data-testid="image-choice-own"
-                  >
-                    <Upload className={`w-6 h-6 mx-auto mb-2 ${imageChoice === 'own' ? 'text-[#4A7C59]' : 'text-stone-400'}`} />
-                    <span className={`text-sm font-medium ${imageChoice === 'own' ? 'text-[#4A7C59]' : 'text-stone-600'}`}>Upload Photo</span>
-                    <p className="text-xs text-stone-400 mt-1">Use your own</p>
-                  </button>
+                  {/* Hidden photo input */}
+                  <input
+                    type="file"
+                    ref={photoInputRef}
+                    onChange={handleOwnPhotoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
                   
-                  <button
-                    onClick={() => { setImageChoice('none'); removeOwnPhoto(); }}
-                    className={`p-4 rounded-xl border-2 transition-all text-center ${
-                      imageChoice === 'none' 
-                        ? 'border-[#4A7C59] bg-[#4A7C59]/5' 
-                        : 'border-stone-200 hover:border-[#4A7C59]/50'
-                    }`}
-                    data-testid="image-choice-none"
-                  >
-                    <ImageOff className={`w-6 h-6 mx-auto mb-2 ${imageChoice === 'none' ? 'text-[#4A7C59]' : 'text-stone-400'}`} />
-                    <span className={`text-sm font-medium ${imageChoice === 'none' ? 'text-[#4A7C59]' : 'text-stone-600'}`}>No Photo</span>
-                    <p className="text-xs text-stone-400 mt-1">Skip image</p>
-                  </button>
+                  {/* Own photo preview */}
+                  {imageChoice === 'own' && ownPhotoPreview && (
+                    <div className="relative inline-block">
+                      <img src={ownPhotoPreview} alt="Recipe preview" className="w-32 h-32 object-cover rounded-xl" />
+                      <button
+                        onClick={removeOwnPhoto}
+                        className="absolute -top-2 -right-2 bg-white rounded-full p-1.5 shadow hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {imageChoice === 'ai' && (
+                    <p className="text-xs text-stone-500">An AI image will be generated when you save the recipe</p>
+                  )}
                 </div>
-                
-                {/* Hidden photo input */}
-                <input
-                  type="file"
-                  ref={photoInputRef}
-                  onChange={handleOwnPhotoUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                
-                {/* Own photo preview */}
-                {imageChoice === 'own' && ownPhotoPreview && (
-                  <div className="mt-4 relative inline-block">
-                    <img src={ownPhotoPreview} alt="Recipe preview" className="w-32 h-32 object-cover rounded-xl" />
-                    <button
-                      onClick={removeOwnPhoto}
-                      className="absolute -top-2 -right-2 bg-white rounded-full p-1.5 shadow hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Time & Servings */}
