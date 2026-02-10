@@ -633,20 +633,44 @@ export default function Pantry() {
                                 </Button>
                               </div>
                             ) : (
-                              <p className="text-sm text-stone-500">
-                                <span className={`font-medium ${lowStock ? 'text-[#E07A5F]' : 'text-[#4A7C59]'}`}>
-                                  {item.quantity}
-                                </span>
-                                {" "}{item.unit}
-                                {item.min_threshold > 0 && (
-                                  <span className="text-stone-400"> / min {item.min_threshold}</span>
-                                )}
-                              </p>
+                              <div>
+                                <p className="text-sm text-stone-500">
+                                  <span className={`font-medium ${lowStock ? 'text-[#E07A5F]' : 'text-[#4A7C59]'}`}>
+                                    {item.quantity}
+                                  </span>
+                                  {" "}{item.unit}
+                                  {item.min_threshold > 0 && (
+                                    <span className="text-stone-400"> / min {item.min_threshold}</span>
+                                  )}
+                                </p>
+                                {/* Expiry date badge */}
+                                {(() => {
+                                  const daysUntil = getDaysUntilExpiry(item);
+                                  const status = getExpiryStatus(daysUntil);
+                                  if (!status) return null;
+                                  return (
+                                    <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded mt-1 ${status.color}`}>
+                                      <CalendarClock className="w-3 h-3" />
+                                      {status.label}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
                             )}
                           </div>
                           
                           {!isEditing && (
                             <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openExpiryDialog(item)}
+                                className={`h-8 w-8 p-0 ${item.expiry_date ? 'text-orange-500' : 'text-stone-400'} hover:text-orange-600`}
+                                title="Set sell by date"
+                                data-testid={`expiry-item-${item.id}`}
+                              >
+                                <CalendarClock className="w-4 h-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
