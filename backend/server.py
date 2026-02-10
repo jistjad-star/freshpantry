@@ -1257,8 +1257,8 @@ async def parse_instructions_image(file: UploadFile = File(...)):
 # ---- Meal Suggestions Route ----
 
 @api_router.get("/suggestions/meals")
-async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None):
-    """Get meal suggestions based on pantry inventory, optionally filtered by meal type"""
+async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None, expiring_soon: bool = False):
+    """Get meal suggestions based on pantry inventory, optionally filtered by meal type or expiring ingredients"""
     user_id = await get_user_id_or_none(request)
     
     # Get pantry items
@@ -1267,6 +1267,32 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
     
     if not pantry or not pantry.get('items'):
         return {"suggestions": [], "message": "Add items to your pantry first!"}
+    
+    pantry_items = pantry['items']
+    
+    # If filtering by expiring soon, prioritize items with expiry dates
+    expiring_items = []
+    if expiring_soon:
+        today = datetime.now(timezone.utc).date()
+        for item in pantry_items:
+            if item.get('expiry_date'):
+                try:
+                    expiry = datetime.fromisoformat(item['expiry_date'].replace('Z', '+00:00')).date()
+                    days_until_expiry = (expiry - today).days
+                    if days_until_expiry <= 7:  # Within 7 days
+                        expiring_items.append({
+                            **item,
+                            'days_until_expiry': days_until_expiry
+                        })
+                except:
+                    pass
+        
+        if not expiring_items:
+            return {"suggestions": [], "message": "No items expiring soon! Your pantry is fresh."}
+        
+        # Sort by expiry date (soonest first)
+        expiring_items.sort(key=lambda x: x['days_until_expiry'])
+        pantry_items = expiring_items
     
     # Get recipes, optionally filtered by meal type
     recipe_query = {"user_id": user_id} if user_id else {}
@@ -1295,11 +1321,12 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
         meal_label = meal_type.title() if meal_type else "any"
         return {"suggestions": [], "message": f"No {meal_label} recipes found. Add some recipes first!"}
     
-    # Get AI suggestions
-    suggestions = await suggest_meals_from_pantry(pantry['items'], recipes)
+    # Get improved suggestions with shared ingredient grouping
+    suggestions = await suggest_meals_with_shared_ingredients(pantry_items, recipes, expiring_soon)
     
     meal_label = f"{meal_type} " if meal_type else ""
-    return {"suggestions": suggestions, "message": f"Found {len(suggestions)} {meal_label}recipes you can make!"}
+    expiry_label = " using expiring items" if expiring_soon else ""
+    return {"suggestions": suggestions, "message": f"Found {len(suggestions)} {meal_label}recipes{expiry_label}!"}
 
 @api_router.get("/recipes/grouped")
 async def get_recipes_grouped_by_ingredients(request: Request):
