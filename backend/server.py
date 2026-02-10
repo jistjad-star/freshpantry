@@ -2823,6 +2823,7 @@ If absolutely necessary, you can include 1-2 common staples like salt, pepper, o
         
         return {
             "recipe": recipe_data,
+            "expiring_items_used": expiring_items[:5],  # Include expiring items info
             "message": "Recipe generated from your pantry ingredients!"
         }
     except Exception as e:
