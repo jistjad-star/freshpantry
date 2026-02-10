@@ -307,6 +307,65 @@ export default function AddRecipe() {
                 />
               )}
             </div>
+            
+            {/* Photo Choice - Always Visible */}
+            <div className="mt-4 flex items-center gap-3">
+              <Label className="text-stone-500 text-sm">Recipe Photo:</Label>
+              <Select value={imageChoice} onValueChange={(val) => {
+                setImageChoice(val);
+                if (val === 'own') {
+                  photoInputRef.current?.click();
+                } else if (val === 'none') {
+                  removeOwnPhoto();
+                }
+              }}>
+                <SelectTrigger className="fresh-input w-[200px]" data-testid="image-choice-select">
+                  <SelectValue placeholder="Choose photo option" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="ai">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#4A7C59]" />
+                      <span>AI Generate</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="own">
+                    <div className="flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-[#4A7C59]" />
+                      <span>Upload My Photo</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <ImageOff className="w-4 h-4 text-stone-400" />
+                      <span>No Photo</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Hidden photo input */}
+              <input
+                type="file"
+                ref={photoInputRef}
+                onChange={handleOwnPhotoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              
+              {/* Own photo preview inline */}
+              {imageChoice === 'own' && ownPhotoPreview && (
+                <div className="relative">
+                  <img src={ownPhotoPreview} alt="Preview" className="w-12 h-12 object-cover rounded-lg" />
+                  <button
+                    onClick={removeOwnPhoto}
+                    className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow hover:bg-red-50"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-500" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Input Methods */}
