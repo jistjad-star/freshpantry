@@ -2470,17 +2470,23 @@ IMPORTANT:
             system_message=system_message
         ).with_model("openai", "gpt-4o-mini")
         
-        # Determine image type for data URI
+        # Determine content type for FileContent
         if is_pdf:
-            image_data_uri = f"data:application/pdf;base64,{image_base64}"
+            file_content_type = "application/pdf"
         elif content_type.startswith("image/"):
-            image_data_uri = f"data:{content_type};base64,{image_base64}"
+            file_content_type = content_type
         else:
-            image_data_uri = f"data:image/jpeg;base64,{image_base64}"
+            file_content_type = "image/jpeg"
+        
+        # Create FileContent for the image/PDF
+        file_content = FileContent(
+            content_type=file_content_type,
+            file_content_base64=image_base64
+        )
         
         user_message = UserMessage(
             text="Extract all grocery items from this receipt. List each item with quantity, unit, and category.",
-            images=[image_data_uri]
+            file_contents=[file_content]
         )
         
         result = await chat.send_message(user_message)
