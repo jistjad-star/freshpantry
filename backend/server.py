@@ -2483,12 +2483,11 @@ IMPORTANT:
         ).with_model("openai", "gpt-4o-mini")
         
         # Determine content type for FileContent
+        # Use 'image' for images (vision API) or actual MIME type for PDFs
         if is_pdf:
             file_content_type = "application/pdf"
-        elif content_type.startswith("image/"):
-            file_content_type = content_type
         else:
-            file_content_type = "image/jpeg"
+            file_content_type = "image"  # Use 'image' for vision API
         
         # Create FileContent for the image/PDF
         file_content = FileContent(
