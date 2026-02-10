@@ -30,6 +30,8 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Save button for editing pantry item quantities
 - [x] **Custom alerts per item** - Bell icon to set low stock threshold for any item
 - [x] **Add Essentials** - Quick-add 15 common pantry staples with pre-set alerts
+- [x] **Sell-by date tracking** - Set expiry dates on items with colored status badges
+- [x] **Expiry alerts** - Red (expired/today), orange (1-3 days), amber (4-7 days)
 
 ### Meal Planning
 - [x] Weekly planner (7 days)
