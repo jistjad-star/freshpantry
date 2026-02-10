@@ -222,9 +222,8 @@ export default function AddRecipe() {
     
     setLoading(true);
     try {
-      const recipeSource = source === "other" ? sourceOther : 
-                          RECIPE_SOURCES.find(s => s.value === source)?.label || 
-                          (urlInput ? extractUrl(urlInput) : "");
+      // Simple source handling - either "Own Recipe" or extracted from URL/parsed
+      const recipeSource = isOwnRecipe ? "Own Recipe" : (urlInput ? extractUrl(urlInput) : "Imported");
       
       // Handle image based on choice
       let imageUrl = "";
