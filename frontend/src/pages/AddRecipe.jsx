@@ -6,17 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import api from "@/lib/api";
-
-const RECIPE_SOURCES = [
-  { value: "own-recipe", label: "Own Recipe" },
-  { value: "green-chef", label: "Green Chef" },
-  { value: "gousto", label: "Gousto" },
-  { value: "hello-fresh", label: "Hello Fresh" },
-  { value: "mindful-chef", label: "Mindful Chef" },
-  { value: "other", label: "Other" },
-];
 
 export default function AddRecipe() {
   const navigate = useNavigate();
@@ -29,8 +21,7 @@ export default function AddRecipe() {
   
   // Recipe data
   const [recipeName, setRecipeName] = useState("");
-  const [source, setSource] = useState("");
-  const [sourceOther, setSourceOther] = useState("");
+  const [isOwnRecipe, setIsOwnRecipe] = useState(false);  // Simple checkbox instead of dropdown
   const [servings, setServings] = useState(2);
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
