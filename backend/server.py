@@ -1359,11 +1359,15 @@ async def create_recipe(recipe_data: RecipeCreate, request: Request):
     """Create a new recipe with AI-generated image and auto-suggested categories"""
     user_id = await get_user_id_or_none(request)
     
-    # Generate AI image if no image provided
+    # Handle image based on skip_image_generation flag
     image_url = recipe_data.image_url
     ingredients_dict = [ing.model_dump() if hasattr(ing, 'model_dump') else ing for ing in recipe_data.ingredients]
     
-    if not image_url and recipe_data.ingredients:
+    # Only generate AI image if:
+    # 1. No image URL provided
+    # 2. skip_image_generation is False
+    # 3. There are ingredients to base the image on
+    if not image_url and not recipe_data.skip_image_generation and recipe_data.ingredients:
         image_url = await generate_recipe_image(recipe_data.name, ingredients_dict)
     
     # Auto-suggest categories if none provided
@@ -1378,6 +1382,8 @@ async def create_recipe(recipe_data: RecipeCreate, request: Request):
     recipe_dict = recipe_data.model_dump()
     recipe_dict['image_url'] = image_url
     recipe_dict['categories'] = categories
+    # Remove skip_image_generation from stored data
+    recipe_dict.pop('skip_image_generation', None)
     
     recipe = Recipe(**recipe_dict, user_id=user_id)
     doc = recipe.model_dump()
