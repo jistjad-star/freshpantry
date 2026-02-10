@@ -23,6 +23,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Star Reviews** - Users can rate recipes 1-5 stars with optional comments
 - [x] **Sort by Popularity** - Recipe library can be sorted by rating (Top Rated, Newest, Default)
 - [x] **Favorites System** - Heart recipes and filter to show only favorites
+- [x] **Select All for Export** - Button to select all visible recipes for sharing
 
 ### Pantry Management
 - [x] Track ingredients with quantities
@@ -33,6 +34,12 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Add Essentials** - Quick-add 15 common pantry staples with pre-set alerts
 - [x] **Sell-by date tracking** - Set expiry dates on items with colored status badges
 - [x] **Expiry alerts** - Red (expired/today), orange (1-3 days), amber (4-7 days)
+- [x] **Receipt Scanning** - Upload photo/PDF of receipt to extract items with AI (NEW)
+
+### Dashboard
+- [x] **Expiry Notification Banner** - Shows expired and expiring items with colored badges (NEW)
+- [x] **"Use Now" button** - Links to meal suggestions that use expiring items (NEW)
+- [x] **Expiring stat card** - Shows count of expiring items in dashboard stats (NEW)
 
 ### Meal Planning
 - [x] Weekly planner (7 days)
@@ -49,6 +56,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **AI Recipe Generator** - Create new recipes from pantry only
 - [x] **Smart ingredient grouping** - Recipes scored by shared ingredients (2+) with other recipes
 - [x] **"Use Expiring" filter** - Prioritize recipes using ingredients expiring within 7 days
+- [x] **Expiring ingredients display** - Shows which expiring items each recipe uses
 - [x] Recommendation messages based on match quality and efficiency
 
 ### Shopping List
@@ -61,11 +69,12 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Supermarket Quick Search Links** - Shop individual items at supermarket websites
 - [x] **Shop All Button** - Open all unchecked items in chosen supermarket (multiple tabs)
 - [x] **Edit Item Quantity** - Inline editing of quantity/unit after list generation
+- [x] **Check All / Uncheck All** - Buttons to quickly check/uncheck all items
 
 ## Tech Stack
 - Frontend: React 19, Tailwind CSS, Shadcn/UI
 - Backend: FastAPI, MongoDB, Motor (async)
-- AI: OpenAI SDK (GPT-4o-mini for text, DALL-E for images)
+- AI: Emergent Integrations (GPT-4o-mini for text/vision, DALL-E for images)
 - Auth: Custom Google OAuth 2.0 (Authlib)
 - Deployment: DigitalOcean App Platform (Dockerfile)
 
@@ -78,10 +87,23 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - GET /api/recipes?sort_by=popularity - Get recipes sorted by rating
 - GET /api/recipes/{id}/reviews - Get reviews for a recipe
 - POST /api/recipes/{id}/reviews - Add a review to a recipe
+- GET /api/pantry/expiring-soon - Get items expiring within N days (NEW)
+- POST /api/pantry/scan-receipt - Scan receipt image/PDF to extract items (NEW)
+- POST /api/pantry/add-from-receipt - Add extracted items to pantry (NEW)
 
 ## Changelog
 
-### 2025-02-10 (Session 6 - Current)
+### 2025-02-10 (Session 7 - Current)
+- **Added**: Dashboard expiry notification banner - Shows expired/expiring items with colored badges
+- **Added**: "Use Now" button to link directly to meal suggestions using expiring items
+- **Added**: "Expiring" stat card on dashboard showing count of items expiring soon
+- **Added**: Receipt scanning feature - Upload photo/PDF of supermarket receipt
+- **Added**: AI-powered item extraction from receipts using GPT-4o-mini vision
+- **Added**: Bulk add extracted items to pantry with selection checkboxes
+- **Fixed**: Vision API integration - Updated to use FileContent with content_type='image'
+- **Verified**: Select All in recipe library, Check All in shopping list, expiring ingredients display
+
+### 2025-02-10 (Session 6)
 - **FIXED**: Photo Choice dropdown now visible immediately on Add Recipe page (was hidden until after parsing)
 - **FIXED**: Recipe grouping now shows only recipe pairs sharing 2+ ingredients (not single-ingredient groups)
 - **FIXED**: AI images use Emergent integrations library properly (OpenAIImageGeneration, LlmChat classes)
@@ -117,12 +139,11 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - Weekly planner improvements
 
 ## Future Tasks
-- P1: **Backend Refactoring** - server.py is >2500 lines and needs to be split into modules (routes, models, services)
+- P1: **Backend Refactoring** - server.py is >2800 lines and needs to be split into modules (routes, models, services)
 - P1: Drag-and-drop weekly planner
-- P2: Expiry date tracking for pantry items
 - P2: Whisk.com Integration for direct "add to basket"
 - P2: PWA support
-- P2: Scan receipt to pantry (OCR)
+- P2: Push notifications for expiring items
 
 ## DB Schema
 
@@ -156,5 +177,20 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
   "rating": 5,
   "comment": "string",
   "created_at": "datetime"
+}
+```
+
+### pantry_items
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "quantity": 2.5,
+  "unit": "L",
+  "category": "dairy",
+  "min_threshold": 0.5,
+  "typical_purchase": 2,
+  "expiry_date": "2025-02-15",
+  "last_updated": "datetime"
 }
 ```
