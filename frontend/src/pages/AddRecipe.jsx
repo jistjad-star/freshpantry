@@ -404,13 +404,21 @@ export default function AddRecipe() {
               </button>
             </div>
 
-            {/* Hidden file input */}
+            {/* Hidden file inputs */}
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleImageUpload}
               accept="image/*"
               multiple
+              className="hidden"
+            />
+            <input
+              type="file"
+              ref={cameraInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              capture="environment"
               className="hidden"
             />
 
@@ -447,8 +455,42 @@ export default function AddRecipe() {
                         </button>
                       </div>
                     ))}
+                    {/* Add more buttons */}
+                    <button
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="aspect-square rounded-lg border-2 border-dashed border-stone-200 hover:border-[#4A7C59] flex flex-col items-center justify-center text-stone-400 hover:text-[#4A7C59] transition-colors"
+                    >
+                      <Camera className="w-5 h-5" />
+                      <span className="text-xs mt-1">Scan</span>
+                    </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square rounded-lg border-2 border-dashed border-stone-200 hover:border-[#4A7C59] flex flex-col items-center justify-center text-stone-400 hover:text-[#4A7C59] transition-colors"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span className="text-xs mt-1">Upload</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="p-8 rounded-xl border-2 border-dashed border-stone-200 hover:border-[#4A7C59] text-center transition-colors group"
+                    >
+                      <Camera className="w-10 h-10 mx-auto mb-3 text-stone-300 group-hover:text-[#4A7C59]" />
+                      <p className="text-stone-600 font-medium group-hover:text-[#4A7C59]">Take Photo</p>
+                      <p className="text-xs text-stone-400 mt-1">Use camera to scan recipe card</p>
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-8 rounded-xl border-2 border-dashed border-stone-200 hover:border-[#4A7C59] text-center transition-colors group"
+                    >
+                      <Upload className="w-10 h-10 mx-auto mb-3 text-stone-300 group-hover:text-[#4A7C59]" />
+                      <p className="text-stone-600 font-medium group-hover:text-[#4A7C59]">Upload Images</p>
+                      <p className="text-xs text-stone-400 mt-1">Select screenshots or photos</p>
+                    </button>
+                  </div>
+                )}
                       className="aspect-square border-2 border-dashed border-stone-300 rounded-lg flex items-center justify-center hover:border-[#4A7C59] transition-colors"
                     >
                       <Plus className="w-6 h-6 text-stone-400" />
