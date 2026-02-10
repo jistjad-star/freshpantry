@@ -422,15 +422,12 @@ def estimate_cooking_times_from_instructions(instructions: List[str], recipe_nam
 
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
     """Use AI to parse raw ingredient text into structured data"""
-    if not openai_client:
-        logger.warning("No OpenAI API key found, returning empty ingredients")
+    if not llm_chat:
+        logger.warning("No LLM API key found, returning empty ingredients")
         return []
     
     try:
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": """You are a helpful assistant that parses recipe ingredients into structured JSON format.
+        system_message = """You are a helpful assistant that parses recipe ingredients into structured JSON format.
 
 IMPORTANT: Only extract actual ingredients with quantities/measurements. 
 DO NOT include:
@@ -444,12 +441,16 @@ For each ingredient, extract:
 - unit: the unit of measurement (e.g., "lb", "cups", "tbsp", "pieces", "" for items like "1 onion")
 - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
 
-Return ONLY a valid JSON array, no markdown or explanation."""},
-                {"role": "user", "content": f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"}
-            ]
-        )
+Return ONLY a valid JSON array, no markdown or explanation."""
+
+        user_message = f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"
         
-        result = response.choices[0].message.content
+        response = await llm_chat.chat([
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ])
+        
+        result = response.content
         
         # Parse the JSON response
         import json
