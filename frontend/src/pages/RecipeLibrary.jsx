@@ -254,16 +254,34 @@ export default function RecipeLibrary() {
               Import
             </Button>
             {selectedForExport.length > 0 && (
-              <Button 
-                variant="outline"
-                onClick={exportRecipes}
-                disabled={exporting}
-                className="border-[#4A7C59] text-[#4A7C59]"
-                data-testid="export-recipes-btn"
-              >
-                {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-                Share ({selectedForExport.length})
-              </Button>
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => setSelectedForExport(filteredRecipes.map(r => r.id))}
+                  className="border-stone-200 text-stone-600"
+                  data-testid="select-all-recipes-btn"
+                >
+                  Select All ({filteredRecipes.length})
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setSelectedForExport([])}
+                  className="border-stone-200 text-stone-600"
+                  data-testid="clear-selection-btn"
+                >
+                  Clear
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={exportRecipes}
+                  disabled={exporting}
+                  className="border-[#4A7C59] text-[#4A7C59]"
+                  data-testid="export-recipes-btn"
+                >
+                  {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                  Share ({selectedForExport.length})
+                </Button>
+              </>
             )}
             <Button 
               variant={viewMode === "grouped" ? "default" : "outline"} 
