@@ -41,6 +41,9 @@ if EMERGENT_LLM_KEY:
 else:
     logger.warning("No EMERGENT_LLM_KEY found - AI features disabled")
 
+llm_chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id="recipe_app", system_message="You are a helpful cooking assistant.") if EMERGENT_LLM_KEY else None
+image_generator = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY) if EMERGENT_LLM_KEY else None
+
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
