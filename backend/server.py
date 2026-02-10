@@ -2775,6 +2775,15 @@ Return ONLY valid JSON, no markdown."""
             for item in pantry['items'] if item.get('quantity', 0) > 0
         ])
         
+        # Add expiring items context
+        expiring_context = ""
+        if expiring_items:
+            expiring_text = "\n".join([
+                f"- {item['name']} (expires in {item['days_until_expiry']} days)"
+                for item in expiring_items[:5]
+            ])
+            expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and should be used:\n{expiring_text}"
+        
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"generate_{uuid.uuid4().hex[:8]}",
@@ -2783,7 +2792,7 @@ Return ONLY valid JSON, no markdown."""
         
         user_message = UserMessage(text=f"""Create a delicious recipe using these available ingredients:
 
-{pantry_text}
+{pantry_text}{expiring_context}
 
 Make sure the recipe is practical and tasty. Use primarily ingredients from the list.
 If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil.""")
