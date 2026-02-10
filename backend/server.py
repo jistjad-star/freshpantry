@@ -4147,3 +4147,222 @@ if static_dir.exists():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# ============== RECIPE CONVERSION (VEGAN/VEGETARIAN) ==============
+
+@api_router.post("/recipes/{recipe_id}/make-vegan")
+async def make_recipe_vegan(recipe_id: str, request: Request):
+    """Convert a recipe to vegan by substituting all animal products with plant-based alternatives"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get the recipe
+    query = {"id": recipe_id}
+    if user_id:
+        query["user_id"] = user_id
+    
+    recipe = await db.recipes.find_one(query, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI features not available")
+    
+    try:
+        # Format current ingredients
+        ingredients_text = "\n".join([
+            f"- {ing.get('quantity', '')} {ing.get('unit', '')} {ing.get('name', '')}".strip()
+            for ing in recipe.get('ingredients', [])
+        ])
+        
+        system_prompt = """You are a vegan chef expert at converting recipes. Replace ALL animal products with delicious plant-based alternatives.
+
+SUBSTITUTION GUIDE:
+- Chicken/Turkey → Tofu, seitan, or tempeh
+- Beef → Mushrooms, seitan, or Beyond/plant mince
+- Pork → Jackfruit, tempeh, or smoked tofu
+- Fish → Banana blossom, hearts of palm, or tofu
+- Shrimp/Prawns → King oyster mushrooms or hearts of palm
+- Bacon → Coconut bacon, smoked tempeh, or mushroom bacon
+- Milk → Oat milk, soy milk, or coconut milk
+- Cream → Coconut cream or cashew cream
+- Butter → Vegan butter or coconut oil
+- Cheese → Nutritional yeast, vegan cheese, or cashew cheese
+- Eggs (binding) → Flax egg (1 tbsp ground flax + 3 tbsp water) or chia egg
+- Eggs (main dish) → Tofu scramble, chickpea flour omelette
+- Honey → Maple syrup or agave
+- Yogurt → Coconut or soy yogurt
+
+Keep quantities similar. Maintain the dish's character and flavor profile.
+
+Return ONLY valid JSON:
+{
+    "ingredients": [
+        {"name": "ingredient name", "quantity": "amount", "unit": "unit", "category": "category"}
+    ],
+    "substitutions_made": ["Replaced chicken with pressed tofu", "Replaced milk with oat milk"],
+    "tips": "Optional cooking tip for the vegan version"
+}"""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Convert this recipe to VEGAN:\n\nRecipe: {recipe.get('name', 'Unknown')}\n\nIngredients:\n{ingredients_text}"}
+            ],
+            max_tokens=1500
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        # Parse JSON
+        if "```json" in result:
+            result = result.split("```json")[1].split("```")[0]
+        elif "```" in result:
+            result = result.split("```")[1].split("```")[0]
+        
+        import json
+        try:
+            data = json.loads(result.strip())
+        except json.JSONDecodeError:
+            start = result.find("{")
+            end = result.rfind("}") + 1
+            if start >= 0 and end > start:
+                data = json.loads(result[start:end])
+            else:
+                raise HTTPException(status_code=500, detail="Failed to parse AI response")
+        
+        new_ingredients = data.get("ingredients", [])
+        substitutions = data.get("substitutions_made", [])
+        tips = data.get("tips", "")
+        
+        # Update recipe in database
+        new_categories = list(set(recipe.get('categories', [])) - {'can-be-vegan', 'vegetarian', 'pescatarian'})
+        new_categories.extend(['vegan', 'vegetarian'])
+        
+        update_data = {
+            "ingredients": new_ingredients,
+            "categories": new_categories,
+            "description": f"🌱 Veganized! {tips}" if tips else recipe.get('description', '')
+        }
+        
+        await db.recipes.update_one(query, {"$set": update_data})
+        
+        return {
+            "success": True,
+            "message": "Recipe converted to vegan!",
+            "substitutions": substitutions,
+            "tips": tips,
+            "new_ingredients": new_ingredients
+        }
+        
+    except Exception as e:
+        logger.error(f"Error converting recipe to vegan: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+
+
+@api_router.post("/recipes/{recipe_id}/make-vegetarian")
+async def make_recipe_vegetarian(recipe_id: str, request: Request):
+    """Convert a recipe to vegetarian by substituting meat/fish with vegetarian alternatives"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Get the recipe
+    query = {"id": recipe_id}
+    if user_id:
+        query["user_id"] = user_id
+    
+    recipe = await db.recipes.find_one(query, {"_id": 0})
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI features not available")
+    
+    try:
+        # Format current ingredients
+        ingredients_text = "\n".join([
+            f"- {ing.get('quantity', '')} {ing.get('unit', '')} {ing.get('name', '')}".strip()
+            for ing in recipe.get('ingredients', [])
+        ])
+        
+        system_prompt = """You are a vegetarian chef expert at converting recipes. Replace meat and fish with vegetarian alternatives. Keep dairy and eggs.
+
+SUBSTITUTION GUIDE:
+- Chicken → Halloumi, paneer, tofu, or quorn
+- Beef → Portobello mushrooms, lentils, or veggie mince
+- Pork → Jackfruit or smoked cheese
+- Fish → Halloumi or firm tofu with nori for seafood flavor
+- Bacon → Halloumi strips or smoked cheese
+- Shrimp → Halloumi cubes or egg
+- Stock/broth → Vegetable stock
+
+Keep dairy (milk, cheese, cream, butter) and eggs as-is.
+Maintain the dish's character and flavor profile.
+
+Return ONLY valid JSON:
+{
+    "ingredients": [
+        {"name": "ingredient name", "quantity": "amount", "unit": "unit", "category": "category"}
+    ],
+    "substitutions_made": ["Replaced chicken with halloumi", "Replaced beef stock with vegetable stock"],
+    "tips": "Optional cooking tip for the vegetarian version"
+}"""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Convert this recipe to VEGETARIAN:\n\nRecipe: {recipe.get('name', 'Unknown')}\n\nIngredients:\n{ingredients_text}"}
+            ],
+            max_tokens=1500
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        # Parse JSON
+        if "```json" in result:
+            result = result.split("```json")[1].split("```")[0]
+        elif "```" in result:
+            result = result.split("```")[1].split("```")[0]
+        
+        import json
+        try:
+            data = json.loads(result.strip())
+        except json.JSONDecodeError:
+            start = result.find("{")
+            end = result.rfind("}") + 1
+            if start >= 0 and end > start:
+                data = json.loads(result[start:end])
+            else:
+                raise HTTPException(status_code=500, detail="Failed to parse AI response")
+        
+        new_ingredients = data.get("ingredients", [])
+        substitutions = data.get("substitutions_made", [])
+        tips = data.get("tips", "")
+        
+        # Update recipe in database
+        new_categories = list(set(recipe.get('categories', [])) - {'can-be-vegan', 'pescatarian'})
+        if 'vegetarian' not in new_categories:
+            new_categories.append('vegetarian')
+        if 'can-be-vegan' not in new_categories:
+            new_categories.append('can-be-vegan')
+        
+        update_data = {
+            "ingredients": new_ingredients,
+            "categories": new_categories,
+            "description": f"🥬 Vegetarian version! {tips}" if tips else recipe.get('description', '')
+        }
+        
+        await db.recipes.update_one(query, {"$set": update_data})
+        
+        return {
+            "success": True,
+            "message": "Recipe converted to vegetarian!",
+            "substitutions": substitutions,
+            "tips": tips,
+            "new_ingredients": new_ingredients
+        }
+        
+    except Exception as e:
+        logger.error(f"Error converting recipe to vegetarian: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+
