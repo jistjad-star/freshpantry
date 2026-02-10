@@ -86,16 +86,18 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - **Verified**: Shop All Button - Opens multiple browser tabs (one per unchecked item) at selected supermarket
 - **Added**: Multiple recipes per day in Weekly Planner - Changed from 7 meals/week limit to 4 meals/day limit
 - **Added**: Meal Type Filters in Recipe Library - Breakfast, Lunch, Dinner, Snack buttons filter by keyword matching
-- **Added**: Photo Choice when adding recipe - AI Generate (default), Upload Own Photo, or No Photo options
+- **Changed**: Photo Choice to Select dropdown - AI Generate, Upload My Photo, No Photo options
 - **Added**: "Own Recipe" as first source option in Add Recipe form
 - **Added**: Source filter dropdown in Recipe Library - Filter by recipe source (Green Chef, Gousto, etc.)
 - **Added**: Clear Filters button with active filter count in Recipe Library
 - **Added**: Custom pantry alerts - Bell icon on each item to set low stock threshold
 - **Added**: Add Essentials button - Quick-add 15 common kitchen staples with pre-set alerts
 - **Fixed**: Separate ingredient/instruction inputs in AddRecipe Paste method - Prevents AI from extracting food names from instructions
-- **Added**: Smart meal suggestions - Recipes scored by shared ingredients with other recipes for efficient shopping
-- **Added**: "Use Expiring" filter in Meal Suggestions - Prioritizes recipes using soon-to-expire pantry items
+- **Added**: Smart meal suggestions - Recipes scored by shared ingredients (2+) with other recipes
+- **Added**: "Use Expiring" filter in Meal Suggestions AND Weekly Planner - Prioritizes recipes using soon-to-expire pantry items
 - **Added**: Sell-by date tracking in Pantry - Calendar icon to set expiry dates, colored status badges
+- **Fixed**: AI images now stored as base64 data URLs - Prevents CDN URL expiry issues
+- **Fixed**: Image transfer on recipe import - Images downloaded and converted to base64
 
 ### 2025-02-09 (Session 4)
 - **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
