@@ -224,10 +224,12 @@ class PantryItemCreate(BaseModel):
     expiry_date: Optional[str] = None
 
 class PantryItemUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     quantity: Optional[float] = None
     min_threshold: Optional[float] = None
     typical_purchase: Optional[float] = None
     expiry_date: Optional[str] = None
+    clear_expiry_date: Optional[bool] = None  # Set to True to remove expiry date
 
 class CookRecipeRequest(BaseModel):
     recipe_id: str
