@@ -47,7 +47,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Suggestions based on pantry ingredients
 - [x] Match percentage and missing ingredients shown
 - [x] **AI Recipe Generator** - Create new recipes from pantry only
-- [x] **Smart ingredient grouping** - Recipes scored by shared ingredients with other recipes
+- [x] **Smart ingredient grouping** - Recipes scored by shared ingredients (2+) with other recipes
 - [x] **"Use Expiring" filter** - Prioritize recipes using ingredients expiring within 7 days
 - [x] Recommendation messages based on match quality and efficiency
 
