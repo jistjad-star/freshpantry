@@ -253,7 +253,11 @@ export default function Pantry() {
 
   const updateItemExpiry = async (itemId, expiryDate) => {
     try {
-      await api.updatePantryItem(itemId, { expiry_date: expiryDate || null });
+      // Use clear_expiry_date flag when removing expiry date
+      const updateData = expiryDate 
+        ? { expiry_date: expiryDate }
+        : { clear_expiry_date: true };
+      await api.updatePantryItem(itemId, updateData);
       fetchPantry();
       fetchExpiringItems();
       setExpiryDialogOpen(false);
