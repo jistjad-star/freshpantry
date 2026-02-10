@@ -140,13 +140,15 @@ export default function Pantry() {
         unit: newItem.unit,
         category: newItem.category,
         min_threshold: parseFloat(newItem.min_threshold) || 0,
-        typical_purchase: parseFloat(newItem.typical_purchase) || parseFloat(newItem.quantity) || 0
+        typical_purchase: parseFloat(newItem.typical_purchase) || parseFloat(newItem.quantity) || 0,
+        expiry_date: newItem.expiry_date || null
       });
       
       toast.success("Item added to pantry");
-      setNewItem({ name: "", quantity: "", unit: "", category: "other", min_threshold: "", typical_purchase: "" });
+      setNewItem({ name: "", quantity: "", unit: "", category: "other", min_threshold: "", typical_purchase: "", expiry_date: "" });
       setDialogOpen(false);
       fetchPantry();
+      fetchExpiringItems();
     } catch (error) {
       console.error("Error adding item:", error);
       toast.error("Failed to add item");
