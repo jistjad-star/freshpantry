@@ -423,23 +423,49 @@ export default function AddRecipe() {
 
             {/* Paste Input */}
             {inputMethod === 'paste' && (
-              <div className="space-y-3">
-                <Textarea
-                  placeholder="Paste ingredients and instructions here...
+              <div className="space-y-4">
+                {/* Ingredients Input */}
+                <div>
+                  <Label className="text-[#1A2E1A] text-sm font-medium mb-2 block">
+                    Ingredients *
+                  </Label>
+                  <Textarea
+                    placeholder="Paste ingredients here...
 
 Example:
 2 chicken breasts
 1 tbsp olive oil
-3 cloves garlic
+3 cloves garlic, minced
+1 cup honey
+1/4 cup soy sauce"
+                    value={pasteIngredients}
+                    onChange={(e) => setPasteIngredients(e.target.value)}
+                    className="fresh-input min-h-[150px] font-mono text-sm"
+                    data-testid="paste-ingredients-input"
+                  />
+                </div>
+                
+                {/* Instructions Input */}
+                <div>
+                  <Label className="text-stone-500 text-sm font-medium mb-2 block">
+                    Instructions (optional)
+                  </Label>
+                  <Textarea
+                    placeholder="Paste cooking instructions here...
 
+Example:
 1. Preheat oven to 200°C
 2. Season chicken with salt and pepper
-3. Cook for 25 minutes"
-                  value={pasteText}
-                  onChange={(e) => setPasteText(e.target.value)}
-                  className="fresh-input min-h-[200px] font-mono text-sm"
-                />
-                <Button onClick={parseFromText} disabled={loading || !recipeName.trim() || !pasteText.trim()} className="btn-primary w-full">
+3. Heat oil in a pan over medium heat
+4. Cook chicken for 25 minutes until golden"
+                    value={pasteInstructions}
+                    onChange={(e) => setPasteInstructions(e.target.value)}
+                    className="fresh-input min-h-[150px] font-mono text-sm"
+                    data-testid="paste-instructions-input"
+                  />
+                </div>
+                
+                <Button onClick={parseFromText} disabled={loading || !recipeName.trim() || !pasteIngredients.trim()} className="btn-primary w-full">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract Ingredients</>}
                 </Button>
               </div>
