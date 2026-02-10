@@ -91,6 +91,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - **Added**: Custom pantry alerts - Bell icon on each item to set low stock threshold
 - **Added**: Add Essentials button - Quick-add 15 common kitchen staples with pre-set alerts
 - **Fixed**: Separate ingredient/instruction inputs in AddRecipe Paste method - Prevents AI from extracting food names from instructions
+- **Added**: Smart meal suggestions - Recipes scored by shared ingredients with other recipes for efficient shopping
+- **Added**: "Use Expiring" filter in Meal Suggestions - Prioritizes recipes using soon-to-expire pantry items
+- **Added**: Sell-by date tracking in Pantry - Calendar icon to set expiry dates, colored status badges
 
 ### 2025-02-09 (Session 4)
 - **Fixed**: Deployment CORS issue - Added regex for Emergent domains to allow credentials
