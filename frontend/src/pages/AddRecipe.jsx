@@ -491,24 +491,9 @@ export default function AddRecipe() {
                     </button>
                   </div>
                 )}
-                      className="aspect-square border-2 border-dashed border-stone-300 rounded-lg flex items-center justify-center hover:border-[#4A7C59] transition-colors"
-                    >
-                      <Plus className="w-6 h-6 text-stone-400" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-12 border-2 border-dashed border-stone-300 rounded-xl hover:border-[#4A7C59] transition-colors"
-                  >
-                    <Camera className="w-10 h-10 text-stone-400 mx-auto mb-2" />
-                    <p className="text-stone-500">Click to upload recipe screenshots</p>
-                    <p className="text-stone-400 text-sm">Supports multiple images</p>
-                  </button>
-                )}
                 
                 {images.length > 0 && (
-                  <Button onClick={parseFromScreenshots} disabled={loading || !recipeName.trim()} className="btn-primary w-full">
+                  <Button onClick={parseFromScreenshots} disabled={loading} className="btn-primary w-full">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract from {images.length} Image{images.length > 1 ? 's' : ''}</>}
                   </Button>
                 )}
