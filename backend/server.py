@@ -992,16 +992,23 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
     try:
         system_message = """You are an expert at reading recipe cards and extracting ingredients.
 
-Your task: Extract ALL ingredients from this image.
+IMPORTANT: Only extract from the INGREDIENTS LIST section - the part that shows items with quantities/measurements.
+DO NOT extract food items mentioned in cooking instructions or method steps.
 
-Common recipe card formats:
-- Meal kit cards (Green Chef, HelloFresh, Gousto): Usually have ingredients in a list on one side
-- Magazine/book recipes: May have ingredients in columns or boxes
-- Handwritten recipes: May be less structured
+Look for:
+- A dedicated "Ingredients" section with quantities (e.g., "2 chicken breasts", "100g flour")
+- Items with measurements like g, ml, tbsp, tsp, cups, pieces
+- Numbered or bulleted ingredient lists
 
-Return ONLY valid JSON with this exact format:
+DO NOT include:
+- Items from cooking steps (e.g., "brown the onions" - don't add onions unless in ingredients list)
+- Serving suggestions
+- Items without any quantity indication
+- Duplicate items
+
+Return ONLY valid JSON:
 {
-    "raw_text": "list all ingredient text you see",
+    "raw_text": "list ingredient text from ingredients section only",
     "ingredients": [
         {"name": "chicken breast", "quantity": "2", "unit": "pieces", "category": "protein"},
         {"name": "olive oil", "quantity": "1", "unit": "tbsp", "category": "pantry"}
@@ -1011,10 +1018,10 @@ Return ONLY valid JSON with this exact format:
 Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
 
 Rules:
-- Extract EVERY ingredient visible
-- If no quantity shown, leave quantity empty
+- ONLY extract from the ingredients list/section, NOT from cooking steps
+- Each ingredient MUST have a quantity - skip items without quantities
 - Simplify names (e.g., "boneless skinless chicken breast" -> "chicken breast")
-- Include garnishes and seasonings
+- NO duplicates - each ingredient appears once
 - Return valid JSON only, no markdown"""
 
         logger.info("Sending image to OpenAI Vision API for ingredient extraction...")
@@ -1026,7 +1033,7 @@ Rules:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract all ingredients from this recipe card image. Return as JSON."},
+                        {"type": "text", "text": "Extract ingredients ONLY from the ingredients list section (with quantities). Do NOT include items mentioned in cooking steps. Return as JSON."},
                         {
                             "type": "image_url",
                             "image_url": {
