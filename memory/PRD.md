@@ -94,13 +94,24 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - GET /api/recipes?sort_by=popularity - Get recipes sorted by rating
 - GET /api/recipes/{id}/reviews - Get reviews for a recipe
 - POST /api/recipes/{id}/reviews - Add a review to a recipe
-- GET /api/pantry/expiring-soon - Get items expiring within N days (NEW)
-- POST /api/pantry/scan-receipt - Scan receipt image/PDF to extract items (NEW)
-- POST /api/pantry/add-from-receipt - Add extracted items to pantry (NEW)
+- GET /api/pantry/expiring-soon - Get items expiring within N days
+- POST /api/pantry/scan-receipt - Scan receipt image/PDF to extract items
+- POST /api/pantry/add-from-receipt - Add extracted items to pantry
+- POST /api/recipes/share - Create private import token (NEW - replaces old share)
+- GET /api/recipes/shared/{token} - Get minimal share preview (NEW)
+- POST /api/recipes/import-shared/{token} - Import safe fields only (NEW)
 
 ## Changelog
 
 ### 2025-02-10 (Session 7 - Current)
+- **MAJOR**: Copyright-safe private recipe sharing system
+  - AI rewrites instructions from step graph with original wording
+  - N-gram compliance checks (8-gram < 0.01, overall ≤ 0.15)
+  - Single-use, 15-minute import tokens (not persistent URLs)
+  - Only safe fields shared: ingredients (facts) + rewritten instructions
+  - No third-party images transferred - user adds their own photos
+  - Domain quotas to respect database rights
+  - Privacy-focused import UI with legal notices
 - **Added**: Dashboard expiry notification banner - Shows expired/expiring items with colored badges
 - **Added**: "Use Now" button to link directly to meal suggestions using expiring items
 - **Added**: "Expiring" stat card on dashboard showing count of items expiring soon
