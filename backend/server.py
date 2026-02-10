@@ -846,25 +846,29 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
         missing = recipe_ings - pantry_ingredient_names
         match_pct = int((len(available) / len(recipe_ings)) * 100) if recipe_ings else 0
         
-        # Count shared ingredients with other recipes
+        # Count shared ingredients with other recipes (must share 2+ to count)
         shared_count = sum(1 for ing in recipe_ings if ing in shared_ingredients)
         
-        # Count how many other recipes share ingredients with this one
-        related_recipes = set()
+        # Count how many other recipes share 2+ ingredients with this one
+        related_recipes = {}
         for ing in recipe_ings:
             if ing in shared_ingredients:
                 for rid in shared_ingredients[ing]:
                     if rid != recipe_id:
-                        related_recipes.add(rid)
+                        related_recipes[rid] = related_recipes.get(rid, 0) + 1
+        
+        # Only count recipes that share 2+ ingredients
+        recipes_sharing_multiple = [rid for rid, count in related_recipes.items() if count >= 2]
         
         # Count expiring ingredients used
         expiring_used = len(recipe_ings & expiring_ingredients) if prioritize_expiring else 0
         
         # Calculate composite score
-        # Weights: match_pct (50%) + shared_ingredients (30%) + related_recipes (20%)
-        # If prioritizing expiring, add bonus for using expiring items
-        base_score = (match_pct * 0.5) + (shared_count * 10 * 0.3) + (len(related_recipes) * 5 * 0.2)
-        expiring_bonus = expiring_used * 20 if prioritize_expiring else 0
+        # Weights: match_pct (40%) + shared_ingredients (25%) + related_recipes_with_2+ (25%) + expiring (10%)
+        # Bonus for recipes that share multiple ingredients with multiple other recipes
+        multi_share_bonus = len(recipes_sharing_multiple) * 15
+        base_score = (match_pct * 0.4) + (shared_count * 8 * 0.25) + (multi_share_bonus * 0.25)
+        expiring_bonus = expiring_used * 25 if prioritize_expiring else 0
         composite_score = base_score + expiring_bonus
         
         suggestions.append({
