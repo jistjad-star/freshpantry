@@ -2704,7 +2704,7 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
     if not pantry or not pantry.get('items'):
         raise HTTPException(status_code=400, detail="Add items to your pantry first")
     
-    if not llm_chat:
+    if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
     meal_context = ""
@@ -2747,19 +2747,20 @@ Return ONLY valid JSON, no markdown."""
             for item in pantry['items'] if item.get('quantity', 0) > 0
         ])
         
-        user_message = f"""Create a delicious recipe using these available ingredients:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"generate_{uuid.uuid4().hex[:8]}",
+            system_message=system_msg
+        ).with_model("openai", "gpt-4o-mini")
+        
+        user_message = UserMessage(text=f"""Create a delicious recipe using these available ingredients:
 
 {pantry_text}
 
 Make sure the recipe is practical and tasty. Use primarily ingredients from the list.
-If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil."""
+If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil.""")
         
-        response = await llm_chat.chat([
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_message}
-        ])
-        
-        result = response.content
+        result = await chat.send_message(user_message)
         
         import json
         clean_response = result.strip()
