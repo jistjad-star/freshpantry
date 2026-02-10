@@ -202,25 +202,25 @@ export default function EditRecipe() {
                 <Input
                   value={ing.quantity}
                   onChange={(e) => updateIngredient(index, 'quantity', e.target.value)}
-                  className="fresh-input w-20"
+                  className="fresh-input w-16"
                   placeholder="Qty"
                 />
                 <Input
                   value={ing.unit}
                   onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                  className="fresh-input w-24"
+                  className="fresh-input w-20"
                   placeholder="Unit"
                 />
                 <Input
                   value={ing.name}
                   onChange={(e) => updateIngredient(index, 'name', e.target.value)}
-                  className="fresh-input flex-1"
+                  className="fresh-input flex-1 min-w-[200px]"
                   placeholder="Ingredient name"
                 />
                 <select
                   value={ing.category || 'other'}
                   onChange={(e) => updateIngredient(index, 'category', e.target.value)}
-                  className="fresh-input w-28 text-sm"
+                  className="fresh-input w-24 text-sm"
                 >
                   {CATEGORIES.map(cat => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
