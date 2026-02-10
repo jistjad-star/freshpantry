@@ -728,7 +728,7 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
 
 async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict]) -> List[dict]:
     """Use AI to suggest meals based on available pantry ingredients"""
-    if not openai_client or not pantry_items or not recipes:
+    if not llm_chat or not pantry_items or not recipes:
         return []
     
     try:
@@ -741,10 +741,7 @@ async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict
             ing_list = ", ".join([ing.get('name', '') for ing in r.get('ingredients', [])])
             recipes_text += f"\nRecipe ID: {r.get('id')}\nName: {r.get('name')}\nIngredients: {ing_list}\n"
         
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": """You are a helpful meal planning assistant.
+        system_message = """You are a helpful meal planning assistant.
             Given a list of pantry items and available recipes, suggest which recipes can be made.
             Consider partial matches - a recipe is still good if most ingredients are available.
             
@@ -761,8 +758,9 @@ async def suggest_meals_from_pantry(pantry_items: List[dict], recipes: List[dict
             ]
             
             Sort by match_percentage descending. Include all recipes with at least 50% match.
-            Return ONLY valid JSON, no markdown code blocks."""},
-                {"role": "user", "content": f"""My pantry has:
+            Return ONLY valid JSON, no markdown code blocks."""
+
+        user_message = f"""My pantry has:
 {pantry_text}
 
 Available recipes:
@@ -770,11 +768,14 @@ Available recipes:
 
 Suggest ALL recipes, even if missing several ingredients. Include recipes with at least 20% match.
 Clearly list what ingredients are missing for each recipe.
-Sort by match percentage (highest first)."""}
-            ]
-        )
+Sort by match percentage (highest first)."""
         
-        result = response.choices[0].message.content
+        response = await llm_chat.chat([
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ])
+        
+        result = response.content
         
         import json
         clean_response = result.strip()
