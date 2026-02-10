@@ -34,10 +34,12 @@ except Exception as e:
     client = None
     db = None
 
-# Emergent AI integrations
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY') or os.environ.get('OPENAI_API_KEY')
-llm_chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id="recipe_app", system_message="You are a helpful cooking assistant.") if EMERGENT_LLM_KEY else None
-image_generator = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY) if EMERGENT_LLM_KEY else None
+# Emergent LLM Key for AI features
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+if EMERGENT_LLM_KEY:
+    logger.info("Emergent LLM Key found - AI features enabled")
+else:
+    logger.warning("No EMERGENT_LLM_KEY found - AI features disabled")
 
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
