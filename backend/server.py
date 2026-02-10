@@ -527,22 +527,20 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
     """Generate a casual food image for a recipe and convert to base64 for permanent storage"""
-    if not openai_client:
+    if not image_generator:
         return ""
     
     try:
         prompt = f"Simple overhead photo of {recipe_name} on a kitchen table, home-cooked style, casual lighting, no garnish, realistic everyday meal"
         
-        response = await openai_client.images.generate(
-            model="dall-e-3",
+        response = await image_generator.generate_image(
             prompt=prompt,
             size="1024x1024",
-            quality="standard",
-            n=1
+            quality="standard"
         )
         
-        if response.data and len(response.data) > 0:
-            image_url = response.data[0].url
+        if response and response.get('url'):
+            image_url = response['url']
             
             # Download and convert to base64 for permanent storage
             # OpenAI's CDN URLs expire, so we need to store the image data
