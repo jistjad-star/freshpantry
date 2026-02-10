@@ -39,6 +39,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Multiple recipes per day** - Up to 4 meals per day (breakfast, lunch, dinner, snack)
 - [x] "Add to Planner" button on recipe pages
 - [x] Recipe selection popup with 3 tabs (Suggested, By Ingredient, All)
+- [x] **"Use expiring items" toggle** - Filter suggestions to prioritize expiring ingredients
 - [x] Servings display in planner
 - [x] "I Cooked This" feature - Deducts ingredients from pantry
 
