@@ -12,6 +12,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 
 const ALL_CATEGORIES = [
   { value: "vegan", label: "Vegan", icon: Leaf, color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "can-be-vegan", label: "Can be Vegan", icon: Leaf, color: "bg-lime-100 text-lime-700 border-lime-200" },
   { value: "vegetarian", label: "Veggie", icon: Salad, color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   { value: "pescatarian", label: "Pescatarian", icon: Fish, color: "bg-blue-100 text-blue-700 border-blue-200" },
   { value: "low-fat", label: "Low Fat", icon: Heart, color: "bg-pink-100 text-pink-700 border-pink-200" },
