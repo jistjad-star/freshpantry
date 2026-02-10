@@ -23,19 +23,25 @@ export default function Dashboard() {
   const [recipes, setRecipes] = useState([]);
   const [shoppingList, setShoppingList] = useState(null);
   const [lowStock, setLowStock] = useState([]);
+  const [expiringItems, setExpiringItems] = useState([]);
+  const [expiredItems, setExpiredItems] = useState([]);
+  const [dismissedExpiry, setDismissedExpiry] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [recipesRes, listRes, lowStockRes] = await Promise.all([
+        const [recipesRes, listRes, lowStockRes, expiringRes] = await Promise.all([
           api.getRecipes(),
           api.getShoppingList(),
-          api.getLowStockItems()
+          api.getLowStockItems(),
+          api.getExpiringItems(7) // Get items expiring within 7 days
         ]);
         setRecipes(recipesRes.data || []);
         setShoppingList(listRes.data);
         setLowStock(lowStockRes.data?.low_stock_items || []);
+        setExpiringItems(expiringRes.data?.expiring_items || []);
+        setExpiredItems(expiringRes.data?.expired_items || []);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
