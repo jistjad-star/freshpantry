@@ -108,7 +108,7 @@ class Ingredient(BaseModel):
     checked: bool = False
 
 # Recipe categories
-RECIPE_CATEGORIES = ["vegan", "vegetarian", "pescatarian", "low-fat", "quick-easy", "comfort-food", "healthy", "family-friendly"]
+RECIPE_CATEGORIES = ["vegan", "can-be-vegan", "vegetarian", "pescatarian", "low-fat", "quick-easy", "comfort-food", "healthy", "family-friendly"]
 
 class Recipe(BaseModel):
     model_config = ConfigDict(extra="ignore")
