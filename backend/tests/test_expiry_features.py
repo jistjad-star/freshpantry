@@ -53,12 +53,14 @@ class TestPantryExpiryFeatures:
         
         assert response.status_code == 200, f"Failed to add item: {response.text}"
         data = response.json()
-        assert data.get("name") == "TEST_Expiring_Milk"
-        assert data.get("expiry_date") == expiry_date
+        
+        # API returns item inside 'item' key
+        item = data.get("item", data)
+        assert item.get("name") == "TEST_Expiring_Milk"
+        assert item.get("expiry_date") == expiry_date
         print(f"✓ Added pantry item with expiry date: {expiry_date}")
         
-        # Store item ID for cleanup
-        return data.get("id")
+        return item.get("id")
     
     def test_add_pantry_item_expired(self, api_client):
         """Test adding a pantry item that is already expired"""
@@ -75,9 +77,10 @@ class TestPantryExpiryFeatures:
         
         assert response.status_code == 200, f"Failed to add item: {response.text}"
         data = response.json()
-        assert data.get("expiry_date") == expiry_date
+        item = data.get("item", data)
+        assert item.get("expiry_date") == expiry_date
         print(f"✓ Added expired pantry item with expiry date: {expiry_date}")
-        return data.get("id")
+        return item.get("id")
     
     def test_add_pantry_item_expiring_in_7_days(self, api_client):
         """Test adding a pantry item expiring in 7 days"""
@@ -93,9 +96,10 @@ class TestPantryExpiryFeatures:
         
         assert response.status_code == 200, f"Failed to add item: {response.text}"
         data = response.json()
-        assert data.get("expiry_date") == expiry_date
+        item = data.get("item", data)
+        assert item.get("expiry_date") == expiry_date
         print(f"✓ Added pantry item expiring in 7 days: {expiry_date}")
-        return data.get("id")
+        return item.get("id")
     
     def test_update_pantry_item_expiry_date(self, api_client):
         """Test updating expiry date on existing pantry item"""
@@ -107,7 +111,9 @@ class TestPantryExpiryFeatures:
             "category": "produce"
         })
         assert response.status_code == 200
-        item_id = response.json().get("id")
+        data = response.json()
+        item = data.get("item", data)
+        item_id = item.get("id")
         
         # Now update with expiry date
         new_expiry = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d")
@@ -116,8 +122,14 @@ class TestPantryExpiryFeatures:
         })
         
         assert update_response.status_code == 200, f"Failed to update: {update_response.text}"
-        updated_data = update_response.json()
-        assert updated_data.get("expiry_date") == new_expiry
+        
+        # Verify by fetching pantry
+        pantry_response = api_client.get(f"{BASE_URL}/api/pantry")
+        pantry = pantry_response.json()
+        updated_item = next((i for i in pantry.get('items', []) if i['id'] == item_id), None)
+        
+        assert updated_item is not None, "Item not found in pantry after update"
+        assert updated_item.get("expiry_date") == new_expiry
         print(f"✓ Updated pantry item expiry date to: {new_expiry}")
         return item_id
     
@@ -133,7 +145,9 @@ class TestPantryExpiryFeatures:
             "expiry_date": expiry_date
         })
         assert response.status_code == 200
-        item_id = response.json().get("id")
+        data = response.json()
+        item = data.get("item", data)
+        item_id = item.get("id")
         
         # Now remove expiry date by setting to null
         update_response = api_client.put(f"{BASE_URL}/api/pantry/items/{item_id}", json={
@@ -141,8 +155,14 @@ class TestPantryExpiryFeatures:
         })
         
         assert update_response.status_code == 200, f"Failed to update: {update_response.text}"
-        updated_data = update_response.json()
-        assert updated_data.get("expiry_date") is None
+        
+        # Verify by fetching pantry
+        pantry_response = api_client.get(f"{BASE_URL}/api/pantry")
+        pantry = pantry_response.json()
+        updated_item = next((i for i in pantry.get('items', []) if i['id'] == item_id), None)
+        
+        assert updated_item is not None, "Item not found in pantry after update"
+        assert updated_item.get("expiry_date") is None
         print(f"✓ Removed expiry date from pantry item")
         return item_id
 
