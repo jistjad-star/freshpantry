@@ -783,6 +783,122 @@ Sort by match percentage (highest first)."""}
         logger.error(f"Error suggesting meals: {e}", exc_info=True)
         return []
 
+async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipes: List[dict], prioritize_expiring: bool = False) -> List[dict]:
+    """
+    Suggest meals with intelligent grouping based on shared ingredients.
+    Prioritizes meals that:
+    1. Share more ingredients with other recipes (efficient shopping)
+    2. Use more pantry ingredients you already have
+    3. Can make multiple meals from same ingredients
+    """
+    if not recipes:
+        return []
+    
+    # Build pantry ingredient set for matching
+    pantry_ingredient_names = set()
+    expiring_ingredients = set()
+    
+    for item in pantry_items:
+        normalized = normalize_ingredient_name(item.get('name', ''))
+        if normalized:
+            pantry_ingredient_names.add(normalized)
+            # Track expiring items
+            if item.get('days_until_expiry') is not None and item['days_until_expiry'] <= 7:
+                expiring_ingredients.add(normalized)
+    
+    # Build recipe -> ingredients mapping
+    recipe_ingredients = {}
+    all_ingredients = {}  # ingredient -> list of recipe ids
+    
+    for recipe in recipes:
+        recipe_id = recipe.get('id')
+        recipe_ings = set()
+        for ing in recipe.get('ingredients', []):
+            normalized = normalize_ingredient_name(ing.get('name', ''))
+            if normalized:
+                recipe_ings.add(normalized)
+                if normalized not in all_ingredients:
+                    all_ingredients[normalized] = []
+                all_ingredients[normalized].append(recipe_id)
+        recipe_ingredients[recipe_id] = recipe_ings
+    
+    # Find shared ingredients (appear in 2+ recipes)
+    shared_ingredients = {
+        ing: recipe_ids 
+        for ing, recipe_ids in all_ingredients.items() 
+        if len(recipe_ids) >= 2
+    }
+    
+    # Score each recipe
+    suggestions = []
+    for recipe in recipes:
+        recipe_id = recipe.get('id')
+        recipe_name = recipe.get('name', '')
+        recipe_ings = recipe_ingredients.get(recipe_id, set())
+        
+        if not recipe_ings:
+            continue
+        
+        # Calculate metrics
+        available = recipe_ings & pantry_ingredient_names
+        missing = recipe_ings - pantry_ingredient_names
+        match_pct = int((len(available) / len(recipe_ings)) * 100) if recipe_ings else 0
+        
+        # Count shared ingredients with other recipes
+        shared_count = sum(1 for ing in recipe_ings if ing in shared_ingredients)
+        
+        # Count how many other recipes share ingredients with this one
+        related_recipes = set()
+        for ing in recipe_ings:
+            if ing in shared_ingredients:
+                for rid in shared_ingredients[ing]:
+                    if rid != recipe_id:
+                        related_recipes.add(rid)
+        
+        # Count expiring ingredients used
+        expiring_used = len(recipe_ings & expiring_ingredients) if prioritize_expiring else 0
+        
+        # Calculate composite score
+        # Weights: match_pct (50%) + shared_ingredients (30%) + related_recipes (20%)
+        # If prioritizing expiring, add bonus for using expiring items
+        base_score = (match_pct * 0.5) + (shared_count * 10 * 0.3) + (len(related_recipes) * 5 * 0.2)
+        expiring_bonus = expiring_used * 20 if prioritize_expiring else 0
+        composite_score = base_score + expiring_bonus
+        
+        suggestions.append({
+            "recipe_id": recipe_id,
+            "recipe_name": recipe_name,
+            "match_percentage": match_pct,
+            "available_ingredients": list(available),
+            "missing_ingredients": list(missing),
+            "shared_ingredient_count": shared_count,
+            "related_recipe_count": len(related_recipes),
+            "expiring_ingredients_used": expiring_used if prioritize_expiring else None,
+            "composite_score": composite_score,
+            "recommendation": get_recommendation(match_pct, shared_count, len(related_recipes), expiring_used if prioritize_expiring else 0)
+        })
+    
+    # Sort by composite score (highest first)
+    suggestions.sort(key=lambda x: x['composite_score'], reverse=True)
+    
+    return suggestions[:20]  # Return top 20
+
+def get_recommendation(match_pct: int, shared_count: int, related_count: int, expiring_count: int) -> str:
+    """Generate a recommendation message based on metrics"""
+    if expiring_count > 0:
+        return f"Uses {expiring_count} items expiring soon!"
+    if match_pct >= 90 and shared_count >= 3:
+        return "Perfect! You have everything and can make similar recipes!"
+    if match_pct >= 80:
+        return "Great choice! You have almost everything."
+    if shared_count >= 4:
+        return f"Smart pick! Shares ingredients with {related_count} other recipes."
+    if related_count >= 3:
+        return f"Efficient! Same ingredients can make {related_count} other meals."
+    if match_pct >= 50:
+        return "Good match with your pantry."
+    return "A few items to buy, but worth it!"
+
 def normalize_ingredient_name(name: str) -> str:
     """Normalize ingredient name for matching"""
     # Remove common variations and plurals
