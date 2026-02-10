@@ -66,17 +66,6 @@ export default function AddRecipe() {
     setOwnPhotoPreview(null);
     if (photoInputRef.current) photoInputRef.current.value = '';
   };
-  
-  // Input data
-  const [urlInput, setUrlInput] = useState("");
-  const [pasteText, setPasteText] = useState("");
-  const [images, setImages] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  
-  // Parsed data
-  const [ingredients, setIngredients] = useState([]);
-  const [instructions, setInstructions] = useState([]);
-  const [isParsed, setIsParsed] = useState(false);
 
   // Extract URL from text
   const extractUrl = (text) => {
