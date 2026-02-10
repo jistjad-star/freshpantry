@@ -538,27 +538,17 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
     try:
         prompt = f"Simple overhead photo of {recipe_name} on a kitchen table, home-cooked style, casual lighting, no garnish, realistic everyday meal"
         
-        response = await image_generator.generate_image(
+        # Use Emergent integrations for image generation
+        images = await image_generator.generate_images(
             prompt=prompt,
-            size="1024x1024",
-            quality="standard"
+            model="gpt-image-1",
+            number_of_images=1
         )
         
-        if response and response.get('url'):
-            image_url = response['url']
-            
-            # Download and convert to base64 for permanent storage
-            # OpenAI's CDN URLs expire, so we need to store the image data
-            try:
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    img_response = await client.get(image_url)
-                    if img_response.status_code == 200:
-                        content_type = img_response.headers.get("content-type", "image/png")
-                        image_base64 = base64.b64encode(img_response.content).decode()
-                        return f"data:{content_type};base64,{image_base64}"
-            except Exception as e:
-                logger.warning(f"Failed to download AI image, using URL: {e}")
-                return image_url  # Fall back to URL if download fails
+        if images and len(images) > 0:
+            # Convert image bytes to base64 data URL
+            image_base64 = base64.b64encode(images[0]).decode('utf-8')
+            return f"data:image/png;base64,{image_base64}"
             
         return ""
     except Exception as e:
