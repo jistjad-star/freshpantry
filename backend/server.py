@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 import httpx
 from bs4 import BeautifulSoup
 # Emergent integrations for AI
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent
 from emergentintegrations.llm.openai.image_generation import OpenAIImageGeneration
 import base64
 import re
