@@ -426,13 +426,20 @@ async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ing
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": """You are a helpful assistant that parses recipe ingredients into structured JSON format.
-            For each ingredient, extract:
-            - name: the ingredient name (e.g., "chicken breast", "olive oil")
-            - quantity: the amount (e.g., "2", "1/2", "1 cup")
-            - unit: the unit of measurement (e.g., "lb", "cups", "tbsp", "pieces", "" for items like "1 onion")
-            - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
-            
-            Return ONLY a valid JSON array, no markdown or explanation."""},
+
+IMPORTANT: Only extract actual ingredients with quantities/measurements. 
+DO NOT include:
+- Cooking instructions or steps
+- Food items mentioned in cooking methods (e.g., "serve with rice" is not an ingredient unless rice is in the ingredients list)
+- Generic terms without quantities (e.g., "salt to taste" is OK, but "golden brown" is not an ingredient)
+
+For each ingredient, extract:
+- name: the ingredient name (e.g., "chicken breast", "olive oil")
+- quantity: the amount (e.g., "2", "1/2", "to taste"). Must have a quantity or "to taste"
+- unit: the unit of measurement (e.g., "lb", "cups", "tbsp", "pieces", "" for items like "1 onion")
+- category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
+
+Return ONLY a valid JSON array, no markdown or explanation."""},
                 {"role": "user", "content": f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"}
             ]
         )
