@@ -250,11 +250,27 @@ export default function WeeklyPlanner() {
                       {/* Suggested Tab */}
                       <TabsContent value="suggested" className="m-0">
                         <div className="max-h-64 overflow-y-auto">
+                          {/* Use Expiring Toggle */}
+                          <div className="px-2 pt-2">
+                            <button
+                              onClick={() => setShowExpiring(!showExpiring)}
+                              className={`w-full text-xs px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 transition-colors ${
+                                showExpiring 
+                                  ? 'bg-red-100 text-red-700 font-medium' 
+                                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                              }`}
+                              data-testid="planner-expiring-toggle"
+                            >
+                              <CalendarClock className="w-3 h-3" />
+                              {showExpiring ? 'Showing expiring items' : 'Use expiring items'}
+                            </button>
+                          </div>
+                          
                           {getSuggestedRecipes().length > 0 ? (
                             <div className="p-2 space-y-1">
                               <p className="text-xs text-[#4A7C59] font-medium px-2 py-1 flex items-center gap-1 bg-[#4A7C59]/5 rounded-lg mb-2">
                                 <Sparkles className="w-3 h-3" />
-                                Suggested based on pantry
+                                {showExpiring ? 'Using ingredients expiring soon' : 'Suggested based on pantry'}
                               </p>
                               {getSuggestedRecipes().map((recipe) => (
                                 <button
@@ -264,13 +280,20 @@ export default function WeeklyPlanner() {
                                 >
                                   <div className="flex items-center justify-between">
                                     <span className="text-sm text-[#1A2E1A] truncate flex-1">{recipe.name}</span>
-                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                      recipe.match >= 80 ? 'text-green-600 bg-green-50' : 
-                                      recipe.match >= 50 ? 'text-amber-600 bg-amber-50' : 
-                                      'text-orange-600 bg-orange-50'
-                                    }`}>
-                                      {recipe.match}%
-                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      {recipe.expiringUsed > 0 && (
+                                        <span className="text-xs font-medium px-1.5 py-0.5 rounded-full text-red-600 bg-red-50">
+                                          {recipe.expiringUsed} exp
+                                        </span>
+                                      )}
+                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                        recipe.match >= 80 ? 'text-green-600 bg-green-50' : 
+                                        recipe.match >= 50 ? 'text-amber-600 bg-amber-50' : 
+                                        'text-orange-600 bg-orange-50'
+                                      }`}>
+                                        {recipe.match}%
+                                      </span>
+                                    </div>
                                   </div>
                                   {recipe.missing > 0 && (
                                     <p className="text-xs text-orange-600 mt-1 truncate">
