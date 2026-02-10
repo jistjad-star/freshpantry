@@ -975,8 +975,8 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
 
 async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Use AI vision to extract ingredients from an image"""
-    if not EMERGENT_LLM_KEY:
-        logger.warning("No LLM API key found")
+    if not openai_client:
+        logger.warning("No OpenAI API key found")
         return "", []
     
     try:
@@ -1007,25 +1007,29 @@ Rules:
 - Include garnishes and seasonings
 - Return valid JSON only, no markdown"""
 
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"extract_{uuid.uuid4().hex[:8]}",
-            system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")
+        logger.info("Sending image to OpenAI Vision API for ingredient extraction...")
         
-        # Create FileContent for the image
-        file_content = FileContent(
-            content_type="image",
-            file_content_base64=image_base64
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_message},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Extract all ingredients from this recipe card image. Return as JSON."},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=2000
         )
         
-        user_message = UserMessage(
-            text="Extract all ingredients from this recipe card image. Return as JSON.",
-            file_contents=[file_content]
-        )
-        
-        logger.info("Sending image to vision API for ingredient extraction...")
-        result = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         logger.info(f"Vision API response length: {len(result) if result else 0}")
         logger.info(f"Vision API response: {result[:1000] if result else 'Empty'}")
         
