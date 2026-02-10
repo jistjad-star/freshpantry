@@ -979,27 +979,39 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         return "", []
     
     try:
-        system_message = """You are a helpful assistant that extracts recipe ingredients from images.
-            Look carefully at the image and extract ALL text related to ingredients.
-            Parse each ingredient into structured format.
+        system_message = """You are an expert at reading recipe cards and extracting ingredients.
             
-            Return as JSON with format:
-            {
-                "raw_text": "all the ingredient text you can see",
-                "ingredients": [
-                    {"name": "ingredient name", "quantity": "amount", "unit": "unit", "category": "category"}
-                ]
-            }
-            
-            Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
-            
-            Return ONLY valid JSON, no markdown code blocks."""
+IMPORTANT: Look VERY carefully at the entire image. Recipe cards often have:
+- Ingredient lists on the left or right side
+- Small text that may be hard to read
+- Multiple columns of ingredients
+- Ingredients mixed with measurements
+
+Your task: Find and extract EVERY ingredient visible, even if partially obscured.
+
+Return as JSON with format:
+{
+    "raw_text": "ALL text you can see related to ingredients, exactly as written",
+    "ingredients": [
+        {"name": "ingredient name", "quantity": "amount as string", "unit": "unit", "category": "category"}
+    ]
+}
+
+Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
+
+RULES:
+- Extract ALL ingredients, even if you're not 100% certain
+- If quantity is unclear, estimate or leave as empty string
+- Include garnishes, seasonings, and optional ingredients
+- Look for ingredients in photo captions, sidebars, and margins
+- Return ONLY valid JSON, no markdown code blocks
+- If you see a recipe card, look for the ingredient section specifically"""
 
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"extract_{uuid.uuid4().hex[:8]}",
             system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")
+        ).with_model("openai", "gpt-4o")  # Use gpt-4o for better vision
         
         # Create FileContent for the image
         file_content = FileContent(
@@ -1008,7 +1020,7 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         )
         
         user_message = UserMessage(
-            text="Extract all ingredients from this recipe image. List every ingredient you can see with quantities and units.",
+            text="This is a recipe card or recipe image. Please carefully examine it and extract ALL ingredients you can see. Look for an ingredients list, sidebar, or any text mentioning food items with quantities. Be thorough - check all parts of the image including corners and margins.",
             file_contents=[file_content]
         )
         
