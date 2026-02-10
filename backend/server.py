@@ -954,24 +954,29 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
     """Generate a casual food image for a recipe and convert to base64 for permanent storage"""
-    if not EMERGENT_LLM_KEY:
+    if not openai_client:
         return ""
     
     try:
         prompt = f"Simple overhead photo of {recipe_name} on a kitchen table, home-cooked style, casual lighting, no garnish, realistic everyday meal"
         
-        # Use Emergent integrations for image generation
-        image_gen = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY)
-        images = await image_gen.generate_images(
+        # Use OpenAI DALL-E for image generation
+        response = await openai_client.images.generate(
+            model="dall-e-3",
             prompt=prompt,
-            model="gpt-image-1",
-            number_of_images=1
+            size="1024x1024",
+            quality="standard",
+            n=1
         )
         
-        if images and len(images) > 0:
-            # Convert image bytes to base64 data URL
-            image_base64 = base64.b64encode(images[0]).decode('utf-8')
-            return f"data:image/png;base64,{image_base64}"
+        if response.data and len(response.data) > 0:
+            image_url = response.data[0].url
+            # Download the image and convert to base64
+            async with httpx.AsyncClient() as client:
+                img_response = await client.get(image_url)
+                if img_response.status_code == 200:
+                    image_base64 = base64.b64encode(img_response.content).decode('utf-8')
+                    return f"data:image/png;base64,{image_base64}"
             
         return ""
     except Exception as e:
