@@ -13,7 +13,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] Recipe editing after creation
 - [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy)
 - [x] **Meal type filters** - Breakfast, Lunch, Dinner, Snack filters in recipe library
+- [x] **Source filter** - Filter recipes by source (Own Recipe, Green Chef, Gousto, etc.)
 - [x] Manual category editing
+- [x] **Photo choice when adding** - AI Generate, Upload Own Photo, or No Photo
 - [x] AI-generated recipe images
 - [x] Recipe sharing via unique shareable links
 - [x] **Star Reviews** - Users can rate recipes 1-5 stars with optional comments
