@@ -1053,10 +1053,16 @@ Rules:
                 data = json.loads(clean_response[start:end])
             else:
                 logger.error(f"Could not parse JSON from response: {clean_response}")
-                return "", []
+                # Try a simpler fallback extraction
+                return await extract_ingredients_fallback(image_base64)
         
         raw_text = data.get("raw_text", "")
         ingredients_data = data.get("ingredients", [])
+        
+        # If no ingredients found, try fallback
+        if not ingredients_data:
+            logger.warning("No ingredients found, trying fallback extraction...")
+            return await extract_ingredients_fallback(image_base64)
         
         # Ensure all required fields exist and handle null values
         ingredients = []
@@ -1082,6 +1088,68 @@ Rules:
         return raw_text, ingredients
     except Exception as e:
         logger.error(f"Error extracting from image: {e}", exc_info=True)
+        # Try fallback on any error
+        try:
+            return await extract_ingredients_fallback(image_base64)
+        except:
+            return "", []
+
+async def extract_ingredients_fallback(image_base64: str) -> tuple[str, List[Ingredient]]:
+    """Fallback extraction using simpler prompt"""
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"fallback_{uuid.uuid4().hex[:8]}",
+            system_message="You read images and list food ingredients. Be thorough."
+        ).with_model("openai", "gpt-4o-mini")
+        
+        file_content = FileContent(
+            content_type="image",
+            file_content_base64=image_base64
+        )
+        
+        user_message = UserMessage(
+            text="List ALL food ingredients visible in this image. Format: one ingredient per line with quantity if shown. Example:\n2 chicken breasts\n1 onion\n200g pasta",
+            file_contents=[file_content]
+        )
+        
+        logger.info("Trying fallback ingredient extraction...")
+        result = await chat.send_message(user_message)
+        logger.info(f"Fallback response: {result[:500] if result else 'Empty'}")
+        
+        if not result or not result.strip():
+            return "", []
+        
+        # Parse simple text format
+        lines = [line.strip() for line in result.strip().split('\n') if line.strip()]
+        ingredients = []
+        
+        for line in lines:
+            # Try to parse quantity and name
+            # Pattern: optional quantity + ingredient name
+            import re
+            match = re.match(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s+(.+)$', line)
+            if match:
+                qty, unit, name = match.groups()
+                ingredients.append(Ingredient(
+                    name=name.strip(),
+                    quantity=qty or "",
+                    unit=unit or "",
+                    category="other"
+                ))
+            else:
+                # Just use the whole line as ingredient name
+                ingredients.append(Ingredient(
+                    name=line,
+                    quantity="",
+                    unit="",
+                    category="other"
+                ))
+        
+        logger.info(f"Fallback extracted {len(ingredients)} ingredients")
+        return result, ingredients
+    except Exception as e:
+        logger.error(f"Fallback extraction failed: {e}")
         return "", []
 
 async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str, str]:
