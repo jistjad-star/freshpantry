@@ -71,13 +71,6 @@ if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
 # Health check endpoint (outside /api for DigitalOcean)
 @app.get("/health")
 async def health_check():
