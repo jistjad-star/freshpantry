@@ -178,6 +178,87 @@ export default function Dashboard() {
         </section>
       )}
 
+      {/* Expiry Notification Banner */}
+      {!dismissedExpiry && (expiredItems.length > 0 || expiringItems.length > 0) && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4" data-testid="expiry-notification">
+          <div className={`fresh-card-static p-4 ${
+            expiredItems.length > 0 
+              ? 'border-red-300 bg-gradient-to-r from-red-50 to-orange-50' 
+              : 'border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50'
+          }`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                expiredItems.length > 0 ? 'bg-red-100' : 'bg-orange-100'
+              }`}>
+                <CalendarClock className={`w-5 h-5 ${expiredItems.length > 0 ? 'text-red-600' : 'text-orange-600'}`} />
+              </div>
+              <div className="flex-1">
+                {expiredItems.length > 0 && (
+                  <div className="mb-2">
+                    <p className="font-medium text-red-700 flex items-center gap-1">
+                      <AlertTriangle className="w-4 h-4" />
+                      {expiredItems.length} item{expiredItems.length !== 1 ? 's' : ''} expired!
+                    </p>
+                    <p className="text-sm text-red-600">
+                      {expiredItems.slice(0, 3).map(i => i.name).join(', ')}
+                      {expiredItems.length > 3 && ` +${expiredItems.length - 3} more`}
+                    </p>
+                  </div>
+                )}
+                {expiringItems.length > 0 && (
+                  <div>
+                    <p className="font-medium text-orange-700 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {expiringItems.length} item{expiringItems.length !== 1 ? 's' : ''} expiring soon
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {expiringItems.slice(0, 5).map((item, i) => (
+                        <span 
+                          key={i} 
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            item.days_until_expiry <= 1 
+                              ? 'bg-red-100 text-red-700' 
+                              : item.days_until_expiry <= 3 
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
+                          {item.name} ({item.days_until_expiry === 0 ? 'today' : item.days_until_expiry === 1 ? 'tomorrow' : `${item.days_until_expiry}d`})
+                        </span>
+                      ))}
+                      {expiringItems.length > 5 && (
+                        <span className="text-xs text-orange-600">+{expiringItems.length - 5} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Link to="/suggestions">
+                  <Button 
+                    size="sm"
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    data-testid="use-expiring-btn"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    Use Now
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setDismissedExpiry(true)}
+                  className="text-stone-400 hover:text-stone-600 p-1"
+                  data-testid="dismiss-expiry-btn"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Stats Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
