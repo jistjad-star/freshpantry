@@ -1568,7 +1568,7 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
         return consolidated
     
     # Otherwise try AI for smarter consolidation
-    if not EMERGENT_LLM_KEY:
+    if not openai_client:
         return consolidated
     
     try:
@@ -1593,14 +1593,16 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
             
             No markdown or explanation, just the JSON array."""
 
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"consolidate_{uuid.uuid4().hex[:8]}",
-            system_message=system_message
-        ).with_model("openai", "gpt-4o-mini")
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}"}
+            ],
+            max_tokens=2000
+        )
         
-        user_message = UserMessage(text=f"Consolidate these shopping list items by combining quantities of the same ingredient:\n\n{items_text}")
-        result = await chat.send_message(user_message)
+        result = response.choices[0].message.content
         
         import json
         clean_response = result.strip()
