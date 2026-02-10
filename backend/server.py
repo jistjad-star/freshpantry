@@ -1101,25 +1101,33 @@ Rules:
 
 async def extract_ingredients_fallback(image_base64: str) -> tuple[str, List[Ingredient]]:
     """Fallback extraction using simpler prompt"""
+    if not openai_client:
+        return "", []
+    
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"fallback_{uuid.uuid4().hex[:8]}",
-            system_message="You read images and list food ingredients. Be thorough."
-        ).with_model("openai", "gpt-4o-mini")
-        
-        file_content = FileContent(
-            content_type="image",
-            file_content_base64=image_base64
-        )
-        
-        user_message = UserMessage(
-            text="List ALL food ingredients visible in this image. Format: one ingredient per line with quantity if shown. Example:\n2 chicken breasts\n1 onion\n200g pasta",
-            file_contents=[file_content]
-        )
-        
         logger.info("Trying fallback ingredient extraction...")
-        result = await chat.send_message(user_message)
+        
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You read images and list food ingredients. Be thorough."},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "List ALL food ingredients visible in this image. Format: one ingredient per line with quantity if shown. Example:\n2 chicken breasts\n1 onion\n200g pasta"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=1500
+        )
+        
+        result = response.choices[0].message.content
         logger.info(f"Fallback response: {result[:500] if result else 'Empty'}")
         
         if not result or not result.strip():
@@ -1132,7 +1140,6 @@ async def extract_ingredients_fallback(image_base64: str) -> tuple[str, List[Ing
         for line in lines:
             # Try to parse quantity and name
             # Pattern: optional quantity + ingredient name
-            import re
             match = re.match(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s+(.+)$', line)
             if match:
                 qty, unit, name = match.groups()
@@ -1159,9 +1166,9 @@ async def extract_ingredients_fallback(image_base64: str) -> tuple[str, List[Ing
 
 async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str, str]:
     """Use AI vision to extract cooking instructions from an image"""
-    if not EMERGENT_LLM_KEY:
-        logger.warning("No LLM API key found")
-        return "", [], "", ""
+    if not openai_client:
+        logger.warning("No OpenAI API key found")
+        return "", [], "", "", ""
     
     try:
         system_message = """You are an expert at reading recipe cards and extracting cooking instructions.
