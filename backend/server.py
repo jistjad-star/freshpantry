@@ -1083,7 +1083,7 @@ RULES:
         logger.error(f"Error extracting from image: {e}", exc_info=True)
         return "", []
 
-async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str]:
+async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str, str]:
     """Use AI vision to extract cooking instructions from an image"""
     if not EMERGENT_LLM_KEY:
         logger.warning("No LLM API key found")
