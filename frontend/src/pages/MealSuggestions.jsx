@@ -150,7 +150,7 @@ export default function MealSuggestions() {
         </div>
 
         {/* Meal Type Filters */}
-        <div className="flex flex-wrap gap-2 mb-6" data-testid="meal-type-filters">
+        <div className="flex flex-wrap items-center gap-2 mb-6" data-testid="meal-type-filters">
           {MEAL_TYPES.map(type => {
             const Icon = type.icon;
             const isActive = mealTypeFilter === type.value;
@@ -173,6 +173,21 @@ export default function MealSuggestions() {
               </button>
             );
           })}
+          
+          {/* Expiring Soon Toggle */}
+          <div className="h-6 w-px bg-stone-200 mx-2" />
+          <button
+            onClick={() => setExpiringSoonFilter(!expiringSoonFilter)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              expiringSoonFilter 
+                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md' 
+                : 'bg-white border border-stone-200 text-stone-600 hover:border-red-300 hover:text-red-600'
+            }`}
+            data-testid="filter-expiring-soon"
+          >
+            <CalendarClock className="w-4 h-4" />
+            Use Expiring
+          </button>
         </div>
 
         {/* AI Generated Recipe - Main Feature */}
