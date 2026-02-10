@@ -21,6 +21,7 @@ const RECIPE_SOURCES = [
 export default function AddRecipe() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const photoInputRef = useRef(null);
   
   // Form state
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,38 @@ export default function AddRecipe() {
   const [servings, setServings] = useState(2);
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
+  
+  // Image choice: 'ai', 'own', 'none'
+  const [imageChoice, setImageChoice] = useState('ai');
+  const [ownPhoto, setOwnPhoto] = useState(null);
+  const [ownPhotoPreview, setOwnPhotoPreview] = useState(null);
+  
+  // Input data
+  const [urlInput, setUrlInput] = useState("");
+  const [pasteText, setPasteText] = useState("");
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  
+  // Parsed data
+  const [ingredients, setIngredients] = useState([]);
+  const [instructions, setInstructions] = useState([]);
+  const [isParsed, setIsParsed] = useState(false);
+
+  // Handle own photo upload
+  const handleOwnPhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setOwnPhoto(file);
+      setOwnPhotoPreview(URL.createObjectURL(file));
+      setImageChoice('own');
+    }
+  };
+
+  const removeOwnPhoto = () => {
+    setOwnPhoto(null);
+    setOwnPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
   
   // Input data
   const [urlInput, setUrlInput] = useState("");
