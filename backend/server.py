@@ -1857,8 +1857,8 @@ async def parse_image(file: UploadFile = File(...)):
 
 
 async def rewrite_instructions_immediately(original_instructions: List[str], ingredients: List[dict] = None) -> List[str]:
-    """Rewrite instructions in original wording to ensure copyright safety.
-    This runs immediately after extraction, before storing."""
+    """Aggressively restructure and rewrite instructions for copyright safety.
+    This completely transforms the recipe structure, not just paraphrases."""
     
     if not openai_client or not original_instructions:
         return original_instructions
@@ -1867,29 +1867,65 @@ async def rewrite_instructions_immediately(original_instructions: List[str], ing
         return original_instructions
     
     try:
-        system_prompt = """You are a culinary editor. Rewrite these cooking instructions in COMPLETELY DIFFERENT wording while keeping the same cooking steps and outcome.
+        system_prompt = """You are a culinary recipe restructuring expert. Your job is to COMPLETELY TRANSFORM recipe instructions into an UNRECOGNIZABLE structure while achieving the same dish.
 
-RULES:
-- Use DIFFERENT verbs and sentence structures than the original
-- Reorder independent prep steps where safe (e.g., preheating, chopping can be rearranged)
-- Split or combine steps differently than the original
-- Use metric measurements (g, ml) and standardize vague terms
-- Keep 6-12 concise imperative steps
-- NO phrase of 8+ consecutive words should match the original
-- Write in neutral, generic cooking instruction style
-- NO brand names, anecdotes, or personal commentary
+CRITICAL RESTRUCTURING RULES:
 
-OUTPUT: Return ONLY a JSON array of rewritten instruction strings, no explanation."""
+1. REORDER AGGRESSIVELY:
+   - Move ALL prep work (chopping, measuring, mixing marinades) to the START
+   - Group similar actions together (all chopping first, then all mixing, then cooking)
+   - If original says "while X cooks, do Y" - separate these into distinct sequential steps
+   - Preheating can go anywhere before it's needed
 
-        # Format original instructions for the prompt
-        original_text = "\n".join([f"{i+1}. {inst}" for i, inst in enumerate(original_instructions)])
+2. SPLIT AND MERGE DIFFERENTLY:
+   - If original has 2 actions in one step, split into 2 steps
+   - If original has 2 short related steps, combine into 1
+   - NEVER have the same number of steps as original
+   - Change where step boundaries fall
+
+3. COMPLETELY DIFFERENT VOCABULARY:
+   - "dice" → "cut into small cubes"
+   - "sauté" → "cook in a pan over medium heat"
+   - "fold in" → "gently mix through"
+   - "season to taste" → "add salt and pepper as needed"
+   - NEVER use the same verb as the original for the same action
+   - Use totally different sentence structures
+
+4. CHANGE PERSPECTIVE/STYLE:
+   - If original is detailed, be concise
+   - If original is concise, add helpful detail
+   - If original uses "you", use imperatives
+   - Change passive to active or vice versa
+
+5. STANDARDIZE DIFFERENTLY:
+   - Convert all to metric OR imperial (opposite of original if possible)
+   - Round temperatures to nearest 10°C
+   - Express times differently (original "15-20 mins" → "quarter of an hour")
+
+6. STRUCTURE OUTPUT:
+   - Always start with ALL prep work grouped together
+   - Then cooking steps in logical order
+   - End with plating/serving
+   - Aim for a DIFFERENT total number of steps than original
+
+OUTPUT FORMAT: Return ONLY a JSON array of instruction strings. Each string is one step."""
+
+        # Format original instructions for analysis
+        original_text = "\n".join([f"ORIGINAL STEP {i+1}: {inst}" for i, inst in enumerate(original_instructions)])
         
-        user_prompt = f"""Rewrite these cooking instructions in completely different wording:
+        user_prompt = f"""COMPLETELY RESTRUCTURE these recipe instructions. 
 
-ORIGINAL INSTRUCTIONS:
+The output must be UNRECOGNIZABLE as the same recipe text - a human should NOT be able to tell these came from the same source.
+
+ORIGINAL ({len(original_instructions)} steps):
 {original_text}
 
-Remember: Change the phrasing completely while keeping the same cooking process. Return only a JSON array of strings."""
+REQUIREMENTS:
+- Different number of steps than {len(original_instructions)}
+- All prep grouped at start
+- Completely different wording throughout
+- No phrase of 5+ words matching original
+- Return JSON array only"""
 
         response = await openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1897,7 +1933,8 @@ Remember: Change the phrasing completely while keeping the same cooking process.
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            max_tokens=2000
+            max_tokens=2500,
+            temperature=0.9  # Higher temperature for more creative restructuring
         )
         
         result = response.choices[0].message.content.strip()
@@ -1915,7 +1952,7 @@ Remember: Change the phrasing completely while keeping the same cooking process.
         try:
             rewritten = json.loads(result)
             if isinstance(rewritten, list) and len(rewritten) > 0:
-                logger.info(f"Rewrote {len(original_instructions)} instructions to {len(rewritten)} steps")
+                logger.info(f"Restructured {len(original_instructions)} steps into {len(rewritten)} steps")
                 return rewritten
         except json.JSONDecodeError:
             # Try to find array in response
@@ -1924,13 +1961,14 @@ Remember: Change the phrasing completely while keeping the same cooking process.
             if start >= 0 and end > start:
                 rewritten = json.loads(result[start:end])
                 if isinstance(rewritten, list):
+                    logger.info(f"Restructured {len(original_instructions)} steps into {len(rewritten)} steps")
                     return rewritten
         
-        logger.warning("Could not parse rewritten instructions, using originals")
+        logger.warning("Could not parse restructured instructions, using originals")
         return original_instructions
         
     except Exception as e:
-        logger.error(f"Error rewriting instructions: {e}")
+        logger.error(f"Error restructuring instructions: {e}")
         return original_instructions
 
 
