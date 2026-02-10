@@ -89,6 +89,16 @@ export const api = {
   getLowStockItems: () => axios.get(`${API}/pantry/low-stock`),
   addFromShopping: () => axios.post(`${API}/pantry/add-from-shopping`),
   getExpiringItems: (days = 7) => axios.get(`${API}/pantry/expiring-soon`, { params: { days } }),
+  
+  // Receipt scanning
+  scanReceipt: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axios.post(`${API}/pantry/scan-receipt`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  addFromReceipt: (items) => axios.post(`${API}/pantry/add-from-receipt`, { items }),
 
   // Meal Suggestions
   getMealSuggestions: (mealType = null, expiringSoon = false) => {
