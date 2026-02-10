@@ -2752,20 +2752,19 @@ Return ONLY valid JSON, no markdown."""
             for item in pantry['items'] if item.get('quantity', 0) > 0
         ])
         
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": f"""Create a delicious recipe using these available ingredients:
+        user_message = f"""Create a delicious recipe using these available ingredients:
 
 {pantry_text}
 
 Make sure the recipe is practical and tasty. Use primarily ingredients from the list.
-If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil."""}
-            ]
-        )
+If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil."""
         
-        result = response.choices[0].message.content
+        response = await llm_chat.chat([
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_message}
+        ])
+        
+        result = response.content
         
         import json
         clean_response = result.strip()
