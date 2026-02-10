@@ -529,14 +529,15 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
     """Generate a casual food image for a recipe and convert to base64 for permanent storage"""
-    if not image_generator:
+    if not EMERGENT_LLM_KEY:
         return ""
     
     try:
         prompt = f"Simple overhead photo of {recipe_name} on a kitchen table, home-cooked style, casual lighting, no garnish, realistic everyday meal"
         
         # Use Emergent integrations for image generation
-        images = await image_generator.generate_images(
+        image_gen = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY)
+        images = await image_gen.generate_images(
             prompt=prompt,
             model="gpt-image-1",
             number_of_images=1
