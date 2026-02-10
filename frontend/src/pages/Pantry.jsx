@@ -10,7 +10,9 @@ import {
   Check,
   X,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Bell,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -45,6 +48,25 @@ const CATEGORIES = [
 ];
 
 const CATEGORY_ORDER = ["produce", "dairy", "protein", "grains", "pantry", "spices", "frozen", "other"];
+
+// Suggested essentials with default thresholds
+const SUGGESTED_ESSENTIALS = [
+  { name: "Milk", category: "dairy", unit: "L", typical_purchase: 2, min_threshold: 0.5 },
+  { name: "Eggs", category: "dairy", unit: "eggs", typical_purchase: 12, min_threshold: 3 },
+  { name: "Butter", category: "dairy", unit: "g", typical_purchase: 250, min_threshold: 50 },
+  { name: "Bread", category: "grains", unit: "loaf", typical_purchase: 1, min_threshold: 0 },
+  { name: "Olive Oil", category: "pantry", unit: "ml", typical_purchase: 500, min_threshold: 100 },
+  { name: "Salt", category: "spices", unit: "g", typical_purchase: 500, min_threshold: 100 },
+  { name: "Pepper", category: "spices", unit: "g", typical_purchase: 100, min_threshold: 20 },
+  { name: "Garlic", category: "produce", unit: "heads", typical_purchase: 2, min_threshold: 0 },
+  { name: "Onions", category: "produce", unit: "pieces", typical_purchase: 5, min_threshold: 1 },
+  { name: "Pasta", category: "grains", unit: "g", typical_purchase: 500, min_threshold: 100 },
+  { name: "Rice", category: "grains", unit: "g", typical_purchase: 1000, min_threshold: 200 },
+  { name: "Chicken Stock", category: "pantry", unit: "ml", typical_purchase: 1000, min_threshold: 250 },
+  { name: "Tinned Tomatoes", category: "pantry", unit: "cans", typical_purchase: 4, min_threshold: 1 },
+  { name: "Flour", category: "pantry", unit: "g", typical_purchase: 1000, min_threshold: 200 },
+  { name: "Sugar", category: "pantry", unit: "g", typical_purchase: 500, min_threshold: 100 },
+];
 
 export default function Pantry() {
   const [pantry, setPantry] = useState(null);
