@@ -62,6 +62,7 @@ export default function RecipeDetail() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [savingCategories, setSavingCategories] = useState(false);
   const [addingToPlanner, setAddingToPlanner] = useState(false);
+  const [converting, setConverting] = useState(null); // 'vegan' | 'vegetarian' | null
   
   // Reviews state
   const [reviews, setReviews] = useState([]);
