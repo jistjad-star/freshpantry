@@ -2123,7 +2123,10 @@ async def update_pantry_item(item_id: str, update_data: PantryItemUpdate, reques
                 item['min_threshold'] = update_data.min_threshold
             if update_data.typical_purchase is not None:
                 item['typical_purchase'] = update_data.typical_purchase
-            if update_data.expiry_date is not None:
+            # Handle expiry_date - can be set to a value or cleared
+            if update_data.clear_expiry_date:
+                item['expiry_date'] = None
+            elif update_data.expiry_date is not None:
                 item['expiry_date'] = update_data.expiry_date
             item['last_updated'] = datetime.now(timezone.utc).isoformat()
             item_found = True
