@@ -178,6 +178,8 @@ export default function WeeklyPlanner() {
         match: s.match_percentage,
         missing: s.missing_ingredients?.length || 0,
         missingItems: s.missing_ingredients || [],
+        expiringUsed: s.expiring_ingredients_used || 0,
+        sharedCount: s.shared_ingredient_count || 0,
         isSuggested: true
       }));
   };
