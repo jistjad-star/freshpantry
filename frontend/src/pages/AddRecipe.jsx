@@ -110,10 +110,6 @@ export default function AddRecipe() {
 
   // Parse recipe from screenshots
   const parseFromScreenshots = async () => {
-    if (!recipeName.trim()) {
-      toast.error("Enter a recipe name first");
-      return;
-    }
     if (images.length === 0) {
       toast.error("Upload at least one image");
       return;
@@ -125,6 +121,7 @@ export default function AddRecipe() {
       let allInstructions = [];
       let foundPrepTime = "";
       let foundCookTime = "";
+      let suggestedName = "";
       
       for (const file of images) {
         // Try parsing as ingredients
@@ -140,6 +137,10 @@ export default function AddRecipe() {
         }
         if (instResponse.data.prep_time) foundPrepTime = instResponse.data.prep_time;
         if (instResponse.data.cook_time) foundCookTime = instResponse.data.cook_time;
+        // Get AI-suggested name (use first one found)
+        if (instResponse.data.suggested_name && !suggestedName) {
+          suggestedName = instResponse.data.suggested_name;
+        }
       }
       
       // Remove duplicate ingredients
@@ -155,8 +156,15 @@ export default function AddRecipe() {
       if (foundPrepTime) setPrepTime(foundPrepTime);
       if (foundCookTime) setCookTime(foundCookTime);
       
+      // Set AI-suggested name if we don't have one yet
+      if (suggestedName && !recipeName.trim()) {
+        setRecipeName(suggestedName);
+        toast.success(`Found ${uniqueIngredients.length} ingredients, ${allInstructions.length} steps! Suggested name: "${suggestedName}"`);
+      } else {
+        toast.success(`Found ${uniqueIngredients.length} ingredients, ${allInstructions.length} steps!`);
+      }
+      
       setIsParsed(true);
-      toast.success(`Found ${uniqueIngredients.length} ingredients, ${allInstructions.length} steps!`);
     } catch (error) {
       toast.error("Failed to parse images");
     } finally {
