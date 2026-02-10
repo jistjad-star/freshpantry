@@ -2141,7 +2141,7 @@ async def create_recipe(recipe_data: RecipeCreate, request: Request):
 
 @api_router.post("/recipes/scrape-url")
 async def scrape_recipe_url(import_data: RecipeImport):
-    """Scrape a recipe URL and return data without saving"""
+    """Scrape a recipe URL and return data without saving - rewrites instructions for copyright safety"""
     scraped = await scrape_recipe_from_url(import_data.url)
     
     if not scraped['name']:
@@ -2155,16 +2155,20 @@ async def scrape_recipe_url(import_data: RecipeImport):
     if scraped['instructions_text']:
         instructions = [step.strip() for step in scraped['instructions_text'].split('\n') if step.strip()]
     
+    # IMMEDIATELY rewrite instructions for copyright safety
+    if instructions and len(instructions) > 0:
+        instructions = await rewrite_instructions_immediately(instructions)
+    
     # Estimate times from instructions
     prep_time, cook_time = estimate_cooking_times_from_instructions(instructions, scraped['name'])
     
     return {
         "name": scraped['name'],
-        "description": scraped['description'],
+        "description": "",  # Don't include original description (may have copyright content)
         "ingredients": [ing.model_dump() for ing in ingredients],
-        "instructions": instructions,
+        "instructions": instructions,  # Rewritten instructions
         "source_url": scraped['source_url'],
-        "image_url": scraped['image_url'],
+        "image_url": "",  # Don't use source image (copyright)
         "prep_time": prep_time,
         "cook_time": cook_time
     }
