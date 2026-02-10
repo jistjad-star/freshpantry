@@ -260,6 +260,25 @@ export default function MealSuggestions() {
                         </span>
                       )}
                     </div>
+                  </div>
+                  
+                  {/* Expiring items used */}
+                  {generatedRecipe.expiring_items_used?.length > 0 && (
+                    <div className="mb-4 p-2 bg-red-50 rounded-lg border border-red-100">
+                      <p className="text-xs font-medium text-red-700 flex items-center gap-1 mb-1">
+                        <CalendarClock className="w-3 h-3" />
+                        Uses expiring ingredients:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {generatedRecipe.expiring_items_used.map((item, i) => (
+                          <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                            {item.name} ({item.days_until_expiry <= 0 ? 'expired' : `${item.days_until_expiry}d left`})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                    </div>
                     {generatedRecipe.missing_ingredients?.length > 0 && (
                       <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
