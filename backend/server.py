@@ -2709,6 +2709,32 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
+    # Find expiring items
+    today = datetime.now(timezone.utc).date()
+    expiring_items = []
+    for item in pantry['items']:
+        if item.get('expiry_date'):
+            try:
+                expiry_str = item['expiry_date']
+                if 'T' in expiry_str:
+                    expiry = datetime.fromisoformat(expiry_str.replace('Z', '+00:00')).date()
+                else:
+                    expiry = datetime.strptime(expiry_str, '%Y-%m-%d').date()
+                
+                days_until = (expiry - today).days
+                if days_until <= 7:
+                    expiring_items.append({
+                        'name': item.get('name'),
+                        'days_until_expiry': days_until,
+                        'quantity': item.get('quantity'),
+                        'unit': item.get('unit')
+                    })
+            except:
+                pass
+    
+    # Sort expiring items by days until expiry
+    expiring_items.sort(key=lambda x: x['days_until_expiry'])
+    
     meal_context = ""
     if meal_type:
         meal_contexts = {
