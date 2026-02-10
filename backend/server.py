@@ -2619,6 +2619,20 @@ async def import_shared_recipes(share_id: str, request: Request):
                     category=ing.get("category", "other")
                 ))
             
+            # Handle image URL - download and convert to base64 if it's a remote URL
+            image_url = recipe_data.get("image_url", "")
+            if image_url and image_url.startswith("http"):
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        response = await client.get(image_url)
+                        if response.status_code == 200:
+                            content_type = response.headers.get("content-type", "image/png")
+                            image_base64 = base64.b64encode(response.content).decode()
+                            image_url = f"data:{content_type};base64,{image_base64}"
+                except Exception as e:
+                    logger.warning(f"Failed to download image for import: {e}")
+                    # Keep original URL if download fails
+            
             recipe = Recipe(
                 name=recipe_data.get("name", "Imported Recipe"),
                 description=recipe_data.get("description", ""),
@@ -2628,7 +2642,7 @@ async def import_shared_recipes(share_id: str, request: Request):
                 ingredients=ingredients,
                 instructions=recipe_data.get("instructions", []),
                 categories=recipe_data.get("categories", []),
-                image_url=recipe_data.get("image_url"),
+                image_url=image_url,
                 user_id=user_id
             )
             
