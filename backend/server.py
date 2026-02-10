@@ -648,7 +648,7 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
 
 async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[str], str, str]:
     """Use AI vision to extract cooking instructions from an image"""
-    if not llm_chat:
+    if not EMERGENT_LLM_KEY:
         logger.warning("No LLM API key found")
         return "", [], "", ""
     
@@ -670,17 +670,18 @@ async def extract_instructions_from_image(image_base64: str) -> tuple[str, List[
             Estimate cook_time based on baking, cooking, simmering steps.
             Return ONLY valid JSON, no markdown code blocks."""
 
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"instructions_{uuid.uuid4().hex[:8]}",
+            system_message=system_message
+        ).with_model("openai", "gpt-4o-mini")
+        
         user_message = UserMessage(
-            content="Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time.",
+            text="Extract all cooking instructions from this recipe image. List every step in order. Also estimate prep time and cook time.",
             images=[f"data:image/jpeg;base64,{image_base64}"]
         )
         
-        response = await llm_chat.chat([
-            {"role": "system", "content": system_message},
-            user_message
-        ])
-        
-        result = response.content
+        result = await chat.send_message(user_message)
         logger.info(f"Instructions Vision API response: {result[:500] if result else 'Empty'}")
         
         import json
