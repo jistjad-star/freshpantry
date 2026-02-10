@@ -12,7 +12,9 @@ import {
   Loader2,
   ArrowRight,
   Bell,
-  Sparkles
+  Sparkles,
+  CalendarClock,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
