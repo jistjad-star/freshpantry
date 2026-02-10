@@ -522,7 +522,7 @@ def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook
     return categories
 
 async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> str:
-    """Generate a casual food image for a recipe"""
+    """Generate a casual food image for a recipe and convert to base64 for permanent storage"""
     if not openai_client:
         return ""
     
@@ -538,7 +538,21 @@ async def generate_recipe_image(recipe_name: str, ingredients: List[dict]) -> st
         )
         
         if response.data and len(response.data) > 0:
-            return response.data[0].url
+            image_url = response.data[0].url
+            
+            # Download and convert to base64 for permanent storage
+            # OpenAI's CDN URLs expire, so we need to store the image data
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    img_response = await client.get(image_url)
+                    if img_response.status_code == 200:
+                        content_type = img_response.headers.get("content-type", "image/png")
+                        image_base64 = base64.b64encode(img_response.content).decode()
+                        return f"data:{content_type};base64,{image_base64}"
+            except Exception as e:
+                logger.warning(f"Failed to download AI image, using URL: {e}")
+                return image_url  # Fall back to URL if download fails
+            
         return ""
     except Exception as e:
         logger.error(f"Error generating recipe image: {e}")
