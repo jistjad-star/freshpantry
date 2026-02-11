@@ -739,21 +739,18 @@ export default function Pantry() {
                   Scan Barcode
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-white sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle className="text-[#1A2E1A] flex items-center gap-2">
-                    <ScanBarcode className="w-5 h-5 text-[#4A7C59]" />
-                    Scan Product Barcode
+              <DialogContent className="bg-white sm:max-w-sm">
+                <DialogHeader className="pb-2">
+                  <DialogTitle className="text-[#1A2E1A] flex items-center gap-2 text-base">
+                    <ScanBarcode className="w-4 h-4 text-[#4A7C59]" />
+                    Scan Barcode
                   </DialogTitle>
-                  <DialogDescription className="text-stone-500">
-                    Point your camera at a product barcode to look it up
-                  </DialogDescription>
                 </DialogHeader>
                 
-                <div className="space-y-4 py-4">
+                <div className="space-y-3">
                   {/* Camera View */}
                   {scanning && (
-                    <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
+                    <div className="relative rounded-lg overflow-hidden bg-black aspect-[4/3]">
                       <video 
                         ref={videoRef} 
                         className="w-full h-full object-cover"
@@ -762,17 +759,17 @@ export default function Pantry() {
                         muted
                       />
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-64 h-32 border-2 border-[#4A7C59] rounded-lg relative">
+                        <div className="w-48 h-24 border-2 border-[#4A7C59] rounded-lg relative">
                           <ScanLine className="w-full h-1 text-[#4A7C59] absolute top-1/2 animate-pulse" />
                         </div>
                       </div>
                       <Button 
                         onClick={stopBarcodeScanner}
                         variant="outline"
-                        className="absolute bottom-3 right-3 bg-white/90"
+                        className="absolute bottom-2 right-2 bg-white/90 text-xs h-7 px-2"
                         size="sm"
                       >
-                        Stop Scanning
+                        Stop
                       </Button>
                     </div>
                   )}
