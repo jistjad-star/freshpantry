@@ -4095,9 +4095,6 @@ async def estimate_shopping_costs(request: Request):
         "message": f"Shop at {display_names.get(cheapest[0], cheapest[0].title())} to save £{savings:.2f}"
     }
 
-# Include the router in the main app
-app.include_router(api_router)
-
 # Get CORS origins from environment
 cors_origins_str = os.environ.get('CORS_ORIGINS', '')
 if cors_origins_str and cors_origins_str != '*':
