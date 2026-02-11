@@ -1426,15 +1426,26 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
     for recipe in recipes:
         recipe_id = recipe.get('id')
         recipe_name = recipe.get('name', '')
+        original_recipe_ings = [ing.get('name', '') for ing in recipe.get('ingredients', [])]
         recipe_ings = recipe_ingredients.get(recipe_id, set())
         
         if not recipe_ings:
             continue
         
-        # Calculate metrics
-        available = recipe_ings & pantry_ingredient_names
-        missing = recipe_ings - pantry_ingredient_names
-        match_pct = int((len(available) / len(recipe_ings)) * 100) if recipe_ings else 0
+        # Calculate metrics using fuzzy matching
+        available = []
+        missing = []
+        
+        for ing_name in original_recipe_ings:
+            matched, matched_key = ingredient_matches_pantry(ing_name)
+            if matched:
+                available.append(ing_name)
+            else:
+                missing.append(ing_name)
+        
+        # Calculate match percentage based on original ingredient count
+        total_ings = len(original_recipe_ings)
+        match_pct = int((len(available) / total_ings) * 100) if total_ings > 0 else 0
         
         # Count shared ingredients with other recipes (must share 2+ to count)
         shared_count = sum(1 for ing in recipe_ings if ing in shared_ingredients)
@@ -1450,8 +1461,14 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
         # Only count recipes that share 2+ ingredients
         recipes_sharing_multiple = [rid for rid, count in related_recipes.items() if count >= 2]
         
-        # Count expiring ingredients used
-        expiring_used_list = list(recipe_ings & expiring_ingredients) if prioritize_expiring else []
+        # Count expiring ingredients used (with fuzzy matching)
+        expiring_used_list = []
+        if prioritize_expiring:
+            for ing_name in original_recipe_ings:
+                normalized = normalize_ingredient_name(ing_name)
+                base_name = get_base_ingredient_name(ing_name)
+                if normalized in expiring_ingredients or base_name in expiring_ingredients:
+                    expiring_used_list.append(ing_name)
         expiring_used = len(expiring_used_list)
         
         # Calculate composite score
