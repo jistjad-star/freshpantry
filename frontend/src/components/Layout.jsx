@@ -172,9 +172,9 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200">
-        <div className="flex items-center justify-around py-2">
+      {/* Mobile Navigation - Compact to fit all items */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200 safe-area-bottom">
+        <div className="flex items-center justify-between px-1 py-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -182,12 +182,17 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 data-testid={`mobile-nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${
+                className={`flex flex-col items-center justify-center min-w-0 flex-1 py-1.5 transition-colors ${
                   isActive ? "text-[#4A7C59]" : "text-stone-400"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <span className="text-[9px] font-medium truncate max-w-full px-0.5">
+                  {item.label === "Add Recipe" ? "Add" : 
+                   item.label === "Cocktails" ? "Drinks" :
+                   item.label === "Suggest" ? "Ideas" :
+                   item.label}
+                </span>
               </NavLink>
             );
           })}
