@@ -1332,12 +1332,22 @@ export default function Pantry() {
                         <div 
                           key={item.id}
                           className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
-                            lowStock 
-                              ? 'bg-[#E07A5F]/5 border border-[#E07A5F]/30' 
-                              : 'bg-stone-50 border border-stone-100 hover:border-[#4A7C59]/30'
+                            isSelected
+                              ? 'bg-[#4A7C59]/10 border-2 border-[#4A7C59]'
+                              : lowStock 
+                                ? 'bg-[#E07A5F]/5 border border-[#E07A5F]/30' 
+                                : 'bg-stone-50 border border-stone-100 hover:border-[#4A7C59]/30'
                           }`}
                           data-testid={`pantry-item-${item.id}`}
                         >
+                          {/* Selection Checkbox */}
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleItemSelection(item.id)}
+                            className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]"
+                            data-testid={`select-item-${item.id}`}
+                          />
+                          
                           {lowStock && (
                             <AlertTriangle className="w-4 h-4 text-[#E07A5F] flex-shrink-0" />
                           )}
