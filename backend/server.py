@@ -153,6 +153,8 @@ class RecipeCreate(BaseModel):
     ingredients: List[Ingredient] = []
     instructions: List[str] = []
     categories: List[str] = []
+    recipe_type: str = "meal"  # "meal" or "cocktail"
+    is_alcoholic: Optional[bool] = None  # For cocktails
     image_url: Optional[str] = None
     source_url: Optional[str] = None
     skip_image_generation: bool = False
