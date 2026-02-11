@@ -569,6 +569,144 @@ export default function Pantry() {
               Merge Duplicates
             </Button>
             
+            {/* Barcode Scanner Dialog */}
+            <Dialog open={barcodeDialogOpen} onOpenChange={setBarcodeDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10" data-testid="scan-barcode-btn">
+                  <ScanBarcode className="w-4 h-4 mr-2" />
+                  Scan Barcode
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-[#1A2E1A] flex items-center gap-2">
+                    <ScanBarcode className="w-5 h-5 text-[#4A7C59]" />
+                    Scan Product Barcode
+                  </DialogTitle>
+                  <DialogDescription className="text-stone-500">
+                    Point your camera at a product barcode to look it up
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  {/* Camera View */}
+                  {scanning && (
+                    <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
+                      <video 
+                        ref={videoRef} 
+                        className="w-full h-full object-cover"
+                        playsInline
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-64 h-32 border-2 border-[#4A7C59] rounded-lg relative">
+                          <ScanLine className="w-full h-1 text-[#4A7C59] absolute top-1/2 animate-pulse" />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={stopBarcodeScanner}
+                        variant="outline"
+                        className="absolute bottom-3 right-3 bg-white/90"
+                        size="sm"
+                      >
+                        Stop Scanning
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Start Scanner Button */}
+                  {!scanning && !scannedProduct && (
+                    <div className="space-y-4">
+                      <Button 
+                        onClick={startBarcodeScanner}
+                        className="w-full btn-primary"
+                        disabled={lookingUpBarcode}
+                      >
+                        <Camera className="w-4 h-4 mr-2" />
+                        Start Camera Scanner
+                      </Button>
+                      
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-stone-200" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white px-2 text-stone-500">or enter manually</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Input
+                          value={manualBarcode}
+                          onChange={(e) => setManualBarcode(e.target.value)}
+                          placeholder="Enter barcode number..."
+                          className="flex-1"
+                          onKeyDown={(e) => e.key === 'Enter' && handleManualBarcodeSubmit()}
+                        />
+                        <Button 
+                          onClick={handleManualBarcodeSubmit}
+                          disabled={!manualBarcode.trim() || lookingUpBarcode}
+                          variant="outline"
+                        >
+                          {lookingUpBarcode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Look Up"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Loading State */}
+                  {lookingUpBarcode && (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#4A7C59] mb-3" />
+                      <p className="text-stone-500">Looking up product...</p>
+                    </div>
+                  )}
+                  
+                  {/* Scanned Product Result */}
+                  {scannedProduct && !lookingUpBarcode && (
+                    <div className="space-y-4">
+                      <div className="bg-[#4A7C59]/10 rounded-lg p-4">
+                        <div className="flex gap-4">
+                          {scannedProduct.image_url && (
+                            <img 
+                              src={scannedProduct.image_url} 
+                              alt={scannedProduct.name}
+                              className="w-20 h-20 object-cover rounded-lg bg-white"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-[#1A2E1A]">{scannedProduct.name}</h4>
+                            {scannedProduct.brand && (
+                              <p className="text-sm text-stone-500">{scannedProduct.brand}</p>
+                            )}
+                            <p className="text-sm text-stone-600 mt-1">
+                              {scannedProduct.quantity} {scannedProduct.unit} • {scannedProduct.category}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => setScannedProduct(null)}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          Scan Another
+                        </Button>
+                        <Button 
+                          onClick={addScannedProductToPantry}
+                          className="flex-1 btn-primary"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add to Pantry
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            
             {/* Receipt Scan Dialog */}
             <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
               <DialogTrigger asChild>
