@@ -107,6 +107,7 @@ export default function Pantry() {
   
   // Barcode scanner state
   const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
+  const [barcodeDialogKey, setBarcodeDialogKey] = useState(0); // Force re-render on open
   const [scanning, setScanning] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
@@ -115,7 +116,7 @@ export default function Pantry() {
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const streamRef = useRef(null);
-  const scannerActiveRef = useRef(false); // Track if scanner should be active;
+  const scannerActiveRef = useRef(false);
   
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
