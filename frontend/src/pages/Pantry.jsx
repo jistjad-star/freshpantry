@@ -904,6 +904,7 @@ export default function Pantry() {
                             setScannedProduct(null); 
                             setFillLevel("full");
                             hasDetectedRef.current = false;
+                            lastBarcodeRef.current = null; // Clear last barcode
                             setTimeout(() => startBarcodeScanner(), 100);
                           }}
                           variant="outline"
