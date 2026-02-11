@@ -4684,10 +4684,16 @@ class GenerateCocktailRequest(BaseModel):
     alcoholic: Optional[bool] = None  # None = any, True = alcoholic, False = non-alcoholic
 
 @api_router.post("/suggestions/generate-cocktail")
-async def generate_ai_cocktail_from_pantry(request: Request, data: GenerateCocktailRequest = None):
+async def generate_ai_cocktail_from_pantry(request: Request, data: Optional[GenerateCocktailRequest] = None):
     """Generate an AI cocktail suggestion based on pantry ingredients"""
     user_id = await get_user_id_or_none(request)
-    alcoholic_preference = data.alcoholic if data else None
+    
+    # Handle the alcoholic preference from request body
+    alcoholic_preference = None
+    if data is not None:
+        alcoholic_preference = data.alcoholic
+    
+    logger.info(f"Generating cocktail for user {user_id}, alcoholic preference: {alcoholic_preference}")
     
     # Get pantry
     query = {"user_id": user_id} if user_id else {"user_id": None}
@@ -4697,7 +4703,7 @@ async def generate_ai_cocktail_from_pantry(request: Request, data: GenerateCockt
         raise HTTPException(status_code=400, detail="Add items to your pantry first")
     
     if not openai_client:
-        raise HTTPException(status_code=500, detail="AI service not configured")
+        raise HTTPException(status_code=500, detail="AI service not configured - check OPENAI_API_KEY")
     
     # Build ingredient list from pantry
     pantry_items = []
