@@ -727,13 +727,7 @@ export default function Pantry() {
             </Button>
             
             {/* Barcode Scanner Dialog */}
-            <Dialog open={barcodeDialogOpen} onOpenChange={(open) => {
-              if (open) {
-                // Reset everything when opening
-                resetBarcodeScanner();
-              }
-              setBarcodeDialogOpen(open);
-            }}>
+            <Dialog open={barcodeDialogOpen} onOpenChange={setBarcodeDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10" data-testid="scan-barcode-btn">
                   <ScanBarcode className="w-4 h-4 mr-2" />
