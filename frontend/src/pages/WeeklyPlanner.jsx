@@ -581,22 +581,23 @@ export default function WeeklyPlanner() {
                   const servings = getServingsFromPlanItem(planItem, recipe);
                   const isCooking = cookingRecipe === recipeId;
                   return (
-                    <div key={`${recipeId}-${i}`} className="flex items-center gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100 group">
+                    <div 
+                      key={`${recipeId}-${i}`} 
+                      className="flex items-center gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100 group cursor-pointer hover:bg-stone-100 transition-colors"
+                      onClick={() => setSelectedMeal({ recipe, day, servings, planItem })}
+                      data-testid={`meal-${recipeId}`}
+                    >
                       {recipe.image_url ? <div className="w-8 h-8 rounded bg-cover bg-center flex-shrink-0" style={{ backgroundImage: `url(${recipe.image_url})` }} /> : <div className="w-8 h-8 rounded bg-stone-200 flex items-center justify-center flex-shrink-0"><ChefHat className="w-4 h-4 text-stone-400" /></div>}
                       <div className="flex-1 min-w-0">
                         <span className="text-sm text-[#1A2E1A] truncate block">{recipe.name}</span>
                         <span className="text-xs text-stone-400">{servings} servings</span>
                       </div>
                       <button 
-                        onClick={() => handleCookedThis(recipeId, day, servings / (recipe.servings || 2))} 
-                        disabled={isCooking}
-                        className="opacity-0 group-hover:opacity-100 text-[#4A7C59] hover:text-[#3A6C49] transition-opacity text-xs flex items-center gap-1 bg-[#4A7C59]/10 px-2 py-1 rounded-md"
-                        title="Mark as cooked & deduct from pantry"
+                        onClick={(e) => { e.stopPropagation(); removeRecipeFromDay(day, recipeId); }} 
+                        className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-[#E07A5F] transition-opacity"
                       >
-                        {isCooking ? <Loader2 className="w-3 h-3 animate-spin" /> : <UtensilsCrossed className="w-3 h-3" />}
-                        Cooked
+                        <X className="w-4 h-4" />
                       </button>
-                      <button onClick={() => removeRecipeFromDay(day, recipeId)} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-[#E07A5F] transition-opacity"><X className="w-4 h-4" /></button>
                     </div>
                   );
                 })}
@@ -614,6 +615,79 @@ export default function WeeklyPlanner() {
             <Button onClick={() => navigate("/add-recipe")} className="btn-primary">Add Recipe</Button>
           </div>
         )}
+        
+        {/* Meal Action Dialog */}
+        <Dialog open={!!selectedMeal} onOpenChange={(open) => !open && setSelectedMeal(null)}>
+          <DialogContent className="bg-white sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-[#1A2E1A] flex items-center gap-2">
+                {selectedMeal?.recipe?.image_url ? (
+                  <div className="w-10 h-10 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${selectedMeal.recipe.image_url})` }} />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center">
+                    <ChefHat className="w-5 h-5 text-stone-400" />
+                  </div>
+                )}
+                {selectedMeal?.recipe?.name}
+              </DialogTitle>
+              <DialogDescription className="text-stone-500">
+                {selectedMeal?.day} • {selectedMeal?.servings} servings
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-3 py-4">
+              <Button 
+                onClick={() => {
+                  const recipeId = selectedMeal?.recipe?.id;
+                  const day = selectedMeal?.day;
+                  const servings = selectedMeal?.servings;
+                  const defaultServings = selectedMeal?.recipe?.servings || 2;
+                  setSelectedMeal(null);
+                  handleCookedThis(recipeId, day, servings / defaultServings);
+                }}
+                disabled={cookingRecipe === selectedMeal?.recipe?.id}
+                className="w-full btn-primary flex items-center justify-center gap-2"
+                data-testid="meal-action-cooked"
+              >
+                {cookingRecipe === selectedMeal?.recipe?.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <UtensilsCrossed className="w-4 h-4" />
+                )}
+                I Cooked This
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  const recipeId = selectedMeal?.recipe?.id;
+                  setSelectedMeal(null);
+                  navigate(`/recipes/${recipeId}`);
+                }}
+                variant="outline"
+                className="w-full border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10 flex items-center justify-center gap-2"
+                data-testid="meal-action-view"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View Recipe
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  const recipeId = selectedMeal?.recipe?.id;
+                  const day = selectedMeal?.day;
+                  setSelectedMeal(null);
+                  removeRecipeFromDay(day, recipeId);
+                }}
+                variant="outline"
+                className="w-full border-red-200 text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+                data-testid="meal-action-remove"
+              >
+                <X className="w-4 h-4" />
+                Remove from Planner
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
         
         {/* Servings Selection Dialog */}
         <Dialog open={!!selectedRecipe} onOpenChange={(open) => !open && setSelectedRecipe(null)}>
