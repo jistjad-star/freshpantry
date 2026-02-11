@@ -472,7 +472,7 @@ export default function WeeklyPlanner() {
                               {getSuggestedRecipes().map((recipe) => (
                                 <button
                                   key={recipe.id}
-                                  onClick={() => addRecipeToDay(day, recipe.id)}
+                                  onClick={() => selectRecipeForDay(day, recipe.id)}
                                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#4A7C59]/10 transition-colors"
                                 >
                                   <div className="flex items-center justify-between">
