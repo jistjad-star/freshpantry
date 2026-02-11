@@ -17,17 +17,9 @@ import Login from "@/pages/Login";
 import Layout from "@/components/Layout";
 
 function AppRouter() {
-  const location = useLocation();
-  
-  // Check for session_id in URL fragment (auth callback)
-  if (location.hash?.includes('session_id=')) {
-    return <AuthCallback />;
-  }
-
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/share/:shareId" element={<SharedRecipes />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
