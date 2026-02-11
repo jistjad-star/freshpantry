@@ -134,19 +134,181 @@ export default function WeeklyPlanner() {
   const getMealsForDay = (day) => (weeklyPlan[day] || []).length;
   const canAddToDay = (day) => getMealsForDay(day) < MAX_MEALS_PER_DAY;
 
+  // Open servings dialog before adding recipe
+  const selectRecipeForDay = (day, recipeId) => {
+    if (!canAddToDay(day)) {
+      toast.error(`Maximum ${MAX_MEALS_PER_DAY} meals per day. Remove one to add another.`);
+      return;
+    }
+    const recipe = recipes.find(r => r.id === recipeId);
+    setSelectedRecipe(recipe);
+    setSelectedDay(day);
+    setSelectedServings(recipe?.servings || 2);
+    setOpenDay(null);
+  };
+  
+  // Confirm adding recipe with selected servings
+  const confirmAddRecipe = () => {
+    if (!selectedRecipe || !selectedDay) return;
+    
+    // Store recipe with custom servings in the plan
+    setWeeklyPlan(prev => ({
+      ...prev,
+      [selectedDay]: [...(prev[selectedDay] || []), { id: selectedRecipe.id, servings: selectedServings }]
+    }));
+    
+    toast.success(`Added ${selectedRecipe.name} (${selectedServings} servings)`);
+    setSelectedRecipe(null);
+    setSelectedDay(null);
+  };
+
   const addRecipeToDay = (day, recipeId) => {
     if (!canAddToDay(day)) {
       toast.error(`Maximum ${MAX_MEALS_PER_DAY} meals per day. Remove one to add another.`);
       return;
     }
     
-    setWeeklyPlan(prev => ({ ...prev, [day]: [...(prev[day] || []), recipeId] }));
+    // For backward compatibility, store as object with servings
+    const recipe = recipes.find(r => r.id === recipeId);
+    setWeeklyPlan(prev => ({ 
+      ...prev, 
+      [day]: [...(prev[day] || []), { id: recipeId, servings: recipe?.servings || 2 }] 
+    }));
     setOpenDay(null);
     toast.success("Meal added!");
   };
 
   const removeRecipeFromDay = (day, recipeId) => {
-    setWeeklyPlan(prev => ({ ...prev, [day]: (prev[day] || []).filter(id => id !== recipeId) }));
+    setWeeklyPlan(prev => ({ 
+      ...prev, 
+      [day]: (prev[day] || []).filter(item => {
+        // Handle both old format (string) and new format (object)
+        const itemId = typeof item === 'string' ? item : item.id;
+        return itemId !== recipeId;
+      })
+    }));
+  };
+  
+  // Get recipe ID from plan item (handles old and new format)
+  const getRecipeIdFromPlanItem = (item) => typeof item === 'string' ? item : item.id;
+  const getServingsFromPlanItem = (item, recipe) => typeof item === 'string' ? (recipe?.servings || 2) : (item.servings || recipe?.servings || 2);
+  
+  // Surprise Me - Auto-populate the planner
+  const handleSurpriseMe = async () => {
+    const selectedDaysList = DAYS.filter(day => surpriseDays[day]);
+    if (selectedDaysList.length === 0) {
+      toast.error("Please select at least one day");
+      return;
+    }
+    
+    setGeneratingSurprise(true);
+    
+    try {
+      // Get suggestions (prioritizes pantry items and shared ingredients)
+      const suggestionsRes = await api.getMealSuggestions(null, true);
+      let availableRecipes = suggestionsRes.data?.suggestions || [];
+      
+      // If we have category filters, filter the suggestions
+      if (surpriseCategories.length > 0) {
+        // Also include all recipes that match categories
+        const filteredRecipes = recipes.filter(r => 
+          r.categories?.some(cat => surpriseCategories.includes(cat))
+        );
+        
+        // Prioritize suggested recipes that match categories
+        availableRecipes = availableRecipes.filter(s => {
+          const recipe = recipes.find(r => r.id === s.recipe_id);
+          return recipe?.categories?.some(cat => surpriseCategories.includes(cat));
+        });
+        
+        // Add any matching recipes not in suggestions
+        filteredRecipes.forEach(recipe => {
+          if (!availableRecipes.find(s => s.recipe_id === recipe.id)) {
+            availableRecipes.push({
+              recipe_id: recipe.id,
+              recipe_name: recipe.name,
+              match_percentage: 50,
+              shared_ingredient_count: 0
+            });
+          }
+        });
+      }
+      
+      // If still no recipes, use all recipes
+      if (availableRecipes.length === 0) {
+        availableRecipes = recipes.map(r => ({
+          recipe_id: r.id,
+          recipe_name: r.name,
+          match_percentage: 50,
+          shared_ingredient_count: 0
+        }));
+      }
+      
+      // Sort by: shared ingredients (efficiency) > match percentage (pantry) > random
+      availableRecipes.sort((a, b) => {
+        if ((b.shared_ingredient_count || 0) !== (a.shared_ingredient_count || 0)) {
+          return (b.shared_ingredient_count || 0) - (a.shared_ingredient_count || 0);
+        }
+        return (b.match_percentage || 0) - (a.match_percentage || 0);
+      });
+      
+      // Build new plan without duplicates (unless not enough recipes)
+      const newPlan = { ...weeklyPlan };
+      const usedRecipeIds = new Set();
+      
+      // Get already planned recipe IDs
+      DAYS.forEach(day => {
+        (newPlan[day] || []).forEach(item => {
+          usedRecipeIds.add(getRecipeIdFromPlanItem(item));
+        });
+      });
+      
+      let recipeIndex = 0;
+      for (const day of selectedDaysList) {
+        if (!canAddToDay(day)) continue;
+        
+        // Find a recipe not yet used this week
+        let selectedRecipeData = null;
+        let searchIndex = recipeIndex;
+        
+        // First pass: try to find unused recipe
+        while (searchIndex < availableRecipes.length) {
+          const candidate = availableRecipes[searchIndex];
+          if (!usedRecipeIds.has(candidate.recipe_id)) {
+            selectedRecipeData = candidate;
+            recipeIndex = searchIndex + 1;
+            break;
+          }
+          searchIndex++;
+        }
+        
+        // Second pass: if not enough unique recipes, allow duplicates
+        if (!selectedRecipeData && availableRecipes.length > 0) {
+          selectedRecipeData = availableRecipes[recipeIndex % availableRecipes.length];
+          recipeIndex++;
+        }
+        
+        if (selectedRecipeData) {
+          const recipe = recipes.find(r => r.id === selectedRecipeData.recipe_id);
+          if (!newPlan[day]) newPlan[day] = [];
+          newPlan[day].push({ 
+            id: selectedRecipeData.recipe_id, 
+            servings: recipe?.servings || 2 
+          });
+          usedRecipeIds.add(selectedRecipeData.recipe_id);
+        }
+      }
+      
+      setWeeklyPlan(newPlan);
+      setShowSurpriseDialog(false);
+      toast.success(`Added meals to ${selectedDaysList.length} days!`);
+      
+    } catch (error) {
+      console.error("Error generating surprise plan:", error);
+      toast.error("Failed to generate plan");
+    } finally {
+      setGeneratingSurprise(false);
+    }
   };
 
   const handleCookedThis = async (recipeId, day) => {
