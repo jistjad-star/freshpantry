@@ -96,6 +96,15 @@ export default function Pantry() {
   // Consolidate state
   const [consolidating, setConsolidating] = useState(false);
   
+  // Barcode scanner state
+  const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scannedProduct, setScannedProduct] = useState(null);
+  const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
+  const [manualBarcode, setManualBarcode] = useState("");
+  const videoRef = useRef(null);
+  const codeReaderRef = useRef(null);
+  
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
