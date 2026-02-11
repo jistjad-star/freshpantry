@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, ChefHat, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Plus, X, Sparkles, Layers, UtensilsCrossed, CalendarClock, Minus, Shuffle } from "lucide-react";
+import { Calendar, ChefHat, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Plus, X, Sparkles, Layers, UtensilsCrossed, CalendarClock, Minus, Shuffle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,6 +26,9 @@ export default function WeeklyPlanner() {
   const [openDay, setOpenDay] = useState(null);
   const [cookingRecipe, setCookingRecipe] = useState(null);
   const [showExpiring, setShowExpiring] = useState(false);
+  
+  // Meal action dialog state
+  const [selectedMeal, setSelectedMeal] = useState(null); // {recipe, day, servings}
   
   // Servings adjustment state
   const [selectedRecipe, setSelectedRecipe] = useState(null);
