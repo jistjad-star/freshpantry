@@ -273,7 +273,25 @@ export default function Pantry() {
     forceStopScanner();
   };
   
+  // Reset all barcode scanner state
+  const resetBarcodeScanner = () => {
+    setScannedProduct(null);
+    setFillLevel("full");
+    setManualBarcode("");
+    setLookingUpBarcode(false);
+    hasDetectedRef.current = false;
+    lastBarcodeRef.current = null;
+    forceStopScanner();
+  };
+  
   const lookupBarcode = async (barcode) => {
+    // Prevent duplicate lookups of the same barcode
+    if (lastBarcodeRef.current === barcode) {
+      console.log("Skipping duplicate barcode lookup:", barcode);
+      return;
+    }
+    lastBarcodeRef.current = barcode;
+    
     setLookingUpBarcode(true);
     try {
       const response = await api.lookupBarcode(barcode);
@@ -283,8 +301,11 @@ export default function Pantry() {
       console.error("Error looking up barcode:", error);
       if (error.response?.status === 404) {
         toast.error("Product not found in database. Try adding manually.");
+        // Reset so user can scan again
+        lastBarcodeRef.current = null;
       } else {
         toast.error("Could not look up product");
+        lastBarcodeRef.current = null;
       }
     } finally {
       setLookingUpBarcode(false);
