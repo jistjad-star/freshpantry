@@ -12,6 +12,7 @@ import ShoppingList from "@/pages/ShoppingList";
 import Pantry from "@/pages/Pantry";
 import MealSuggestions from "@/pages/MealSuggestions";
 import SharedRecipes from "@/pages/SharedRecipes";
+import Cocktails from "@/pages/Cocktails";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
 import Layout from "@/components/Layout";
