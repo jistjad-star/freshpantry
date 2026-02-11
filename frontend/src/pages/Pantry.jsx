@@ -440,6 +440,18 @@ export default function Pantry() {
               Add from Shopping List
             </Button>
             
+            {/* Consolidate Button */}
+            <Button 
+              onClick={handleConsolidate} 
+              disabled={consolidating}
+              variant="outline" 
+              className="border-purple-300 text-purple-600 hover:bg-purple-50" 
+              data-testid="consolidate-pantry-btn"
+            >
+              {consolidating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Layers className="w-4 h-4 mr-2" />}
+              Merge Duplicates
+            </Button>
+            
             {/* Receipt Scan Dialog */}
             <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
               <DialogTrigger asChild>
