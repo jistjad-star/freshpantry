@@ -311,10 +311,10 @@ export default function WeeklyPlanner() {
     }
   };
 
-  const handleCookedThis = async (recipeId, day) => {
+  const handleCookedThis = async (recipeId, day, servingsMultiplier = 1) => {
     setCookingRecipe(recipeId);
     try {
-      const response = await api.cookRecipe(recipeId, 1);
+      const response = await api.cookRecipe(recipeId, servingsMultiplier);
       toast.success(`Marked as cooked! ${response.data.deducted_count || 0} ingredients updated in pantry`);
       // Remove from planner after cooking
       removeRecipeFromDay(day, recipeId);
