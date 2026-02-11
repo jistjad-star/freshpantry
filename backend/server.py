@@ -1572,37 +1572,65 @@ def parse_quantity(qty_str: str) -> float:
         return 1.0
 
 def consolidate_items_locally(items: List[ShoppingListItem]) -> List[ShoppingListItem]:
-    """Consolidate shopping list items without AI"""
-    # Group by normalized name and unit
+    """Consolidate shopping list items with smart unit conversion"""
+    # Group by base ingredient name (using equivalents) and convert to base units
     grouped = {}
     for item in items:
-        key = (normalize_ingredient_name(item.name), item.unit.lower().strip())
-        if key not in grouped:
-            grouped[key] = {
-                'name': item.name,
+        base_name = get_base_ingredient_name(item.name)
+        qty = parse_quantity(item.quantity)
+        base_qty, base_unit = convert_to_base_unit(item.name, qty, item.unit)
+        
+        if base_name not in grouped:
+            grouped[base_name] = {
+                'name': item.name,  # Keep first occurrence's name
                 'quantity': 0,
-                'unit': item.unit,
+                'unit': base_unit,
+                'original_unit': item.unit,
                 'category': item.category,
                 'sources': []
             }
-        grouped[key]['quantity'] += parse_quantity(item.quantity)
-        if item.recipe_source and item.recipe_source not in grouped[key]['sources']:
-            grouped[key]['sources'].append(item.recipe_source)
+        grouped[base_name]['quantity'] += base_qty
+        if item.recipe_source and item.recipe_source not in grouped[base_name]['sources']:
+            grouped[base_name]['sources'].append(item.recipe_source)
     
-    # Convert back to list
+    # Convert back to list with smart unit formatting
     consolidated = []
-    for (norm_name, unit), data in grouped.items():
-        # Format quantity nicely
+    for base_name, data in grouped.items():
         qty = data['quantity']
+        unit = data['unit']
+        
+        # Convert large quantities to more sensible units
+        if unit == 'g' and qty >= 1000:
+            qty = qty / 1000
+            unit = 'kg'
+        elif unit == 'ml' and qty >= 1000:
+            qty = qty / 1000
+            unit = 'L'
+        
+        # Format quantity nicely
         if qty == int(qty):
             qty_str = str(int(qty))
+        elif qty < 1:
+            # Show fractions for small amounts
+            if abs(qty - 0.25) < 0.05:
+                qty_str = '1/4'
+            elif abs(qty - 0.33) < 0.05:
+                qty_str = '1/3'
+            elif abs(qty - 0.5) < 0.05:
+                qty_str = '1/2'
+            elif abs(qty - 0.67) < 0.05:
+                qty_str = '2/3'
+            elif abs(qty - 0.75) < 0.05:
+                qty_str = '3/4'
+            else:
+                qty_str = f"{qty:.1f}".rstrip('0').rstrip('.')
         else:
             qty_str = f"{qty:.1f}".rstrip('0').rstrip('.')
         
         consolidated.append(ShoppingListItem(
             name=data['name'],
             quantity=qty_str,
-            unit=data['unit'],
+            unit=unit,
             category=data['category'],
             recipe_source=', '.join(data['sources']) if data['sources'] else None
         ))
