@@ -3272,6 +3272,9 @@ async def lookup_barcode(barcode: str):
             "raw_quantity": quantity_str
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404) as-is
+        raise
     except aiohttp.ClientError as e:
         logger.error(f"Error querying Open Food Facts: {e}")
         raise HTTPException(status_code=503, detail="Could not reach product database")
