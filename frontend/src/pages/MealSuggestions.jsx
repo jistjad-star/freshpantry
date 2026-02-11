@@ -19,7 +19,9 @@ import {
   Clock,
   Users,
   CalendarClock,
-  Layers
+  Layers,
+  GlassWater,
+  Wine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
