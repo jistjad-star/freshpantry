@@ -2666,6 +2666,34 @@ async def import_recipe(import_data: RecipeImport, request: Request):
     await db.recipes.insert_one(doc)
     return recipe
 
+# ============== COCKTAILS ENDPOINTS ==============
+
+@api_router.get("/cocktails", response_model=List[Recipe])
+async def get_cocktails(request: Request, alcoholic: Optional[str] = None):
+    """Get all cocktail recipes with optional alcoholic/non-alcoholic filter"""
+    user_id = await get_user_id_or_none(request)
+    
+    # Base query: only cocktails
+    query = {"recipe_type": "cocktail"}
+    if user_id:
+        query["user_id"] = user_id
+    
+    # Filter by alcoholic status if specified
+    if alcoholic == "true":
+        query["is_alcoholic"] = True
+    elif alcoholic == "false":
+        query["is_alcoholic"] = False
+    # If not specified, return all cocktails
+    
+    cursor = db.recipes.find(query, {"_id": 0}).sort("created_at", -1)
+    cocktails = await cursor.to_list(1000)
+    
+    for cocktail in cocktails:
+        if isinstance(cocktail.get('created_at'), str):
+            cocktail['created_at'] = datetime.fromisoformat(cocktail['created_at'])
+    
+    return cocktails
+
 @api_router.get("/recipes", response_model=List[Recipe])
 async def get_recipes(request: Request, sort_by: Optional[str] = None):
     """Get all recipes (for logged in user or all if not logged in)"""
