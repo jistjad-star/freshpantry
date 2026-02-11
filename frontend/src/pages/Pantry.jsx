@@ -183,28 +183,26 @@ export default function Pantry() {
     setScannedProduct(null);
     
     try {
+      // First, explicitly request camera permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',  // Prefer back camera
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
+      // Attach stream to video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      
       const codeReader = new BrowserMultiFormatReader();
       codeReaderRef.current = codeReader;
       
-      // Get available video devices
-      const videoInputDevices = await codeReader.listVideoInputDevices();
-      
-      if (videoInputDevices.length === 0) {
-        toast.error("No camera found");
-        setScanning(false);
-        return;
-      }
-      
-      // Prefer back camera on mobile
-      const backCamera = videoInputDevices.find(device => 
-        device.label.toLowerCase().includes('back') || 
-        device.label.toLowerCase().includes('rear')
-      );
-      const selectedDevice = backCamera || videoInputDevices[0];
-      
-      // Start continuous scanning
-      await codeReader.decodeFromVideoDevice(
-        selectedDevice.deviceId,
+      // Start continuous scanning from the video stream
+      codeReader.decodeFromVideoElement(
         videoRef.current,
         async (result, error) => {
           if (result) {
@@ -217,12 +215,27 @@ export default function Pantry() {
       );
     } catch (error) {
       console.error("Error starting scanner:", error);
-      toast.error("Could not access camera. Please check permissions.");
+      if (error.name === 'NotAllowedError') {
+        toast.error("Camera access denied. Please allow camera permissions.");
+      } else if (error.name === 'NotFoundError') {
+        toast.error("No camera found on this device.");
+      } else if (error.name === 'NotSupportedError' || error.name === 'SecurityError') {
+        toast.error("Camera not supported. Please use HTTPS.");
+      } else {
+        toast.error("Could not access camera. Please check permissions.");
+      }
       setScanning(false);
     }
   };
   
   const stopBarcodeScanner = () => {
+    // Stop video stream
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
     if (codeReaderRef.current) {
       codeReaderRef.current.reset();
       codeReaderRef.current = null;
