@@ -122,6 +122,8 @@ class Recipe(BaseModel):
     ingredients: List[Ingredient] = []
     instructions: List[str] = []
     categories: List[str] = []  # vegan, vegetarian, pescatarian, low-fat, quick-easy
+    recipe_type: str = "meal"  # "meal" or "cocktail"
+    is_alcoholic: Optional[bool] = None  # For cocktails: True/False
     source_url: Optional[str] = None
     image_url: Optional[str] = None
     average_rating: float = 0.0
