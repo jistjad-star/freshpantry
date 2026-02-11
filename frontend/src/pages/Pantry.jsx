@@ -879,7 +879,13 @@ export default function Pantry() {
                       
                       <div className="flex gap-2">
                         <Button 
-                          onClick={() => { setScannedProduct(null); setFillLevel("full"); }}
+                          onClick={() => { 
+                            setScannedProduct(null); 
+                            setFillLevel("full");
+                            hasDetectedRef.current = false;
+                            // Automatically start scanning again
+                            setTimeout(() => startBarcodeScanner(), 100);
+                          }}
                           variant="outline"
                           className="flex-1"
                         >
