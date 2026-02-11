@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, Trash2, Plus, Camera, Link2, FileText, Sparkles, ChefHat, Clock, Users, ImageIcon, ImageOff, Upload } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Loader2, Trash2, Plus, Camera, Link2, FileText, Sparkles, ChefHat, Clock, Users, ImageIcon, ImageOff, Upload, GlassWater, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import api from "@/lib/api";
 
 export default function AddRecipe() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -19,6 +20,17 @@ export default function AddRecipe() {
   // Form state
   const [loading, setLoading] = useState(false);
   const [inputMethod, setInputMethod] = useState(null); // 'url', 'screenshot', 'paste'
+  
+  // Recipe type: 'meal' or 'cocktail'
+  const [recipeType, setRecipeType] = useState('meal');
+  const [isAlcoholic, setIsAlcoholic] = useState(true); // For cocktails
+  
+  // Check URL param for cocktail mode
+  useEffect(() => {
+    if (searchParams.get('type') === 'cocktail') {
+      setRecipeType('cocktail');
+    }
+  }, [searchParams]);
   
   // Recipe data
   const [recipeName, setRecipeName] = useState("");
