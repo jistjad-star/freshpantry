@@ -4330,6 +4330,32 @@ Return ONLY valid JSON:
         raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
 
 
-# Include the router in the main app (must be after all routes are defined)
+# Include the router in the main app (must be before static file catch-all)
 app.include_router(api_router)
+
+# Serve static frontend files in production (MUST be after api_router to not catch /api routes)
+static_dir = ROOT_DIR / "static"
+if static_dir.exists():
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+    
+    # Mount static files for assets (js, css, images)
+    app.mount("/static", StaticFiles(directory=static_dir / "static"), name="static_assets")
+    
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(static_dir / "index.html")
+    
+    # Catch-all for SPA routing - exclude /api routes (handled by api_router above)
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        # API routes are already handled by api_router, this shouldn't be reached
+        if path.startswith("api"):
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        file_path = static_dir / path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        # For SPA routing, return index.html
+        return FileResponse(static_dir / "index.html")
 
