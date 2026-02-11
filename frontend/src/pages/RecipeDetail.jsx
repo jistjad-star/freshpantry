@@ -567,6 +567,37 @@ export default function RecipeDetail() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                
+                {/* Recipe Conversion Buttons */}
+                <Button 
+                  onClick={handleMakeVegan} 
+                  disabled={converting !== null}
+                  variant="outline"
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                  data-testid="make-vegan-btn"
+                >
+                  {converting === 'vegan' ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Leaf className="w-4 h-4 mr-2" />
+                  )}
+                  Make Vegan
+                </Button>
+                <Button 
+                  onClick={handleMakeVegetarian} 
+                  disabled={converting !== null}
+                  variant="outline"
+                  className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  data-testid="make-vegetarian-btn"
+                >
+                  {converting === 'vegetarian' ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Salad className="w-4 h-4 mr-2" />
+                  )}
+                  Make Veggie
+                </Button>
+                
                 <Button 
                   onClick={() => navigate(`/recipes/${id}/edit`)} 
                   variant="outline" 
