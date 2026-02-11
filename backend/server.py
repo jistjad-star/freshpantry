@@ -4752,16 +4752,17 @@ Return ONLY valid JSON, no markdown."""
 Suggest a creative {'' if alcoholic_preference is None else ('alcoholic ' if alcoholic_preference else 'non-alcoholic ')}drink I can make!"""
         
         response = await openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg}
             ],
-            temperature=0.9,  # Higher creativity for cocktails
+            temperature=0.9,
             max_tokens=1500
         )
         
         ai_response = response.choices[0].message.content
+        logger.info(f"Cocktail AI response received: {len(ai_response)} chars")
         
         # Parse JSON response
         clean_response = ai_response.strip()
@@ -4778,15 +4779,18 @@ Suggest a creative {'' if alcoholic_preference is None else ('alcoholic ' if alc
             if start >= 0 and end > start:
                 cocktail_data = json.loads(clean_response[start:end])
             else:
+                logger.error(f"Failed to parse cocktail JSON: {clean_response[:200]}")
                 raise HTTPException(status_code=500, detail="Failed to parse AI response")
         
         return {
             "cocktail": cocktail_data,
             "message": "Cocktail suggestion generated from your pantry!"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error generating cocktail: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate cocktail suggestion")
+        raise HTTPException(status_code=500, detail=f"Failed to generate cocktail: {str(e)}")
 
 # ============== SHOPPING LIST COST ESTIMATION ==============
 
