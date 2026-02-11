@@ -2,76 +2,108 @@
 The user wants to build a full-stack application that converts recipes into weekly shopping lists.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Recipe Management**: Allow users to input recipes by manual entry, pasting text, or uploading screenshots. The app should generate AI images, auto-categorize recipes (with manual override), allow scaling of servings, and group recipes by shared ingredients. Users should be able to edit saved recipes, provide star ratings, and mark recipes as favorites.
-2.  **User Accounts & Sharing**: The app must support Google Sign-In for user accounts to store all data. Users should be able to export their recipes and import recipes from other users via shareable links.
-3.  **Pantry & Suggestions**: A pantry system to track ingredients. The app should suggest meals based on pantry items (highlighting missing ingredients) and also allow AI-generation of new recipes from pantry contents. An Eat Now feature should provide an immediate, time-of-day appropriate meal suggestion.
-4.  **Weekly Planner**: A planner to organize up to 7 meals for the week, allowing users to add recipes from their library and specify servings. It should include an I Cooked This feature to deduct ingredients from the pantry.
-5.  **Smart Shopping List**: Generate a shopping list from the weekly plan that consolidates items, subtracts available ingredients from the pantry, and provides AI-powered cost estimates for UK supermarkets. It should also include quick links to search for items on supermarket websites and allow last-minute edits to item quantities.
-6.  **UI/UX**: A calm and foody design with a fresh greens and orange theme. The UI should be intuitive, with quick-action links, filters for suggestions (by meal type), and recipe sorting (by popularity, favorites).
+1.  **Recipe Management**: Allow users to input recipes by manual entry, pasting text, URL, or uploading screenshots. The app should perform AI-powered parsing, generate AI images, auto-categorize recipes (including Vegan, Vegetarian, Can be Vegan), allow scaling of servings, and group recipes. All instructions must be immediately rewritten by AI to be copyright-safe. Users can edit saved recipes, provide ratings, and mark favorites.
+2.  **User Accounts & Sharing**: The app must support Google Sign-In for user accounts. Users can share recipes via private, tokenized links that import a copyright-safe version of the recipe into another user's private library.
+3.  **Pantry & Suggestions**: A pantry system to track ingredients with custom low-stock and expiry date alerts. The app suggests meals based on pantry items and can AI-generate new recipes from pantry contents.
+4.  **Weekly Planner**: A planner to organize multiple meals per day for the week.
+5.  **Smart Shopping List**: Generate a shopping list from the weekly plan that consolidates items and subtracts available pantry ingredients.
+6.  **UI/UX**: A calm and foody design with a fresh greens and orange theme. The UI should be intuitive, with quick-action links and robust filtering/sorting.
+7.  **Recipe Conversion**: Buttons within a recipe to automatically convert it to a Vegan or Vegetarian version using AI.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application using FastAPI, MongoDB, and React. The application has been successfully configured and deployed to a third-party platform (DigitalOcean), which required a significant refactor of the authentication and build process.
+A full-stack application using FastAPI, MongoDB, and React. Authentication is handled via a custom Google OAuth2 flow.
 
-The app now uses a custom Google OAuth2 implementation (not Emergent-managed) and the standard OpenAI Python SDK for all AI features. Key features include a dashboard, recipe library (with search, sort, and filters for categories, ratings, and favorites), recipe detail view, a redesigned single-page  form, a weekly planner with an I cooked this feature, a smart shopping list with supermarket search links, a pantry, and a recipe sharing system via generated links.
+A critical migration has been completed, moving all AI functionality from the  library to the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit SDK, using the user's . This was done at the user's explicit request to move away from Emergent-managed services.
+
+The application features a dashboard with pantry alerts, a recipe library, a recipe detail view, an  page with URL/text/image/camera parsing, a weekly planner, a shopping list, and a pantry. A copyright-safe sharing system is in place, which now **aggressively rewrites all recipe instructions upon parsing** to ensure they are unique and do not infringe on original sources.
+
+Recent fixes have improved recipe parsing from images, de-duplicated ingredients, enlarged UI input fields, and added a Can be Vegan category with sophisticated detection logic.
 
 **Last working item**:
-The agent was implementing two user requests: changing the terminology on the Add Recipe page and adding an edit feature to the shopping list.
-
--   **Last item agent was working**: Adding the ability for users to edit the quantity of an item directly on the  page. The agent has added the necessary state, handlers, and UI elements for this functionality.
--   **Status**: USER VERIFICATION PENDING
+-   **Last item agent was working**: Implementing Make Vegan and Make Vegetarian buttons on the recipe detail page. The agent has created the backend endpoints (, ) and the corresponding frontend API calls. The next step is to add the UI buttons to the  page.
+-   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1**: The Shop All button functionality needs verification (Priority: P1)
--   **Issue 2**: The new Edit Item feature on the shopping list needs verification (Priority: P0)
+-   **Issue 1**: Complete the Make Vegan / Make Vegetarian feature. (Priority: P0)
 
 **Issues Detail**:
 -   **Issue 1**:
-    -   **Description**: The user reported that the Shop All button was only opening a search for a single ingredient instead of all items on the list.
-    -   **Attempted fixes**: The agent modified the  function in  to loop through all unchecked items and open each in a new tab, with a delay to prevent popup blockers.
+    -   **Description**: The user requested buttons to convert a recipe to a vegan or vegetarian version using AI. The backend logic is in place but the frontend UI is not yet implemented.
+    -   **Attempted fixes**: The agent created the backend endpoints in  and the API service calls in .
     -   **Next debug checklist**:
-        1.  Click the Shop All button and select a supermarket.
-        2.  Verify that multiple tabs open for each unchecked item.
-        3.  Check the browser's console for any errors, especially related to popup blocking.
-    -   **Why fix this issue and what will be achieved with the fix?**: Fulfills the user's request for a quick way to search for all shopping list items at a chosen supermarket.
-    -   **Status**: USER VERIFICATION PENDING
+        1.  Open .
+        2.  Add two new state variables,  and , to manage loading states.
+        3.  Add two new functions,  and , that call the new API endpoints. On success, they should update the local recipe state with the new data and show a success toast.
+        4.  Add two buttons, Make Vegan and Make Vegetarian, to the UI, likely near the existing action buttons (Edit, Share, etc.). The buttons should be disabled and show a loading indicator when their respective conversion is in progress.
+        5.  Test the full flow: click the button, see the loading state, and verify the recipe's ingredients and instructions update correctly on the page.
+    -   **Why fix this issue and what will be achieved with the fix?**: This will complete a key user-requested feature, adding significant AI-powered value to the application.
+    -   **Status**: IN PROGRESS
     -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on other issue**: None
-
--   **Issue 2**:
-    -   **Description**: The user requested the ability to edit the quantity/amount of an item directly on the shopping list page after the list has been generated.
-    -   **Attempted fixes**: The agent added state management and UI components (edit button, input field, save button) to  to allow inline editing of item quantities. The changes are local to the frontend state.
-    -   **Next debug checklist**:
-        1.  Navigate to the shopping list.
-        2.  Click the edit icon next to an item.
-        3.  Verify that an input field appears.
-        4.  Change the quantity and click the save icon.
-        5.  Confirm that the item's displayed quantity is updated.
-    -   **Why fix this issue and what will be achieved with the fix?**: Provides flexibility for users to make last-minute adjustments to their shopping list without regenerating it.
-    -   **Status**: USER VERIFICATION PENDING
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: frontend
+    -   **Should Test frontend/backend/both after fix?**: both
     -   **Blocked on other issue**: None
 
 **In progress Task List**:
--   None.
+-   **Task 1**: Add UI for Make Vegan and Make Vegetarian buttons. (Priority: P0)
+    -   **Where to resume**: . The agent needs to add the state, handler functions, and button components as described in the issue checklist above.
+    -   **What will be achieved with this?**: A user-facing way to trigger the AI recipe conversion.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on something**: None
 
 **Upcoming and Future Tasks**
+-   **Upcoming Tasks**:
+    -   **P0**: Test the completed Make Vegan / Make Vegetarian feature end-to-end.
+    -   **P1**: **Refactor the monolithic  file.** This is a critical technical debt item that is making development increasingly difficult and risky. Propose breaking it into a structured layout (e.g., , , ).
 -   **Future Tasks**:
-    -   **P1: Drag-and-Drop Weekly Planner**: Make the planner UI more interactive.
-    -   **P2: Whisk.com Integration**: A potential integration to provide direct add to basket functionality with UK supermarkets.
-    -   **P2: Pantry Expiry Date Tracking**: Add a way to track when pantry items expire.
-    -   **P2: Scan Receipt to Pantry**: A user-suggested enhancement to add items to the pantry by scanning a supermarket receipt photo.
+    -   **P1**: Drag-and-Drop functionality for the Weekly Planner UI.
+    -   **P2**: Integration with Whisk.com for direct add to basket functionality with UK supermarkets.
+    -   **P2**: Push notifications or daily email summaries for pantry items nearing their expiry date.
+    -   **P2**: Further enhancements to the Scan Receipt to Pantry feature.
 
 **Completed work in this session**
--   **Deployment to DigitalOcean**: Successfully guided the user through deploying the app, which involved:
-    -   Creating a unified  to serve both frontend and backend.
-    -   Replacing Emergent-specific  with the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+-   **Critical Migration to OpenAI SDK**: Successfully migrated the entire application from  to the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -108,48 +140,78 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit SDK.
-    -   Replacing Emergent-managed Google Auth with a custom Google OAuth2 flow using .
-    -   Debugging and fixing numerous deployment issues related to environment variables, build dependencies (Node.js version, ), CORS, and MongoDB connection strings.
--   **Recipe Sharing Links**: Replaced file-based import/export with a system for sharing recipes via unique, shareable URLs.
--   **Favorites System**: Implemented a feature to heart recipes and filter the library to show only favorites.
--   **Shopping List Enhancements**:
-    -   Added Quick Search Links to open supermarket websites with the item pre-searched.
-    -   Attempted to fix the Shop All button to open all items in new tabs.
-    -   Added an Edit Item feature for last-minute quantity changes.
--   ** Page Redesign**: Overhauled the page into a single-page layout with clear options for input (URL, Screenshots, Paste Text) and changed parse to extract.
--   **Cooking Time Calculation**: Implemented automatic estimation of prep and cook times based on recipe instructions.
--   **I Cooked This Feature**: Added a button to the weekly planner that deducts a meal's ingredients from the pantry.
--   **UI/UX Tweaks**:
-    -   Adjusted AI image generation prompts for more casual and realistic photos.
-    -   Added total cooking time to recipe cards.
-    -   Removed Made with Emergent branding from .
+  -V, --version         show program's version number and exit SDK, per user's request. This involved rewriting all AI calls (parsing, image generation, rewriting, etc.) and updating the environment to use .
+-   **DigitalOcean Deployment Fix**: Resolved a critical build failure by removing the private  dependency from  and the .
+-   **Aggressive Copyright Rewriting**: The AI instruction rewriting process was made significantly more robust. It now happens **immediately upon parsing** and aggressively restructures the recipe (reorders steps, changes vocabulary, alters step count, and enforces a 5-word match limit) to ensure the output is completely unique.
+-   **Improved Recipe Parsing & De-duplication**: Updated AI prompts for image parsing to specifically target the ingredients list, ignore mentions in the steps, filter out items without quantities, and de-duplicate the final list.
+-   **UI/UX Enhancements**:
+    -   **Add Recipe**: Implemented separate Take Photo and Upload Image buttons. Made parsed ingredients editable inline.
+    -   **Edit Recipe**: Increased the width of the ingredient name input field for better visibility.
+    -   **Can be Vegan Category**: Added the new category and implemented sophisticated backend logic to tag recipes with easily substitutable ingredients (e.g., chicken, fish, dairy) as Can be Vegan.
+-   **Initial Feature Testing**: Verified the functionality of Select All in the recipe library, Check All in the shopping list, and the display of expiring ingredients in meal suggestions using the testing agent.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Monolithic Backend**: The  file has grown even larger and is now over 2500 lines. It urgently needs to be refactored into a modular structure (e.g., routers, models, services) to ensure future maintainability and reduce risk.
+-   **Issue 1: Monolithic Backend ()**: This file has grown even larger and more complex. It urgently needs to be refactored into a modular structure (e.g., , , , ) to ensure maintainability. This is the project's most significant technical debt.
+-   **Issue 2: Unused Files**: The root directory may still contain unused deployment helper files (, ) which should be removed for cleanliness.
 
 **Known issue recurrence from previous fork**
--   None.
+-   The user was previously frustrated with features needing multiple attempts to be implemented correctly. The latest work has shown better adherence to requests, but the principle of careful implementation and thorough testing remains paramount. The back-and-forth on the copyright rewriting logic is an example of this.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend**: FastAPI, Motor, Pydantic, **Authlib** (for custom Google OAuth).
+-   **Backend**: FastAPI, Motor (async MongoDB), Pydantic, Authlib (Google OAuth).
 -   **Frontend**: React, React Router, Context API, Tailwind CSS, Shadcn UI, .
--   **Deployment**: **DigitalOcean App Platform** using a single **Dockerfile** that serves both the Python backend and the static React frontend.
--   **Integrations**: **OpenAI SDK** (standard Python package), Custom Google OAuth 2.0.
+-   **AI**: **OpenAI SDK (usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit)** is now used directly for all AI features, including GPT-4o for vision/text and DALL-E for image generation.
+-   **Deployment**: Dockerfile for deployment on platforms like DigitalOcean.
 
 **key DB schema**
--   **favorites**: 
--   **recipe_shares**: 
+-   **recipes**: . The  are now always the AI-rewritten version. The  is cleared during parsing to respect copyright.
+-   **pantry_items**: 
 -   **users**: 
--   **recipes**: 
--   **pantry**: 
--   **weekly_plans**: 
+-   **recipe_shares**:  - Now uses a token-based system for private, copyright-safe sharing.
 
 **changes in tech stack**
--   **AI Integration**: Switched from  to the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+-   **REMOVED**:  library.
+-   **ADDED/USED**: Standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -186,19 +248,10 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit Python package.
--   **Authentication**: Switched from Emergent-managed Google Auth to a custom-implemented Google OAuth2 flow using .
+  -V, --version         show program's version number and exit Python SDK for all LLM and image generation tasks.
 
 **All files of reference**
--   : Major changes for OpenAI SDK, Google OAuth, static file serving, and new API endpoints for sharing and favorites.
--   : Completely rewritten into a single-page, multi-input form.
--   : Updated with supermarket search links, a Shop All function, and an item edit feature.
--   : Updated to use share links and a favorites system.
--   : Rewritten to handle the custom Google OAuth flow.
--   : New file to handle viewing/importing shared recipes.
--   : New file, crucial for the DigitalOcean deployment.
--   : New file defining the DigitalOcean deployment specification.
--   : Updated to add usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+-   : Heavily modified to migrate from  to the usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -235,27 +288,27 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit, , , and .
+  -V, --version         show program's version number and exit SDK. Contains all new logic for aggressive instruction rewriting and vegan/vegetarian conversion.
+-   : The next file to be modified for the new conversion buttons.
+-   : UI updated for camera/upload options and editable ingredients.
+-   : Ingredient input fields widened.
+-   : New endpoints for recipe conversion added.
+-   : Modified to remove the installation of the private  package.
+-   :  was removed.
 
 **Areas that need refactoring**:
--    is critically monolithic and requires immediate attention to be broken down into smaller, manageable modules (routes, models, services). This is a significant technical debt.
--   The root directory contains now-unused deployment helper files (, ) from previous attempts, which should be cleaned up to avoid confusion.
+-   ** MUST BE BROKEN DOWN.** This is the highest priority refactoring task. Its size and complexity are a major risk to future development. Propose a clear folder structure (, , ) to the user as the next major task after the current feature is complete.
 
 **key api endpoints**
--   : Initiates the Google OAuth flow.
--   : Handles the redirect from Google to create a session.
--   : Toggles a recipe's favorite status.
--   : Retrieves the current user's favorited recipe IDs.
--   : Creates a shareable link for selected recipes.
--   : Retrieves recipe data for a given share link.
--   : Scrapes a URL and returns recipe data without saving it.
--   : Deducts ingredients for a cooked meal from the pantry.
--   : Health check endpoint for deployment monitoring.
+-   : (New) AI-converts a recipe to be vegan.
+-   : (New) AI-converts a recipe to be vegetarian.
+-   : (Updated) Now includes immediate, aggressive AI rewriting of instructions.
+-   : (Updated) Now includes immediate, aggressive AI rewriting of instructions.
+-   : (Updated) Creates a token for the new copyright-safe private sharing flow.
+-   : (Updated) Imports a recipe using the secure token.
 
 **Critical Info for New Agent**
--   **Deployment Context**: The application is now fully configured for deployment on DigitalOcean via a . Do not use Emergent-specific deployment logic.
--   **Authentication**: The app uses a custom Google OAuth flow. The  on the frontend calls backend endpoints () which then redirect to Google. All  auth URLs have been removed.
--   **AI SDK**: All AI features use the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+-   **USE **: The application has been fully migrated away from  at the user's explicit request. All AI functionality now depends on the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -292,54 +345,88 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit Python package. The agent must have an  set in the environment to test these features.
--   **Monolith Risk**: The  file is extremely large. Propose refactoring this file as a high-priority task after any immediate user requests are handled.
--   **Testing**: The last few features ( fix and Shopping List edit) were implemented but not tested. Your first action should be to verify these.
+  -V, --version         show program's version number and exit library and the  environment variable. **Do not reintroduce **.
+-   **Copyright Rewriting is Immediate**: The user was very clear that recipe instructions must be rewritten by the AI *immediately* upon parsing from an image or URL, not just when sharing. This is a hard requirement. The current implementation does this.
+-   **Propose Backend Refactor**: After completing the current Make Vegan task, you MUST propose refactoring the  monolith. It is a significant and growing technical debt that will impede future work.
+-   **DigitalOcean Deployment**: The deployment issue related to the private package is solved. The app should build correctly on DigitalOcean as long as the required environment variables (especially ) are set.
 
 **documents and test reports created in this job**
 -   
 -   
+-   
+-    (updated multiple times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user**: can you not use the word pars but extract instead. also can you add an edit to the shopping list to edit amount of an item last minute after the total calculation from all meals has taken place.
-    -   **status**: Completed (code written), needs verification.
-2.  **user**: go back and make add recipe one page again with options of input for url, screenshot (multiple images) copy paste text etc...
-    -   **status**: Completed.
-3.  **user**: Shop All seems to only shop for one ingredient or variant of ingredient not all ingredients
-    -   **status**: Completed (code written), needs verification.
-4.  **user**: allow users to favourite by hearting recipe and add favourites filter
-    -   **status**: Completed.
-5.  **user**: auto calculated cooking times should be based on cooking instructions provided... if you select URL... it should autopopulate...
-    -   **status**: Completed.
-6.  **user**: if other, URL is selected in add recipee, then this should populate the recipee going forward...
-    -   **status**: Completed.
-7.  **user**: cn the time for prep and cooking be automatically calculated without having to manually input...
-    -   **status**: Completed.
-8.  **user**: can we chill out with the pictures for the food... open ai is awful.
-    -   **status**: Completed (prompt was changed after being temporarily disabled).
-9.  **user**: can you add drop down optional option for source, with Green Chef, Guasto,Hello Fresh...
-    -   **status**: Completed.
-10. **user**: Can you also make it so the pictures pull through with the exported recipees? Can you also make the pictures of food more realistic? Can we add an I cooked this option...
-    -   **status**: Completed.
+1.  **user**: Requested a Turn this Recipe Vegan button that automatically updates the saved recipe. (IN PROGRESS)
+2.  **user**: Clarified that Can be Vegan should apply even if a recipe has chicken, as it can be substituted. (RESOLVED)
+3.  **user**: Requested adding a Can be Vegan category. (RESOLVED)
+4.  **user**: Requested de-duplication of ingredients and a bigger input box for the ingredient name. (RESOLVED)
+5.  **user**: Stated that the AI-rewritten instructions were still too recognizable and requested more aggressive reordering and restructuring. (RESOLVED)
+6.  **user**: Confirmed that the AI was supposed to rewrite instructions to be copyright-safe, but it wasn't happening on upload. (RESOLVED)
+7.  **user**: Stated they were moving away from Emergent, had been told to use  by another agent, and had paid for OpenAI credit. This triggered the migration. (RESOLVED)
+8.  **user**: Confirmed  was missing on DigitalOcean, but showed an  was present. (RESOLVED)
+9.  **user**: Reported parsing was still failing after the legislative/copyright requirements were added. (RESOLVED)
+10. **user**: Requested allowing camera scan (in addition to upload) for recipe photos and ensuring receipt scanning accepts screenshots. (RESOLVED)
 
 **Project Health Check:**
--   **Broken**: None. The main deployment blocker was resolved.
+-   **Broken**: None.
 -   **Mocked**: None.
+-   **Fragile**: The backend architecture is extremely fragile due to the monolithic  file. Any change carries a high risk of unintended side effects.
 
 **3rd Party Integrations**
--   **OpenAI API** (GPT for text, DALL-E for images) — requires User API Key ().
--   **Google OAuth 2.0** — requires User-provided  and .
--   **MongoDB Atlas** — requires User-provided .
+-   **OpenAI SDK (usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit)** — Requires User-provided .
+-   **Google OAuth 2.0** — Requires User-provided  and .
+-   **MongoDB Atlas** — Requires User-provided .
 
 **Testing status**
--   **Testing agent used after significant changes**: YES (after the initial deployment fix).
+-   **Testing agent used after significant changes**: YES, but not since the major migration to the OpenAI SDK.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None.
+-   **Known regressions**: None known, but the risk is high due to the lack of automated tests and the monolithic backend.
 
 **Credentials to test flow:**
--   User authentication is required via the custom Google Sign-In flow. This cannot be tested without valid credentials configured in the environment.
+-   
+-   
+-   
+-   
 
 **What agent forgot to execute**
--   The agent did not refactor the monolithic  file, despite it being identified as a critical risk in the initial handoff summary and growing significantly larger during the session.
--   Several now-unused deployment files (, ) were created during iterative debugging but were not cleaned up after the final  approach was settled on.</analysis>
+-   The agent has consistently deferred the critical task of refactoring the monolithic  file, which was noted as a major risk in the previous handoff and has only worsened.
+-   Unused files in the root directory (, ) have not been cleaned up.</analysis>

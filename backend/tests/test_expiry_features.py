@@ -16,7 +16,7 @@ import requests
 import os
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://foodprep-4.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://shopguru-4.preview.emergentagent.com').rstrip('/')
 SESSION_TOKEN = "test_session_1770684291113"
 
 @pytest.fixture
