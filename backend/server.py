@@ -44,7 +44,14 @@ except Exception as e:
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 if OPENAI_API_KEY:
     logger.info("OpenAI API Key found - AI features enabled")
-    openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    # Check if using Emergent LLM key (starts with sk-emergent)
+    if OPENAI_API_KEY.startswith('sk-emergent'):
+        openai_client = AsyncOpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url="https://emergentintegrations.ai/api/v1"
+        )
+    else:
+        openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 else:
     logger.warning("No OPENAI_API_KEY found - AI features disabled")
     openai_client = None
