@@ -3420,9 +3420,6 @@ IMPORTANT:
             )
         else:
             return {"extracted_items": [], "message": "Could not extract content from file"}
-            ],
-            max_tokens=2000
-        )
         
         result = response.choices[0].message.content
         logger.info(f"Receipt scan response: {result[:500] if result else 'Empty'}")
