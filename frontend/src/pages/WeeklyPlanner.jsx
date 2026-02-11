@@ -26,6 +26,25 @@ export default function WeeklyPlanner() {
   const [openDay, setOpenDay] = useState(null);
   const [cookingRecipe, setCookingRecipe] = useState(null);
   const [showExpiring, setShowExpiring] = useState(false);
+  
+  // Servings adjustment state
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedServings, setSelectedServings] = useState(2);
+  
+  // Surprise Me state
+  const [showSurpriseDialog, setShowSurpriseDialog] = useState(false);
+  const [surpriseDays, setSurpriseDays] = useState(DAYS.reduce((acc, day) => ({...acc, [day]: true}), {}));
+  const [surpriseCategories, setSurpriseCategories] = useState([]);
+  const [generatingSurprise, setGeneratingSurprise] = useState(false);
+  
+  const ALL_CATEGORIES = [
+    { value: "vegan", label: "Vegan" },
+    { value: "vegetarian", label: "Veggie" },
+    { value: "pescatarian", label: "Pescatarian" },
+    { value: "quick-easy", label: "Quick & Easy" },
+    { value: "low-fat", label: "Low Fat" },
+  ];
 
   function getWeekStart(date) {
     const d = new Date(date);
