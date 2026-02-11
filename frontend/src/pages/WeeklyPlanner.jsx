@@ -382,6 +382,14 @@ export default function WeeklyPlanner() {
             <p className="text-stone-500">{totalMeals} meals planned</p>
           </div>
           <div className="flex items-center gap-3">
+            <Button 
+              onClick={() => setShowSurpriseDialog(true)} 
+              variant="outline" 
+              className="border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10"
+              data-testid="surprise-me-btn"
+            >
+              <Shuffle className="w-4 h-4 mr-2" />Surprise Me
+            </Button>
             <Button onClick={savePlan} disabled={saving} variant="outline" className="border-stone-200">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Plan"}</Button>
             <Button onClick={generateShoppingList} disabled={generating || totalMeals === 0} className="btn-primary">
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShoppingCart className="w-4 h-4 mr-2" />Generate List</>}
