@@ -183,6 +183,7 @@ export default function Pantry() {
   const startBarcodeScanner = async () => {
     setScanning(true);
     setScannedProduct(null);
+    hasDetectedRef.current = false;
     
     try {
       // First, explicitly request camera permission
@@ -193,6 +194,9 @@ export default function Pantry() {
           height: { ideal: 720 }
         } 
       });
+      
+      // Store stream reference for cleanup
+      streamRef.current = stream;
       
       // Attach stream to video element
       if (videoRef.current) {
@@ -206,12 +210,16 @@ export default function Pantry() {
       // Start continuous scanning from the video stream
       codeReader.decodeFromVideoElement(
         videoRef.current,
-        async (result, error) => {
-          if (result) {
+        (result, error) => {
+          // Prevent multiple detections
+          if (result && !hasDetectedRef.current) {
+            hasDetectedRef.current = true;
             const barcode = result.getText();
             console.log("Barcode detected:", barcode);
-            stopBarcodeScanner();
-            await lookupBarcode(barcode);
+            
+            // Stop scanner first, then lookup
+            forceStopScanner();
+            lookupBarcode(barcode);
           }
         }
       );
@@ -230,19 +238,38 @@ export default function Pantry() {
     }
   };
   
-  const stopBarcodeScanner = () => {
-    // Stop video stream
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
+  // Force stop - used internally after detection
+  const forceStopScanner = () => {
+    // Stop the code reader first
+    if (codeReaderRef.current) {
+      try {
+        codeReaderRef.current.reset();
+      } catch (e) {
+        console.log("Error resetting code reader:", e);
+      }
+      codeReaderRef.current = null;
+    }
+    
+    // Stop all tracks in the stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+    
+    // Clear video element
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     
-    if (codeReaderRef.current) {
-      codeReaderRef.current.reset();
-      codeReaderRef.current = null;
-    }
     setScanning(false);
+  };
+  
+  // User-triggered stop (button click)
+  const stopBarcodeScanner = () => {
+    hasDetectedRef.current = true; // Prevent any pending detections
+    forceStopScanner();
   };
   
   const lookupBarcode = async (barcode) => {
