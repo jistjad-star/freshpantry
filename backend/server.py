@@ -2187,9 +2187,51 @@ REQUIREMENTS:
 
 @api_router.post("/parse-instructions-image")
 async def parse_instructions_image(file: UploadFile = File(...)):
-    """Extract cooking instructions from an uploaded image using AI vision, then rewrite for copyright safety"""
+    """Extract cooking instructions from an uploaded image or PDF using AI vision, then rewrite for copyright safety"""
     contents = await file.read()
-    image_base64 = base64.b64encode(contents).decode('utf-8')
+    content_type = file.content_type or ""
+    filename = file.filename or ""
+    
+    logger.info(f"Parse instructions - file: name={filename}, content_type={content_type}, size={len(contents)} bytes")
+    
+    # Check if it's a PDF by magic bytes (PDF files start with %PDF)
+    is_pdf = (
+        content_type == "application/pdf" or 
+        filename.lower().endswith('.pdf') or
+        contents[:4] == b'%PDF'
+    )
+    
+    # Handle PDF by converting to image
+    if is_pdf:
+        logger.info("Detected PDF for instructions, converting to image...")
+        try:
+            import fitz  # PyMuPDF
+            
+            pdf_document = fitz.open(stream=contents, filetype="pdf")
+            
+            if pdf_document.page_count == 0:
+                raise HTTPException(status_code=400, detail="PDF has no pages")
+            
+            # Get first page and render at high resolution
+            page = pdf_document[0]
+            zoom = 300 / 72
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            
+            image_bytes = pix.tobytes("png")
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            
+            pdf_document.close()
+            logger.info(f"Successfully converted instructions PDF to image")
+            
+        except ImportError as e:
+            logger.error(f"PyMuPDF not available: {e}")
+            raise HTTPException(status_code=400, detail="PDF processing not available. Please upload an image instead.")
+        except Exception as e:
+            logger.error(f"Error converting PDF: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"Could not process PDF. Please take a screenshot instead.")
+    else:
+        image_base64 = base64.b64encode(contents).decode('utf-8')
     
     raw_text, instructions, prep_time, cook_time, suggested_name = await extract_instructions_from_image(image_base64)
     
