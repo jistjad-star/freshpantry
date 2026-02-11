@@ -10,7 +10,8 @@ import {
   LogOut,
   User,
   Package,
-  Sparkles
+  Sparkles,
+  GlassWater
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
