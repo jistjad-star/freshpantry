@@ -1199,7 +1199,7 @@ export default function Pantry() {
 
         {/* Low Stock Alert Banner */}
         {lowStockCount > 0 && (
-          <div className="fresh-card-static p-4 mb-8 border-[#E07A5F]/30 bg-[#E07A5F]/5">
+          <div className="fresh-card-static p-4 mb-6 border-[#E07A5F]/30 bg-[#E07A5F]/5">
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-[#E07A5F]" />
               <div className="flex-1">
@@ -1216,6 +1216,85 @@ export default function Pantry() {
                   Go Shopping
                 </Button>
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Filter and Selection Controls */}
+        {totalItems > 0 && (
+          <div className="fresh-card-static p-4 mb-6 flex flex-col md:flex-row md:items-center gap-4">
+            {/* Low Stock Filter Toggle */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant={showLowStockOnly ? "default" : "outline"}
+                onClick={() => {
+                  setShowLowStockOnly(!showLowStockOnly);
+                  setSelectedItems(new Set()); // Clear selection when toggling filter
+                }}
+                className={showLowStockOnly ? "bg-[#E07A5F] hover:bg-[#E07A5F]/90" : "border-[#E07A5F] text-[#E07A5F] hover:bg-[#E07A5F]/10"}
+                data-testid="filter-low-stock-btn"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {showLowStockOnly ? "Showing Low Stock" : "Filter Low Stock"}
+              </Button>
+            </div>
+            
+            {/* Selection Controls */}
+            <div className="flex items-center gap-2 md:ml-auto">
+              <span className="text-sm text-stone-500">
+                {selectedItems.size > 0 ? `${selectedItems.size} selected` : "Select items:"}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAllLowStock}
+                className="text-xs"
+                data-testid="select-all-low-stock-btn"
+              >
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Low Stock
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAll}
+                className="text-xs"
+                data-testid="select-all-btn"
+              >
+                <CheckSquare className="w-3 h-3 mr-1" />
+                All
+              </Button>
+              
+              {selectedItems.size > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="text-xs"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Clear
+                </Button>
+              )}
+              
+              <Button
+                onClick={exportToShoppingList}
+                disabled={selectedItems.size === 0 || exportingToShoppingList}
+                className="bg-[#4A7C59] hover:bg-[#4A7C59]/90 text-white"
+                size="sm"
+                data-testid="export-to-shopping-btn"
+              >
+                {exportingToShoppingList ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Export to List
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         )}
@@ -1247,6 +1326,7 @@ export default function Pantry() {
                     {items.map((item) => {
                       const lowStock = isLowStock(item);
                       const isEditing = editingItem === item.id;
+                      const isSelected = selectedItems.has(item.id);
                       
                       return (
                         <div 
