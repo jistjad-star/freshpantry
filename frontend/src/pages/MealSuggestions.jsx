@@ -80,6 +80,8 @@ export default function MealSuggestions() {
 
   useEffect(() => {
     fetchSuggestions(mealTypeFilter, expiringSoonFilter);
+    // Regenerate AI recipe when filter changes
+    generateAIRecipe();
   }, [mealTypeFilter, expiringSoonFilter]);
 
   const generateAIRecipe = async () => {
