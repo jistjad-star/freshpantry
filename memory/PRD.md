@@ -86,6 +86,8 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **"Use Expiring" filter** - Prioritize recipes using ingredients expiring within 7 days
 - [x] **Expiring ingredients display** - Shows which expiring items each recipe uses
 - [x] Recommendation messages based on match quality and efficiency
+- [x] **AI Cocktail Suggestions** (NEW) - Generate cocktail/mocktail suggestions from pantry
+- [x] **Cocktail Type Filter** (NEW) - Filter between Any, Alcoholic, or Virgin/Non-Alcoholic
 
 ### Shopping List
 - [x] Smart generation (subtracts pantry inventory)
