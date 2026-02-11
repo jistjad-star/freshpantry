@@ -2268,6 +2268,7 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
     
     # If filtering by expiring soon, prioritize items with expiry dates
     expiring_items = []
+    expiring_item_names = []
     if expiring_soon:
         today = datetime.now(timezone.utc).date()
         for item in pantry_items:
@@ -2280,6 +2281,7 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
                             **item,
                             'days_until_expiry': days_until_expiry
                         })
+                        expiring_item_names.append(item.get('name', ''))
                 except:
                     pass
         
@@ -2288,7 +2290,19 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
         
         # Sort by expiry date (soonest first)
         expiring_items.sort(key=lambda x: x['days_until_expiry'])
-        pantry_items = expiring_items
+        
+        # IMPORTANT: Don't replace pantry_items entirely - just mark expiring ones
+        # This allows recipes to match against ALL pantry items but prioritize expiring ones
+        for item in pantry_items:
+            item['is_expiring'] = item.get('name', '') in expiring_item_names
+        
+        # Add expiring flag to items that are expiring
+        for exp_item in expiring_items:
+            exp_item['is_expiring'] = True
+            # Find and update the item in pantry_items
+            for p_item in pantry_items:
+                if p_item.get('name') == exp_item.get('name'):
+                    p_item['days_until_expiry'] = exp_item['days_until_expiry']
     
     # Get recipes, optionally filtered by meal type
     recipe_query = {"user_id": user_id} if user_id else {}
