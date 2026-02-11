@@ -111,7 +111,7 @@ export const api = {
     if (expiringSoon) params.expiring_soon = true;
     return axios.get(`${API}/suggestions/meals`, { params });
   },
-  generateAIRecipe: (mealType = null) => axios.post(`${API}/suggestions/generate-recipe`, { meal_type: mealType }),
+  generateAIRecipe: (mealType = null, expiringSoon = false) => axios.post(`${API}/suggestions/generate-recipe`, { meal_type: mealType, expiring_soon: expiringSoon }),
 };
 
 export default api;
