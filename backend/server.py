@@ -3284,26 +3284,29 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
     # Read file contents
     contents = await file.read()
     
-    # Determine file type and convert to base64
+    # Determine file type
     content_type = file.content_type or ""
     filename = file.filename or ""
     
     logger.info(f"Receipt scan - file: name={filename}, content_type={content_type}, size={len(contents)} bytes")
     
-    # Check if it's a PDF by magic bytes (PDF files start with %PDF)
+    # Check if it's a PDF
     is_pdf = (
         content_type == "application/pdf" or 
         filename.lower().endswith('.pdf') or
-        contents[:4] == b'%PDF'
+        (len(contents) > 4 and contents[:4] == b'%PDF')
     )
     
-    # Handle PDF by converting to image
+    extracted_text = ""
+    image_base64 = None
+    image_media_type = "image/png"
+    
+    # Handle PDF - extract text directly (faster and more accurate for text-based PDFs)
     if is_pdf:
-        logger.info("Detected PDF receipt, converting to image...")
+        logger.info("Detected PDF receipt, extracting text...")
         try:
             import fitz  # PyMuPDF
             
-            # Open PDF from bytes
             pdf_document = fitz.open(stream=contents, filetype="pdf")
             
             if pdf_document.page_count == 0:
@@ -3311,32 +3314,43 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
             
             logger.info(f"Receipt PDF has {pdf_document.page_count} pages")
             
-            # Get first page
-            page = pdf_document[0]
+            # Extract text from ALL pages (Tesco baskets can have many pages)
+            all_text = []
+            for page_num in range(min(pdf_document.page_count, 30)):  # Limit to 30 pages
+                page = pdf_document[page_num]
+                page_text = page.get_text()
+                if page_text.strip():
+                    all_text.append(f"--- Page {page_num + 1} ---\n{page_text}")
             
-            # Render at higher resolution for better OCR (300 DPI)
-            zoom = 300 / 72  # 72 is default DPI
-            mat = fitz.Matrix(zoom, zoom)
-            pix = page.get_pixmap(matrix=mat)
+            extracted_text = "\n".join(all_text)
+            logger.info(f"Extracted {len(extracted_text)} chars of text from PDF")
             
-            # Convert to PNG bytes
-            image_bytes = pix.tobytes("png")
-            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-            image_media_type = "image/png"
+            # If very little text, fall back to image OCR of first few pages
+            if len(extracted_text.strip()) < 100:
+                logger.info("Little text found, falling back to image OCR...")
+                # Render first 3 pages to images
+                images_base64 = []
+                for page_num in range(min(pdf_document.page_count, 3)):
+                    page = pdf_document[page_num]
+                    zoom = 200 / 72  # 200 DPI for reasonable size
+                    mat = fitz.Matrix(zoom, zoom)
+                    pix = page.get_pixmap(matrix=mat)
+                    image_bytes = pix.tobytes("png")
+                    images_base64.append(base64.b64encode(image_bytes).decode('utf-8'))
+                
+                image_base64 = images_base64[0] if images_base64 else None
             
             pdf_document.close()
-            logger.info(f"Successfully converted receipt PDF to image, base64 length: {len(image_base64)}")
             
         except ImportError as e:
             logger.error(f"PyMuPDF not installed: {e}")
-            raise HTTPException(status_code=400, detail="PDF processing not available. Please upload a screenshot or photo instead.")
+            raise HTTPException(status_code=400, detail="PDF processing not available. Please upload a screenshot instead.")
         except Exception as e:
-            logger.error(f"Error converting PDF: {e}", exc_info=True)
-            raise HTTPException(status_code=400, detail=f"Could not process PDF: {str(e)}. Please take a screenshot of the receipt instead.")
+            logger.error(f"Error processing PDF: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"Could not process PDF: {str(e)}")
     else:
-        # For images (JPEG, PNG, etc.)
+        # For images, encode as base64 for vision API
         image_base64 = base64.b64encode(contents).decode('utf-8')
-        # Determine media type
         if content_type.startswith("image/"):
             image_media_type = content_type
         elif filename.lower().endswith('.png'):
@@ -3345,60 +3359,67 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
             image_media_type = "image/webp"
         else:
             image_media_type = "image/jpeg"
-        logger.info(f"Processing receipt as image, media_type={image_media_type}")
+        logger.info(f"Processing receipt as image")
     
     try:
-        system_message = """You are a helpful assistant that extracts grocery items from supermarket receipts.
-        
-Look at this receipt image carefully and extract ALL grocery items purchased.
+        system_message = """You are a helpful assistant that extracts grocery items from shopping lists, baskets, or receipts.
 
-CRITICAL - READ THE ACTUAL VALUES FROM THE RECEIPT:
-- Read the EXACT quantity shown on the receipt (e.g., if it says "2" or "x2", quantity is 2)
-- Read the EXACT weight/size from the product name or line (e.g., "500g", "1L", "2kg", "250ml")
-- Do NOT default everything to 1 gram - actually read the receipt!
+Extract ALL grocery/food items from the provided text or image.
 
-For each item, extract:
-- name: The product name (simplified, e.g., "Milk" not "TESCO SEMI SKIMMED MILK 2L")
-- quantity: The actual quantity purchased AS SHOWN ON RECEIPT (number of items, OR weight for loose items)
-- unit: The actual unit AS SHOWN ON RECEIPT (e.g., "kg", "g", "L", "ml", "pack", "pieces", "each")
+For each item, determine:
+- name: Simplified product name (e.g., "Pistachios" not "Tesco Roasted & Salted Pistachios 150G")
+- quantity: The number of items or weight (look for "X in basket", quantities, or weights like "150G", "500G", "1KG")
+- unit: The unit (g, kg, L, ml, pack, pieces, each - extract from product name like "150G" means 150, g)
 - category: One of: produce, dairy, protein, grains, pantry, spices, frozen, other
 
-EXAMPLES of what to look for:
-- "BANANAS 0.540kg @ £1.09/kg" → name: "Bananas", quantity: 540, unit: "g", category: "produce"
-- "CHICKEN BREAST 1KG" → name: "Chicken Breast", quantity: 1, unit: "kg", category: "protein"
-- "MILK 2L x2" or "2 x MILK 2L" → name: "Milk", quantity: 4, unit: "L", category: "dairy"
-- "BREAD" (no weight shown) → name: "Bread", quantity: 1, unit: "loaf", category: "grains"
-- "CHEDDAR 250G" → name: "Cheddar Cheese", quantity: 250, unit: "g", category: "dairy"
-- "EGGS x12" → name: "Eggs", quantity: 12, unit: "pieces", category: "protein"
+EXAMPLES:
+- "Tesco Roasted & Salted Pistachios 150G, 1 in basket" → name: "Pistachios", quantity: 150, unit: "g", category: "pantry"
+- "Tesco Penne Pasta 500G" → name: "Penne Pasta", quantity: 500, unit: "g", category: "grains"
+- "Semi Skimmed Milk 2L, 2 in basket" → name: "Milk", quantity: 4, unit: "L", category: "dairy"
+- "Chicken Breast Fillets 650G" → name: "Chicken Breast", quantity: 650, unit: "g", category: "protein"
+- "6 Free Range Eggs" → name: "Eggs", quantity: 6, unit: "pieces", category: "protein"
 
-Return ONLY a valid JSON array of items, no markdown or explanation:
-[
-    {"name": "Bananas", "quantity": 540, "unit": "g", "category": "produce"},
-    {"name": "Milk", "quantity": 2, "unit": "L", "category": "dairy"},
-    ...
-]
+Return ONLY a valid JSON array, no explanation:
+[{"name": "Pistachios", "quantity": 150, "unit": "g", "category": "pantry"}, ...]
 
 IMPORTANT:
-- Skip non-food items (bags, vouchers, discounts, carrier bags)
-- Simplify product names (remove store brand names like TESCO/ASDA/SAINSBURYS)
-- ACTUALLY READ the quantities and weights from the receipt - do not guess!"""
+- Skip unavailable items, vouchers, bags, non-food items
+- Remove brand names (TESCO, ASDA, etc.) from item names
+- Extract weights/sizes from product names (e.g., "500G" → quantity: 500, unit: "g")
+- If "X in basket", multiply the weight by X"""
 
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o",  # Use gpt-4o for better vision accuracy
-            messages=[
-                {"role": "system", "content": system_message},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Extract all grocery items from this receipt. Read the ACTUAL quantities and weights shown - do not default to 1g for everything."},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{image_media_type};base64,{image_base64}"
+        # Use text if available (from PDF), otherwise use image
+        if extracted_text and len(extracted_text.strip()) > 100:
+            logger.info("Using extracted text for AI processing")
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o-mini",  # Text processing can use the smaller model
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": f"Extract all grocery items from this shopping list/basket:\n\n{extracted_text[:15000]}"}  # Limit text length
+                ],
+                max_tokens=3000
+            )
+        elif image_base64:
+            logger.info("Using image for AI processing")
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Extract all grocery items from this receipt/basket image."},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:{image_media_type};base64,{image_base64}"}
                             }
-                        }
-                    ]
-                }
+                        ]
+                    }
+                ],
+                max_tokens=3000
+            )
+        else:
+            return {"extracted_items": [], "message": "Could not extract content from file"}
             ],
             max_tokens=2000
         )
