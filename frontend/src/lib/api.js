@@ -8,7 +8,6 @@ axios.defaults.withCredentials = true;
 
 export const api = {
   // Auth
-  createSession: (sessionId) => axios.post(`${API}/auth/session`, { session_id: sessionId }),
   getMe: () => axios.get(`${API}/auth/me`),
   logout: () => axios.post(`${API}/auth/logout`),
 
