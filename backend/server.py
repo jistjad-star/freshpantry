@@ -2016,8 +2016,18 @@ async def parse_image(file: UploadFile = File(...)):
     content_type = file.content_type or ""
     filename = file.filename or ""
     
+    logger.info(f"Received file: name={filename}, content_type={content_type}, size={len(contents)} bytes")
+    
+    # Check if it's a PDF by magic bytes (PDF files start with %PDF)
+    is_pdf = (
+        content_type == "application/pdf" or 
+        filename.lower().endswith('.pdf') or
+        contents[:4] == b'%PDF'
+    )
+    
     # Handle PDF by converting to image
-    if content_type == "application/pdf" or filename.lower().endswith('.pdf'):
+    if is_pdf:
+        logger.info("Detected PDF file, converting to image...")
         try:
             import fitz  # PyMuPDF
             
@@ -2026,6 +2036,8 @@ async def parse_image(file: UploadFile = File(...)):
             
             if pdf_document.page_count == 0:
                 raise HTTPException(status_code=400, detail="PDF has no pages")
+            
+            logger.info(f"PDF has {pdf_document.page_count} pages")
             
             # Get first page and render at high resolution
             page = pdf_document[0]
@@ -2038,16 +2050,18 @@ async def parse_image(file: UploadFile = File(...)):
             image_base64 = base64.b64encode(image_bytes).decode('utf-8')
             
             pdf_document.close()
-            logger.info("Successfully converted PDF to image for ingredient parsing")
+            logger.info(f"Successfully converted PDF to image, base64 length: {len(image_base64)}")
             
-        except ImportError:
+        except ImportError as e:
+            logger.error(f"PyMuPDF not available: {e}")
             raise HTTPException(status_code=400, detail="PDF processing not available. Please upload an image instead.")
         except Exception as e:
-            logger.error(f"Error converting PDF: {e}")
-            raise HTTPException(status_code=400, detail="Could not process PDF. Please take a screenshot instead.")
+            logger.error(f"Error converting PDF: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"Could not process PDF: {str(e)}. Please take a screenshot instead.")
     else:
         # For images, just encode as base64
         image_base64 = base64.b64encode(contents).decode('utf-8')
+        logger.info(f"Processing as image, base64 length: {len(image_base64)}")
     
     # Extract ingredients
     raw_text, ingredients = await extract_ingredients_from_image(image_base64)
