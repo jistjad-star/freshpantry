@@ -1879,10 +1879,44 @@ async def parse_ingredients(data: ParseIngredientsRequest):
 
 @api_router.post("/parse-image", response_model=ImageParseResponse)
 async def parse_image(file: UploadFile = File(...)):
-    """Extract ingredients from an uploaded image using AI vision"""
-    # Read and encode image
+    """Extract ingredients from an uploaded image or PDF using AI vision"""
+    # Read file contents
     contents = await file.read()
-    image_base64 = base64.b64encode(contents).decode('utf-8')
+    content_type = file.content_type or ""
+    filename = file.filename or ""
+    
+    # Handle PDF by converting to image
+    if content_type == "application/pdf" or filename.lower().endswith('.pdf'):
+        try:
+            import fitz  # PyMuPDF
+            
+            # Open PDF from bytes
+            pdf_document = fitz.open(stream=contents, filetype="pdf")
+            
+            if pdf_document.page_count == 0:
+                raise HTTPException(status_code=400, detail="PDF has no pages")
+            
+            # Get first page and render at high resolution
+            page = pdf_document[0]
+            zoom = 300 / 72  # 300 DPI
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            
+            # Convert to PNG bytes then base64
+            image_bytes = pix.tobytes("png")
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            
+            pdf_document.close()
+            logger.info("Successfully converted PDF to image for ingredient parsing")
+            
+        except ImportError:
+            raise HTTPException(status_code=400, detail="PDF processing not available. Please upload an image instead.")
+        except Exception as e:
+            logger.error(f"Error converting PDF: {e}")
+            raise HTTPException(status_code=400, detail="Could not process PDF. Please take a screenshot instead.")
+    else:
+        # For images, just encode as base64
+        image_base64 = base64.b64encode(contents).decode('utf-8')
     
     # Extract ingredients
     raw_text, ingredients = await extract_ingredients_from_image(image_base64)
