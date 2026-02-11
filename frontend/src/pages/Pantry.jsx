@@ -82,6 +82,7 @@ const SUGGESTED_ESSENTIALS = [
 ];
 
 export default function Pantry() {
+  const navigate = useNavigate();
   const [pantry, setPantry] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,6 +96,11 @@ export default function Pantry() {
   const [selectedEssentials, setSelectedEssentials] = useState([]);
   const [expiringItems, setExpiringItems] = useState([]);
   const [expiredItems, setExpiredItems] = useState([]);
+  
+  // Filter and selection state
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [exportingToShoppingList, setExportingToShoppingList] = useState(false);
   
   // Consolidate state
   const [consolidating, setConsolidating] = useState(false);
