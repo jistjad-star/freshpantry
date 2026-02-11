@@ -103,7 +103,13 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ## Changelog
 
-### 2025-02-10 (Session 7 - Current)
+### 2025-02-11 (Session 8 - Current)
+- **Added**: "Make Vegan" button on recipe detail page - AI converts all animal products to plant-based alternatives
+- **Added**: "Make Vegetarian" button on recipe detail page - AI converts meat/fish to vegetarian substitutes
+- **Fixed**: Route registration order in server.py - API endpoints now properly registered
+- **Fixed**: Backend returns full updated recipe data after conversion for proper UI refresh
+
+### 2025-02-10 (Session 7)
 - **MAJOR**: Copyright-safe private recipe sharing system
   - AI rewrites instructions from step graph with original wording
   - N-gram compliance checks (8-gram < 0.01, overall ≤ 0.15)
