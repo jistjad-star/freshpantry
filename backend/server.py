@@ -2363,26 +2363,77 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
     
     # Get recipes, optionally filtered by meal type
     recipe_query = {"user_id": user_id} if user_id else {}
+    all_recipes = await db.recipes.find(recipe_query, {"_id": 0}).to_list(100)
+    
+    # Filter by meal type using smart keyword matching
     if meal_type and meal_type in ["breakfast", "lunch", "dinner", "snack"]:
-        recipe_query["meal_type"] = meal_type
-    
-    recipes = await db.recipes.find(recipe_query, {"_id": 0}).to_list(100)
-    
-    # If no recipes with that meal type, try to infer from name/categories
-    if not recipes and meal_type:
-        all_recipes = await db.recipes.find({"user_id": user_id} if user_id else {}, {"_id": 0}).to_list(100)
-        # Filter by keywords in name
+        # Extended keywords for better meal type detection
         meal_keywords = {
-            "breakfast": ["breakfast", "pancake", "egg", "omelette", "toast", "porridge", "cereal", "smoothie", "muffin"],
-            "lunch": ["lunch", "sandwich", "salad", "soup", "wrap", "bowl"],
-            "dinner": ["dinner", "roast", "steak", "curry", "pasta", "stir fry", "casserole", "pie"],
-            "snack": ["snack", "cookie", "cake", "bar", "dip", "nuts", "fruit"]
+            "breakfast": [
+                "breakfast", "pancake", "pancakes", "waffle", "waffles", "egg", "eggs", 
+                "omelette", "omelet", "toast", "porridge", "oatmeal", "cereal", "smoothie", 
+                "muffin", "muffins", "bacon", "sausage", "hash brown", "french toast",
+                "granola", "yogurt parfait", "scrambled", "fried egg", "benedict",
+                "croissant", "bagel"
+            ],
+            "lunch": [
+                "lunch", "sandwich", "sandwiches", "salad", "salads", "soup", "soups",
+                "wrap", "wraps", "bowl", "bowls", "panini", "quesadilla", "tacos", "taco",
+                "burrito", "pita", "hummus", "bruschetta", "light", "quick"
+            ],
+            "dinner": [
+                "dinner", "roast", "steak", "curry", "curries", "casserole", "pie", "pies",
+                "lasagna", "lasagne", "risotto", "stew", "beef", "pork", "lamb", "chicken",
+                "fish", "salmon", "cod", "roasted", "baked", "grilled", "braised",
+                "shepherd", "cottage pie", "bolognese", "carbonara", "tikka", "korma",
+                "thai", "chinese", "indian", "mexican", "mediterranean"
+            ],
+            "snack": [
+                "snack", "snacks", "cookie", "cookies", "cake", "bar", "bars", "dip", "dips",
+                "nuts", "fruit", "bites", "balls", "energy", "popcorn", "chips", "nachos",
+                "trail mix", "crackers"
+            ]
         }
+        
+        # Some items can be multi-meal - pasta and stir fry work for lunch AND dinner
+        multi_meal_items = {
+            "pasta": ["lunch", "dinner"],
+            "stir fry": ["lunch", "dinner"],
+            "stir-fry": ["lunch", "dinner"],
+            "noodles": ["lunch", "dinner"],
+            "noodle": ["lunch", "dinner"],
+            "rice": ["lunch", "dinner"],
+            "fried rice": ["lunch", "dinner"],
+        }
+        
         keywords = meal_keywords.get(meal_type, [])
-        recipes = [
-            r for r in all_recipes 
-            if any(kw in r.get('name', '').lower() for kw in keywords)
-        ]
+        
+        recipes = []
+        for r in all_recipes:
+            recipe_name = r.get('name', '').lower()
+            recipe_desc = r.get('description', '').lower()
+            recipe_text = recipe_name + " " + recipe_desc
+            
+            # Check if any keyword matches
+            if any(kw in recipe_text for kw in keywords):
+                recipes.append(r)
+            else:
+                # Check multi-meal items
+                for item, valid_meals in multi_meal_items.items():
+                    if item in recipe_text and meal_type in valid_meals:
+                        recipes.append(r)
+                        break
+        
+        # If still no matches and looking for breakfast/lunch, be more lenient
+        # Don't include heavy dinner items in breakfast/lunch
+        if not recipes and meal_type in ["breakfast", "lunch"]:
+            dinner_only_keywords = ["roast", "stew", "casserole", "braised", "slow cook"]
+            recipes = [
+                r for r in all_recipes
+                if not any(kw in r.get('name', '').lower() for kw in dinner_only_keywords)
+            ]
+    else:
+        recipes = all_recipes
     
     if not recipes:
         meal_label = meal_type.title() if meal_type else "any"
