@@ -262,6 +262,40 @@ export default function RecipeDetail() {
     }
   };
 
+  const handleMakeVegan = async () => {
+    setConverting('vegan');
+    toast.info("Converting recipe to vegan... This may take a moment.");
+    try {
+      const response = await api.makeRecipeVegan(id);
+      setRecipe(response.data);
+      setServings(response.data.servings || 2);
+      setSelectedCategories(response.data.categories || []);
+      toast.success("Recipe converted to vegan!");
+    } catch (error) {
+      console.error("Error converting recipe:", error);
+      toast.error(error.response?.data?.detail || "Failed to convert recipe");
+    } finally {
+      setConverting(null);
+    }
+  };
+
+  const handleMakeVegetarian = async () => {
+    setConverting('vegetarian');
+    toast.info("Converting recipe to vegetarian... This may take a moment.");
+    try {
+      const response = await api.makeRecipeVegetarian(id);
+      setRecipe(response.data);
+      setServings(response.data.servings || 2);
+      setSelectedCategories(response.data.categories || []);
+      toast.success("Recipe converted to vegetarian!");
+    } catch (error) {
+      console.error("Error converting recipe:", error);
+      toast.error(error.response?.data?.detail || "Failed to convert recipe");
+    } finally {
+      setConverting(null);
+    }
+  };
+
   // Scale ingredient quantity based on servings
   const scaleQuantity = (originalQty, originalServings, newServings) => {
     if (!originalQty || !originalServings || !newServings) return originalQty;
