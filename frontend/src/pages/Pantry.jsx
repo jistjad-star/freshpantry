@@ -711,6 +711,8 @@ export default function Pantry() {
                         ref={videoRef} 
                         className="w-full h-full object-cover"
                         playsInline
+                        autoPlay
+                        muted
                       />
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-64 h-32 border-2 border-[#4A7C59] rounded-lg relative">
