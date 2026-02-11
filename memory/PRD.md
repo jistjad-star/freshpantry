@@ -167,7 +167,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - Weekly planner improvements
 
 ## Future Tasks
-- P1: **Backend Refactoring** - server.py is >2800 lines and needs to be split into modules (routes, models, services)
+- P1: **Backend Refactoring** - server.py is >3500 lines and URGENTLY needs to be split into modules (routes, models, services)
 - P1: Drag-and-drop weekly planner
 - P2: Whisk.com Integration for direct "add to basket"
 - P2: PWA support
