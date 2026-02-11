@@ -36,6 +36,7 @@ function AppRouter() {
         <Route path="recipes" element={<RecipeLibrary />} />
         <Route path="recipes/:id" element={<RecipeDetail />} />
         <Route path="recipes/:id/edit" element={<EditRecipe />} />
+        <Route path="cocktails" element={<Cocktails />} />
         <Route path="planner" element={<WeeklyPlanner />} />
         <Route path="weekly-planner" element={<WeeklyPlanner />} />
         <Route path="shopping-list" element={<ShoppingList />} />
