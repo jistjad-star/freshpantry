@@ -90,6 +90,9 @@ export default function Pantry() {
   const [expiringItems, setExpiringItems] = useState([]);
   const [expiredItems, setExpiredItems] = useState([]);
   
+  // Consolidate state
+  const [consolidating, setConsolidating] = useState(false);
+  
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
