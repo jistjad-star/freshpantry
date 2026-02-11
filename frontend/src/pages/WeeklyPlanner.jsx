@@ -571,19 +571,21 @@ export default function WeeklyPlanner() {
               </div>
               
               <div className="space-y-2">
-                {(weeklyPlan[day] || []).map((recipeId, i) => {
+                {(weeklyPlan[day] || []).map((planItem, i) => {
+                  const recipeId = getRecipeIdFromPlanItem(planItem);
                   const recipe = getRecipeById(recipeId);
                   if (!recipe) return null;
+                  const servings = getServingsFromPlanItem(planItem, recipe);
                   const isCooking = cookingRecipe === recipeId;
                   return (
                     <div key={`${recipeId}-${i}`} className="flex items-center gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100 group">
                       {recipe.image_url ? <div className="w-8 h-8 rounded bg-cover bg-center flex-shrink-0" style={{ backgroundImage: `url(${recipe.image_url})` }} /> : <div className="w-8 h-8 rounded bg-stone-200 flex items-center justify-center flex-shrink-0"><ChefHat className="w-4 h-4 text-stone-400" /></div>}
                       <div className="flex-1 min-w-0">
                         <span className="text-sm text-[#1A2E1A] truncate block">{recipe.name}</span>
-                        <span className="text-xs text-stone-400">{recipe.servings || 2} servings</span>
+                        <span className="text-xs text-stone-400">{servings} servings</span>
                       </div>
                       <button 
-                        onClick={() => handleCookedThis(recipeId, day)} 
+                        onClick={() => handleCookedThis(recipeId, day, servings / (recipe.servings || 2))} 
                         disabled={isCooking}
                         className="opacity-0 group-hover:opacity-100 text-[#4A7C59] hover:text-[#3A6C49] transition-opacity text-xs flex items-center gap-1 bg-[#4A7C59]/10 px-2 py-1 rounded-md"
                         title="Mark as cooked & deduct from pantry"
@@ -609,6 +611,136 @@ export default function WeeklyPlanner() {
             <Button onClick={() => navigate("/add-recipe")} className="btn-primary">Add Recipe</Button>
           </div>
         )}
+        
+        {/* Servings Selection Dialog */}
+        <Dialog open={!!selectedRecipe} onOpenChange={(open) => !open && setSelectedRecipe(null)}>
+          <DialogContent className="bg-white sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-[#1A2E1A]">Add to {selectedDay}</DialogTitle>
+              <DialogDescription className="text-stone-500">
+                Adjust servings for {selectedRecipe?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-center gap-4 py-6">
+              <button 
+                onClick={() => setSelectedServings(Math.max(1, selectedServings - 1))}
+                className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors"
+              >
+                <Minus className="w-5 h-5" />
+              </button>
+              <div className="text-center">
+                <span className="text-4xl font-bold text-[#1A2E1A]">{selectedServings}</span>
+                <p className="text-sm text-stone-500">servings</p>
+              </div>
+              <button 
+                onClick={() => setSelectedServings(Math.min(20, selectedServings + 1))}
+                className="w-10 h-10 rounded-full bg-[#4A7C59] hover:bg-[#3A6C49] flex items-center justify-center text-white transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedRecipe(null)}>Cancel</Button>
+              <Button onClick={confirmAddRecipe} className="btn-primary">Add to Plan</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Surprise Me Dialog */}
+        <Dialog open={showSurpriseDialog} onOpenChange={setShowSurpriseDialog}>
+          <DialogContent className="bg-white sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-[#1A2E1A] flex items-center gap-2">
+                <Shuffle className="w-5 h-5 text-[#4A7C59]" />
+                Surprise Me!
+              </DialogTitle>
+              <DialogDescription className="text-stone-500">
+                Auto-fill your planner with recipes based on your pantry and shared ingredients
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6 py-4">
+              {/* Day Selection */}
+              <div>
+                <h4 className="text-sm font-medium text-[#1A2E1A] mb-3">Select days to fill:</h4>
+                <div className="grid grid-cols-7 gap-2">
+                  {DAYS.map(day => (
+                    <button
+                      key={day}
+                      onClick={() => setSurpriseDays(prev => ({...prev, [day]: !prev[day]}))}
+                      className={`py-2 px-1 text-xs font-medium rounded-lg border transition-colors ${
+                        surpriseDays[day] 
+                          ? 'bg-[#4A7C59] text-white border-[#4A7C59]' 
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-[#4A7C59]'
+                      }`}
+                    >
+                      {day.slice(0, 3)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button 
+                    onClick={() => setSurpriseDays(DAYS.reduce((acc, d) => ({...acc, [d]: true}), {}))}
+                    className="text-xs text-[#4A7C59] hover:underline"
+                  >
+                    Select All
+                  </button>
+                  <button 
+                    onClick={() => setSurpriseDays(DAYS.reduce((acc, d) => ({...acc, [d]: false}), {}))}
+                    className="text-xs text-stone-500 hover:underline"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+              
+              {/* Category Filter */}
+              <div>
+                <h4 className="text-sm font-medium text-[#1A2E1A] mb-3">Filter by category (optional):</h4>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_CATEGORIES.map(cat => (
+                    <button
+                      key={cat.value}
+                      onClick={() => setSurpriseCategories(prev => 
+                        prev.includes(cat.value) 
+                          ? prev.filter(c => c !== cat.value) 
+                          : [...prev, cat.value]
+                      )}
+                      className={`py-1.5 px-3 text-xs font-medium rounded-full border transition-colors ${
+                        surpriseCategories.includes(cat.value) 
+                          ? 'bg-[#4A7C59] text-white border-[#4A7C59]' 
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-[#4A7C59]'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="bg-[#4A7C59]/10 rounded-lg p-3 text-sm text-[#1A2E1A]">
+                <p className="font-medium mb-1">How it works:</p>
+                <ul className="text-xs text-stone-600 space-y-1">
+                  <li>• Prioritizes recipes using your pantry ingredients</li>
+                  <li>• Groups recipes with shared ingredients to reduce waste</li>
+                  <li>• Avoids duplicate recipes unless you don&apos;t have enough</li>
+                </ul>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSurpriseDialog(false)}>Cancel</Button>
+              <Button 
+                onClick={handleSurpriseMe} 
+                disabled={generatingSurprise || !DAYS.some(d => surpriseDays[d])}
+                className="btn-primary"
+              >
+                {generatingSurprise ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                Fill My Week
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
