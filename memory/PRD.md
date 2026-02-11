@@ -104,7 +104,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - Frontend: React 19, Tailwind CSS, Shadcn/UI
 - Backend: FastAPI, MongoDB, Motor (async)
 - AI: OpenAI SDK (GPT-4o for text/vision, DALL-E for images)
-- Auth: Custom Google OAuth 2.0 (Authlib)
+- Auth: Google OAuth 2.0 (Authlib)
 - Deployment: DigitalOcean App Platform (Dockerfile)
 
 ## API Endpoints
