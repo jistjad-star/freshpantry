@@ -281,11 +281,13 @@ export default function AddRecipe() {
         instructions,
         source_url: recipeSource,
         image_url: imageUrl,
-        skip_image_generation: imageChoice !== 'ai' // Tell backend not to generate AI image
+        skip_image_generation: imageChoice !== 'ai', // Tell backend not to generate AI image
+        recipe_type: recipeType, // 'meal' or 'cocktail'
+        is_alcoholic: recipeType === 'cocktail' ? isAlcoholic : null // Only for cocktails
       };
       
       const response = await api.createRecipe(recipeData);
-      toast.success("Recipe saved!");
+      toast.success(recipeType === 'cocktail' ? "Cocktail saved!" : "Recipe saved!");
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       toast.error("Failed to save recipe");
@@ -299,14 +301,45 @@ export default function AddRecipe() {
       <div className="max-w-3xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2">Add Recipe</h1>
+          <h1 className="font-display text-3xl font-bold text-[#1A2E1A] mb-2 flex items-center justify-center gap-3">
+            {recipeType === 'cocktail' ? (
+              <GlassWater className="w-8 h-8 text-purple-500" />
+            ) : (
+              <ChefHat className="w-8 h-8 text-[#4A7C59]" />
+            )}
+            Add {recipeType === 'cocktail' ? 'Cocktail' : 'Recipe'}
+          </h1>
           <p className="text-stone-500">Import from URL, upload screenshots, or paste text</p>
         </div>
 
         <div className="space-y-6">
+          {/* Recipe Type Toggle */}
+          <div className="fresh-card-static p-4 flex items-center justify-center gap-4">
+            <Button
+              variant={recipeType === 'meal' ? 'default' : 'outline'}
+              onClick={() => setRecipeType('meal')}
+              className={recipeType === 'meal' ? 'bg-[#4A7C59] hover:bg-[#4A7C59]/90' : ''}
+              data-testid="recipe-type-meal"
+            >
+              <ChefHat className="w-4 h-4 mr-2" />
+              Meal
+            </Button>
+            <Button
+              variant={recipeType === 'cocktail' ? 'default' : 'outline'}
+              onClick={() => setRecipeType('cocktail')}
+              className={recipeType === 'cocktail' ? 'bg-purple-500 hover:bg-purple-600' : ''}
+              data-testid="recipe-type-cocktail"
+            >
+              <GlassWater className="w-4 h-4 mr-2" />
+              Cocktail
+            </Button>
+          </div>
+          
           {/* Recipe Name */}
           <div className="fresh-card-static p-6">
-            <Label className="text-[#1A2E1A] text-lg font-medium mb-3 block">Recipe Name *</Label>
+            <Label className="text-[#1A2E1A] text-lg font-medium mb-3 block">
+              {recipeType === 'cocktail' ? 'Cocktail' : 'Recipe'} Name *
+            </Label>
             <Input
               placeholder="e.g., Honey Garlic Chicken"
               value={recipeName}
