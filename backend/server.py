@@ -3078,6 +3078,69 @@ async def get_pantry(request: Request):
     
     return pantry
 
+@api_router.post("/pantry/consolidate")
+async def consolidate_pantry(request: Request):
+    """Consolidate duplicate items in the pantry using smart matching"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry or not pantry.get('items'):
+        return {"message": "Pantry is empty", "merged": 0}
+    
+    # Group items by their base ingredient name
+    groups = {}
+    for item in pantry['items']:
+        base_name = get_base_ingredient_name(item['name'])
+        if base_name not in groups:
+            groups[base_name] = []
+        groups[base_name].append(item)
+    
+    # Merge groups with multiple items
+    merged_count = 0
+    new_items = []
+    
+    for base_name, items in groups.items():
+        if len(items) == 1:
+            new_items.append(items[0])
+        else:
+            # Merge items - use shortest name as the canonical name
+            items.sort(key=lambda x: len(x['name']))
+            merged_item = items[0].copy()
+            
+            # Sum up quantities (convert to same unit if possible)
+            total_base_qty = 0
+            base_unit = None
+            
+            for item in items:
+                qty, unit = convert_to_base_unit(item['name'], item['quantity'], item.get('unit', ''))
+                if base_unit is None:
+                    base_unit = unit
+                if unit == base_unit:
+                    total_base_qty += qty
+                else:
+                    total_base_qty += item['quantity']
+            
+            merged_item['quantity'] = total_base_qty
+            if base_unit:
+                merged_item['unit'] = base_unit
+            merged_item['last_updated'] = datetime.now(timezone.utc).isoformat()
+            
+            new_items.append(merged_item)
+            merged_count += len(items) - 1
+            logger.info(f"Merged {len(items)} items into '{merged_item['name']}'")
+    
+    if merged_count > 0:
+        pantry['items'] = new_items
+        pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
+        await db.pantry.update_one(query, {"$set": pantry}, upsert=True)
+    
+    return {
+        "message": f"Consolidated pantry - merged {merged_count} duplicate items",
+        "merged": merged_count
+    }
+
 @api_router.post("/pantry/items")
 async def add_pantry_item(item_data: PantryItemCreate, request: Request):
     """Add a new item to the pantry"""
