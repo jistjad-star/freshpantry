@@ -343,12 +343,12 @@ export default function Pantry() {
     return Math.round(scannedProduct.quantity * multiplier * 10) / 10;
   };
   
-  // Clean up scanner when dialog closes
+  // Clean up scanner when dialog closes and increment key to force fresh state on reopen
   useEffect(() => {
     if (!barcodeDialogOpen) {
-      // Full cleanup when dialog closes
       scannerActiveRef.current = false;
       stopCameraStream();
+      // Reset all state immediately
       setScanning(false);
       setScannedProduct(null);
       setLookingUpBarcode(false);
@@ -364,6 +364,22 @@ export default function Pantry() {
       stopCameraStream();
     };
   }, []);
+  
+  // Handler for opening the barcode dialog - ensures fresh state
+  const openBarcodeDialog = () => {
+    // Reset all state BEFORE opening
+    scannerActiveRef.current = false;
+    stopCameraStream();
+    setScanning(false);
+    setScannedProduct(null);
+    setLookingUpBarcode(false);
+    setManualBarcode("");
+    setFillLevel("full");
+    // Increment key to force fresh dialog content
+    setBarcodeDialogKey(prev => prev + 1);
+    // Now open dialog
+    setBarcodeDialogOpen(true);
+  };
   
   // Receipt scanning functions
   const handleReceiptUpload = async (e) => {
