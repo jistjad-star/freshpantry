@@ -27,6 +27,7 @@ const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/add-recipe", icon: PlusCircle, label: "Add Recipe" },
   { path: "/recipes", icon: BookOpen, label: "Recipes" },
+  { path: "/cocktails", icon: GlassWater, label: "Cocktails" },
   { path: "/suggestions", icon: Sparkles, label: "Suggest" },
   { path: "/planner", icon: Calendar, label: "Planner" },
   { path: "/pantry", icon: Package, label: "Pantry" },
