@@ -9,7 +9,7 @@ import time
 import subprocess
 from datetime import datetime, timezone, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://shopguru-4.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://recipe-list.preview.emergentagent.com').rstrip('/')
 
 
 @pytest.fixture(scope="module")
