@@ -707,15 +707,52 @@ export default function Pantry() {
                               <p className="text-sm text-stone-500">{scannedProduct.brand}</p>
                             )}
                             <p className="text-sm text-stone-600 mt-1">
-                              {scannedProduct.quantity} {scannedProduct.unit} • {scannedProduct.category}
+                              Full size: {scannedProduct.quantity} {scannedProduct.unit}
                             </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Fill Level Selector */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-[#1A2E1A]">How full is this item?</Label>
+                        <div className="grid grid-cols-5 gap-2">
+                          {[
+                            { value: "full", label: "Full", icon: "████", percent: "100%" },
+                            { value: "three-quarters", label: "¾", icon: "███░", percent: "75%" },
+                            { value: "half", label: "Half", icon: "██░░", percent: "50%" },
+                            { value: "quarter", label: "¼", icon: "█░░░", percent: "25%" },
+                            { value: "nearly-empty", label: "Low", icon: "░░░░", percent: "10%" },
+                          ].map((level) => (
+                            <button
+                              key={level.value}
+                              onClick={() => setFillLevel(level.value)}
+                              className={`p-2 rounded-lg border-2 text-center transition-all ${
+                                fillLevel === level.value 
+                                  ? 'border-[#4A7C59] bg-[#4A7C59]/10 text-[#4A7C59]' 
+                                  : 'border-stone-200 hover:border-stone-300 text-stone-600'
+                              }`}
+                            >
+                              <div className="text-xs font-mono mb-1">{level.icon}</div>
+                              <div className="text-xs font-medium">{level.label}</div>
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {/* Calculated Quantity Display */}
+                        <div className="bg-stone-50 rounded-lg p-3 mt-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-stone-600">Amount to add:</span>
+                            <span className="text-lg font-semibold text-[#4A7C59]">
+                              {getAdjustedQuantity()} {scannedProduct.unit}
+                            </span>
                           </div>
                         </div>
                       </div>
                       
                       <div className="flex gap-2">
                         <Button 
-                          onClick={() => setScannedProduct(null)}
+                          onClick={() => { setScannedProduct(null); setFillLevel("full"); }}
                           variant="outline"
                           className="flex-1"
                         >
