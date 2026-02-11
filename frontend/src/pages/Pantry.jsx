@@ -111,12 +111,11 @@ export default function Pantry() {
   const [scannedProduct, setScannedProduct] = useState(null);
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
   const [manualBarcode, setManualBarcode] = useState("");
-  const [fillLevel, setFillLevel] = useState("full"); // full, three-quarters, half, quarter, nearly-empty
+  const [fillLevel, setFillLevel] = useState("full");
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const streamRef = useRef(null);
-  const hasDetectedRef = useRef(false); // Prevent multiple detections
-  const lastBarcodeRef = useRef(null); // Track last scanned barcode to prevent duplicates;
+  const scannerActiveRef = useRef(false); // Track if scanner should be active;
   
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
