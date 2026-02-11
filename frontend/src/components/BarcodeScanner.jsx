@@ -157,7 +157,7 @@ export default function BarcodeScanner({ open, onOpenChange, onProductAdded }) {
       const multipliers = { "full": 1.0, "three-quarters": 0.75, "half": 0.5, "quarter": 0.25, "nearly-empty": 0.1 };
       const adjustedQty = Math.round(scannedProduct.quantity * multipliers[fillLevel] * 10) / 10;
       
-      await api.addToPantry({
+      await api.addPantryItem({
         name: scannedProduct.name,
         quantity: adjustedQty,
         unit: scannedProduct.unit,
@@ -168,6 +168,7 @@ export default function BarcodeScanner({ open, onOpenChange, onProductAdded }) {
       onProductAdded?.();
       onOpenChange(false);
     } catch (error) {
+      console.error("Error adding to pantry:", error);
       toast.error("Failed to add product");
     }
   };
