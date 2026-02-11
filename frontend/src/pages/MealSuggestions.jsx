@@ -145,6 +145,57 @@ export default function MealSuggestions() {
     }
   };
 
+  // Cocktail generation functions
+  const generateAICocktail = async () => {
+    setGeneratingCocktail(true);
+    setGeneratedCocktail(null);
+    try {
+      const response = await api.generateAICocktail(cocktailTypeFilter);
+      setGeneratedCocktail(response.data.cocktail);
+      toast.success("Cheers! Cocktail suggestion ready 🍹");
+    } catch (error) {
+      console.error("Error generating cocktail:", error);
+      if (error.response?.data?.detail?.includes("pantry")) {
+        toast.error("Add items to your pantry first!");
+      } else {
+        toast.error("Failed to generate cocktail");
+      }
+    } finally {
+      setGeneratingCocktail(false);
+    }
+  };
+
+  const saveGeneratedCocktail = async () => {
+    if (!generatedCocktail) return;
+    setSavingCocktail(true);
+    try {
+      const recipeData = {
+        name: generatedCocktail.name,
+        description: generatedCocktail.description,
+        servings: 1,
+        prep_time: "5 min",
+        cook_time: "",
+        ingredients: generatedCocktail.ingredients?.map(ing => ({
+          name: ing.name,
+          quantity: String(ing.quantity),
+          unit: ing.unit || "",
+          category: "beverages"
+        })) || [],
+        instructions: generatedCocktail.instructions || [],
+        categories: [],
+        recipe_type: "cocktail",
+        is_alcoholic: generatedCocktail.is_alcoholic
+      };
+      const response = await api.createRecipe(recipeData);
+      toast.success("Cocktail saved to your collection!");
+      navigate(`/recipes/${response.data.id}`);
+    } catch (error) {
+      toast.error("Failed to save cocktail");
+    } finally {
+      setSavingCocktail(false);
+    }
+  };
+
   const getMealIcon = (type) => {
     const meal = MEAL_TYPES.find(m => m.value === type);
     return meal?.icon || UtensilsCrossed;
