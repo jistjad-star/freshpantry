@@ -21,7 +21,6 @@ import {
   FileImage,
   Layers,
   ScanBarcode,
-  ScanLine,
   Filter,
   CheckSquare,
   Square
@@ -47,7 +46,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { BrowserMultiFormatReader } from "@zxing/browser";
+import BarcodeScanner from "@/components/BarcodeScanner";
 
 const CATEGORIES = [
   { value: "produce", label: "Produce", emoji: "🥬" },
