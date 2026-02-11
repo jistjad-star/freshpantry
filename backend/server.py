@@ -859,15 +859,25 @@ async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ing
     try:
         system_message = """You are a helpful assistant that parses recipe ingredients into structured JSON format.
 
-IMPORTANT: Only extract actual ingredients with quantities/measurements. 
-DO NOT include:
-- Cooking instructions or steps
-- Food items mentioned in cooking methods (e.g., "serve with rice" is not an ingredient unless rice is in the ingredients list)
-- Generic terms without quantities (e.g., "salt to taste" is OK, but "golden brown" is not an ingredient)
+CRITICAL: You must ONLY extract items from an INGREDIENTS LIST, NOT from cooking instructions.
+
+HOW TO IDENTIFY INGREDIENTS VS COOKING STEPS:
+- INGREDIENTS have specific measurements: "2 cups flour", "500g chicken", "1 onion, diced"
+- COOKING STEPS describe actions: "add oil to pan", "stir until golden", "drizzle with honey"
+
+DO NOT INCLUDE:
+- Items mentioned in cooking method sentences (e.g., "add a splash of wine" - this is a cooking step)
+- Serving suggestions ("serve with rice" is NOT an ingredient)
+- Vague quantities: "oil for frying", "water as needed", "salt to taste" (SKIP unless in ingredients list)
+- Duplicates - if "olive oil" appears in ingredients list AND cooking steps, only include once from the list
+
+ONLY INCLUDE items that:
+1. Have a specific quantity (number + unit): "2 tbsp olive oil", "400g pasta"
+2. Are in a clear ingredients list format (not embedded in instruction sentences)
 
 For each ingredient, extract:
 - name: the ingredient name (e.g., "chicken breast", "olive oil")
-- quantity: the amount (e.g., "2", "1/2", "to taste"). Must have a quantity or "to taste"
+- quantity: the amount (e.g., "2", "1/2"). Must have a quantity.
 - unit: the unit of measurement (e.g., "lb", "cups", "tbsp", "pieces", "" for items like "1 onion")
 - category: one of: produce, dairy, protein, grains, pantry, spices, frozen, other
 
@@ -877,7 +887,7 @@ Return ONLY a valid JSON array, no markdown or explanation."""
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": f"Parse these ingredients from the recipe '{recipe_name}':\n\n{raw_text}"}
+                {"role": "user", "content": f"Parse ONLY the ingredients list (NOT cooking steps) from this recipe '{recipe_name}':\n\n{raw_text}"}
             ],
             max_tokens=1500
         )
