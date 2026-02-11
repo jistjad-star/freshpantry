@@ -19,7 +19,9 @@ import {
   Camera,
   Upload,
   FileImage,
-  Layers
+  Layers,
+  ScanBarcode,
+  ScanLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +44,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 
 const CATEGORIES = [
   { value: "produce", label: "Produce", emoji: "🥬" },
