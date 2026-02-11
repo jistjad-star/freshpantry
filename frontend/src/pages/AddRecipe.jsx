@@ -361,13 +361,33 @@ export default function AddRecipe() {
                 htmlFor="own-recipe" 
                 className="text-stone-600 text-sm cursor-pointer"
               >
-                This is my own recipe
+                This is my own {recipeType === 'cocktail' ? 'cocktail' : 'recipe'}
               </Label>
             </div>
             
+            {/* Alcoholic Toggle - For Cocktails Only */}
+            {recipeType === 'cocktail' && (
+              <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                <Checkbox
+                  id="is-alcoholic"
+                  checked={isAlcoholic}
+                  onCheckedChange={setIsAlcoholic}
+                  className="border-purple-300 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
+                  data-testid="is-alcoholic-checkbox"
+                />
+                <Label 
+                  htmlFor="is-alcoholic" 
+                  className="text-purple-700 text-sm cursor-pointer flex items-center gap-2"
+                >
+                  <Wine className="w-4 h-4" />
+                  Contains alcohol
+                </Label>
+              </div>
+            )}
+            
             {/* Photo Choice - Always Visible */}
             <div className="mt-4 flex items-center gap-3">
-              <Label className="text-stone-500 text-sm">Recipe Photo:</Label>
+              <Label className="text-stone-500 text-sm">{recipeType === 'cocktail' ? 'Cocktail' : 'Recipe'} Photo:</Label>
               <Select value={imageChoice} onValueChange={(val) => {
                 setImageChoice(val);
                 if (val === 'own') {
