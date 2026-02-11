@@ -89,6 +89,7 @@ export const api = {
   getLowStockItems: () => axios.get(`${API}/pantry/low-stock`),
   addFromShopping: () => axios.post(`${API}/pantry/add-from-shopping`),
   getExpiringItems: (days = 7) => axios.get(`${API}/pantry/expiring-soon`, { params: { days } }),
+  consolidatePantry: () => axios.post(`${API}/pantry/consolidate`),
   
   // Recipe conversion
   makeRecipeVegan: (recipeId) => axios.post(`${API}/recipes/${recipeId}/make-vegan`),
