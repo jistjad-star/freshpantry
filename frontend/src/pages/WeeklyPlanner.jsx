@@ -547,7 +547,7 @@ export default function WeeklyPlanner() {
                             {recipes.length > 0 ? recipes.map((recipe) => (
                               <button
                                 key={recipe.id}
-                                onClick={() => addRecipeToDay(day, recipe.id)}
+                                onClick={() => selectRecipeForDay(day, recipe.id)}
                                 className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors flex items-center gap-3"
                               >
                                 {recipe.image_url ? (
