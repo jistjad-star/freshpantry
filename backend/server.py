@@ -3671,7 +3671,7 @@ IMPORTANT:
 
 @api_router.post("/pantry/add-from-receipt")
 async def add_from_receipt(request: Request):
-    """Add items extracted from a receipt scan to pantry"""
+    """Add items extracted from a receipt scan to pantry with smart consolidation"""
     user_id = await get_user_id_or_none(request)
     body = await request.json()
     items = body.get('items', [])
@@ -3691,31 +3691,96 @@ async def add_from_receipt(request: Request):
     added_count = 0
     updated_count = 0
     
+    def find_matching_pantry_item(new_name: str, pantry_items: list) -> int:
+        """Find a matching pantry item using fuzzy matching"""
+        new_normalized = normalize_ingredient_name(new_name)
+        new_base = get_base_ingredient_name(new_name)
+        new_words = set(new_normalized.split())
+        
+        best_match_idx = None
+        best_match_score = 0
+        
+        for i, pantry_item in enumerate(pantry_items):
+            existing_name = pantry_item['name']
+            existing_normalized = normalize_ingredient_name(existing_name)
+            existing_base = get_base_ingredient_name(existing_name)
+            existing_words = set(existing_normalized.split())
+            
+            score = 0
+            
+            # Exact normalized match
+            if new_normalized == existing_normalized:
+                score = 100
+            # Base name match (e.g., both are "burger")
+            elif new_base == existing_base and len(new_base) > 3:
+                score = 85
+            # One contains the other
+            elif new_normalized in existing_normalized or existing_normalized in new_normalized:
+                score = 80
+            else:
+                # Word overlap matching
+                common_words = new_words & existing_words
+                # Remove common filler words
+                significant_common = {w for w in common_words if len(w) > 3 and w not in ['based', 'style', 'free', 'organic']}
+                
+                if significant_common:
+                    # Score based on overlap ratio
+                    overlap_ratio = len(significant_common) / max(len(new_words), len(existing_words))
+                    score = int(50 + overlap_ratio * 40)
+            
+            if score > best_match_score and score >= 70:  # Require at least 70% confidence
+                best_match_score = score
+                best_match_idx = i
+        
+        return best_match_idx
+    
     for item in items:
         qty = float(item.get('quantity', 1))
         name = item.get('name', '').strip()
+        unit = item.get('unit', '').strip()
         
         if not name:
             continue
         
-        # Check if item exists in pantry (case-insensitive)
-        existing_idx = None
-        for i, pantry_item in enumerate(pantry['items']):
-            if pantry_item['name'].lower() == name.lower():
-                existing_idx = i
-                break
+        # Find matching item using fuzzy matching
+        existing_idx = find_matching_pantry_item(name, pantry['items'])
         
         if existing_idx is not None:
             # Update existing item
-            pantry['items'][existing_idx]['quantity'] += qty
+            existing_item = pantry['items'][existing_idx]
+            existing_unit = existing_item.get('unit', '').lower()
+            new_unit = unit.lower()
+            
+            # Convert to same units if possible before adding
+            if existing_unit == new_unit or not existing_unit or not new_unit:
+                pantry['items'][existing_idx]['quantity'] += qty
+            else:
+                # Try to convert units
+                new_base_qty, new_base_unit = convert_to_base_unit(name, qty, unit)
+                existing_base_qty, existing_base_unit = convert_to_base_unit(
+                    existing_item['name'], 
+                    existing_item['quantity'], 
+                    existing_unit
+                )
+                
+                if new_base_unit == existing_base_unit:
+                    # Convert back to original unit
+                    total_base = existing_base_qty + new_base_qty
+                    pantry['items'][existing_idx]['quantity'] = total_base
+                    pantry['items'][existing_idx]['unit'] = new_base_unit
+                else:
+                    # Units incompatible, just add the quantity
+                    pantry['items'][existing_idx]['quantity'] += qty
+            
             pantry['items'][existing_idx]['last_updated'] = datetime.now(timezone.utc).isoformat()
             updated_count += 1
+            logger.info(f"Consolidated '{name}' with existing '{existing_item['name']}'")
         else:
             # Add new item
             new_item = PantryItem(
                 name=name,
                 quantity=qty,
-                unit=item.get('unit', ''),
+                unit=unit,
                 category=item.get('category', 'other'),
                 typical_purchase=qty
             ).model_dump()
