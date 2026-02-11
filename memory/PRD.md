@@ -12,7 +12,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] AI instruction extraction from screenshots
 - [x] **Separate ingredient/instruction inputs** - Paste method has two text areas to prevent mixing
 - [x] Recipe editing after creation
-- [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy)
+- [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy, Can be Vegan)
+- [x] **Make Vegan conversion** - AI button converts any recipe to vegan with plant-based substitutes
+- [x] **Make Vegetarian conversion** - AI button converts meat/fish recipes to vegetarian
 - [x] **Meal type filters** - Breakfast, Lunch, Dinner, Snack filters in recipe library
 - [x] **Source filter** - Filter recipes by source (Own Recipe, Green Chef, Gousto, etc.)
 - [x] Manual category editing
