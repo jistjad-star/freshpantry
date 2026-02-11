@@ -56,6 +56,12 @@ export default function MealSuggestions() {
   const [generatingRecipe, setGeneratingRecipe] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [savingRecipe, setSavingRecipe] = useState(false);
+  
+  // AI Cocktail State
+  const [generatingCocktail, setGeneratingCocktail] = useState(false);
+  const [generatedCocktail, setGeneratedCocktail] = useState(null);
+  const [savingCocktail, setSavingCocktail] = useState(false);
+  const [cocktailTypeFilter, setCocktailTypeFilter] = useState(null); // null = any, true = alcoholic, false = non-alcoholic
 
   const fetchSuggestions = async (mealType = "all", expiringSoon = false) => {
     setLoading(true);
