@@ -115,7 +115,8 @@ export default function Pantry() {
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const streamRef = useRef(null);
-  const hasDetectedRef = useRef(false); // Prevent multiple detections;
+  const hasDetectedRef = useRef(false); // Prevent multiple detections
+  const lastBarcodeRef = useRef(null); // Track last scanned barcode to prevent duplicates;
   
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
