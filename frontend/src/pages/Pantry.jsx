@@ -776,22 +776,22 @@ export default function Pantry() {
                   
                   {/* Start Scanner Button */}
                   {!scanning && !scannedProduct && (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <Button 
                         onClick={startBarcodeScanner}
-                        className="w-full btn-primary"
+                        className="w-full btn-primary h-9"
                         disabled={lookingUpBarcode}
                       >
                         <Camera className="w-4 h-4 mr-2" />
-                        Start Camera Scanner
+                        Start Camera
                       </Button>
                       
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t border-stone-200" />
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-white px-2 text-stone-500">or enter manually</span>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="bg-white px-2 text-stone-400">or enter manually</span>
                         </div>
                       </div>
                       
@@ -799,14 +799,15 @@ export default function Pantry() {
                         <Input
                           value={manualBarcode}
                           onChange={(e) => setManualBarcode(e.target.value)}
-                          placeholder="Enter barcode number..."
-                          className="flex-1"
+                          placeholder="Barcode number..."
+                          className="flex-1 h-9 text-sm"
                           onKeyDown={(e) => e.key === 'Enter' && handleManualBarcodeSubmit()}
                         />
                         <Button 
                           onClick={handleManualBarcodeSubmit}
                           disabled={!manualBarcode.trim() || lookingUpBarcode}
                           variant="outline"
+                          className="h-9 px-3"
                         >
                           {lookingUpBarcode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Look Up"}
                         </Button>
@@ -816,17 +817,17 @@ export default function Pantry() {
                   
                   {/* Loading State */}
                   {lookingUpBarcode && (
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <Loader2 className="w-8 h-8 animate-spin text-[#4A7C59] mb-3" />
-                      <p className="text-stone-500">Looking up product...</p>
+                    <div className="flex flex-col items-center justify-center py-6">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#4A7C59] mb-2" />
+                      <p className="text-stone-500 text-sm">Looking up product...</p>
                     </div>
                   )}
                   
                   {/* Scanned Product Result */}
                   {scannedProduct && !lookingUpBarcode && (
-                    <div className="space-y-4">
-                      <div className="bg-[#4A7C59]/10 rounded-lg p-4">
-                        <div className="flex gap-4">
+                    <div className="space-y-3">
+                      <div className="bg-[#4A7C59]/10 rounded-lg p-3">
+                        <div className="flex gap-3">
                           {scannedProduct.image_url && (
                             <img 
                               src={scannedProduct.image_url} 
