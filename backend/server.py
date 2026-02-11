@@ -4681,17 +4681,15 @@ If absolutely necessary, you can include 1-2 common staples like salt, pepper, o
 # ============== AI COCKTAIL GENERATION ==============
 
 class GenerateCocktailRequest(BaseModel):
-    alcoholic: Optional[bool] = None  # None = any, True = alcoholic, False = non-alcoholic
+    alcoholic: Optional[bool] = None
 
 @api_router.post("/suggestions/generate-cocktail")
-async def generate_ai_cocktail_from_pantry(request: Request, data: Optional[GenerateCocktailRequest] = None):
+async def generate_ai_cocktail_from_pantry(request: Request, data: GenerateCocktailRequest = None):
     """Generate an AI cocktail suggestion based on pantry ingredients"""
     user_id = await get_user_id_or_none(request)
     
     # Handle the alcoholic preference from request body
-    alcoholic_preference = None
-    if data is not None:
-        alcoholic_preference = data.alcoholic
+    alcoholic_preference = data.alcoholic if data else None
     
     logger.info(f"Generating cocktail for user {user_id}, alcoholic preference: {alcoholic_preference}")
     
