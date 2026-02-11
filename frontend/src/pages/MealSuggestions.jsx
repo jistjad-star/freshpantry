@@ -86,12 +86,20 @@ export default function MealSuggestions() {
     setGeneratingRecipe(true);
     setGeneratedRecipe(null);
     try {
-      const response = await api.generateAIRecipe(mealTypeFilter !== "all" ? mealTypeFilter : getMealTypeByTime());
+      const response = await api.generateAIRecipe(
+        mealTypeFilter !== "all" ? mealTypeFilter : getMealTypeByTime(),
+        expiringSoonFilter  // Pass the expiring filter
+      );
       setGeneratedRecipe(response.data.recipe);
+      if (expiringSoonFilter && response.data.recipe) {
+        toast.success("Recipe created using your expiring ingredients!");
+      }
     } catch (error) {
       console.error("Error generating recipe:", error);
       if (error.response?.data?.detail?.includes("pantry")) {
         toast.error("Add items to your pantry first!");
+      } else if (error.response?.data?.detail?.includes("expiring")) {
+        toast.info("No ingredients expiring soon - your pantry is fresh!");
       }
     } finally {
       setGeneratingRecipe(false);
