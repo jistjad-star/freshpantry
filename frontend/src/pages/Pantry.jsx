@@ -346,10 +346,19 @@ export default function Pantry() {
   // Clean up scanner when dialog closes
   useEffect(() => {
     if (!barcodeDialogOpen) {
-      stopBarcodeScanner();
+      forceStopScanner();
       setScannedProduct(null);
+      setManualBarcode("");
+      hasDetectedRef.current = false;
     }
   }, [barcodeDialogOpen]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      forceStopScanner();
+    };
+  }, []);
   
   // Receipt scanning functions
   const handleReceiptUpload = async (e) => {
