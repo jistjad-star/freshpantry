@@ -4725,7 +4725,7 @@ Return ONLY valid JSON, no markdown."""
 
 Suggest a creative {'' if alcoholic_preference is None else ('alcoholic ' if alcoholic_preference else 'non-alcoholic ')}drink I can make!"""
         
-        response = openai_client.chat.completions.create(
+        response = await openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_msg},
