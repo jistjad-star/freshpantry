@@ -3141,6 +3141,108 @@ async def consolidate_pantry(request: Request):
         "merged": merged_count
     }
 
+@api_router.get("/pantry/barcode/{barcode}")
+async def lookup_barcode(barcode: str):
+    """Look up a product by barcode using Open Food Facts API"""
+    import aiohttp
+    
+    # Clean barcode - remove any non-numeric characters
+    barcode = ''.join(filter(str.isdigit, barcode))
+    
+    if not barcode or len(barcode) < 8:
+        raise HTTPException(status_code=400, detail="Invalid barcode")
+    
+    try:
+        # Query Open Food Facts API
+        url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=10) as response:
+                if response.status != 200:
+                    raise HTTPException(status_code=404, detail="Product not found")
+                
+                data = await response.json()
+        
+        if data.get('status') != 1:
+            raise HTTPException(status_code=404, detail="Product not found in database")
+        
+        product = data.get('product', {})
+        
+        # Extract product information
+        product_name = product.get('product_name', '') or product.get('product_name_en', '') or product.get('generic_name', '')
+        
+        # Try to get a cleaner name
+        if not product_name:
+            brands = product.get('brands', '')
+            generic = product.get('generic_name', '')
+            product_name = f"{brands} {generic}".strip() if brands or generic else "Unknown Product"
+        
+        # Determine category
+        categories = product.get('categories', '').lower()
+        category = 'other'
+        if any(x in categories for x in ['fruit', 'vegetable', 'produce', 'salad']):
+            category = 'produce'
+        elif any(x in categories for x in ['milk', 'cheese', 'yogurt', 'dairy', 'cream', 'butter']):
+            category = 'dairy'
+        elif any(x in categories for x in ['meat', 'chicken', 'beef', 'pork', 'fish', 'seafood', 'egg', 'protein']):
+            category = 'protein'
+        elif any(x in categories for x in ['bread', 'pasta', 'rice', 'cereal', 'grain', 'flour']):
+            category = 'grains'
+        elif any(x in categories for x in ['spice', 'herb', 'seasoning', 'sauce']):
+            category = 'spices'
+        elif any(x in categories for x in ['frozen']):
+            category = 'frozen'
+        elif any(x in categories for x in ['canned', 'preserved', 'oil', 'condiment']):
+            category = 'pantry'
+        
+        # Get quantity/size
+        quantity_str = product.get('quantity', '')
+        serving_size = product.get('serving_size', '')
+        
+        # Parse quantity
+        quantity = 1
+        unit = 'pieces'
+        
+        if quantity_str:
+            # Try to extract number and unit from quantity string like "500g" or "1L"
+            import re
+            match = re.search(r'(\d+(?:\.\d+)?)\s*(g|kg|ml|l|cl|oz|lb)(?:\b|$)', quantity_str.lower())
+            if match:
+                quantity = float(match.group(1))
+                unit = match.group(2)
+                # Normalize units
+                if unit == 'cl':
+                    quantity *= 10
+                    unit = 'ml'
+                elif unit == 'oz':
+                    quantity *= 28.35
+                    unit = 'g'
+                elif unit == 'lb':
+                    quantity *= 453.6
+                    unit = 'g'
+        
+        # Get image
+        image_url = product.get('image_front_small_url', '') or product.get('image_url', '')
+        
+        return {
+            "found": True,
+            "barcode": barcode,
+            "name": product_name.strip().title(),
+            "brand": product.get('brands', ''),
+            "quantity": quantity,
+            "unit": unit,
+            "category": category,
+            "image_url": image_url,
+            "raw_quantity": quantity_str
+        }
+        
+    except aiohttp.ClientError as e:
+        logger.error(f"Error querying Open Food Facts: {e}")
+        raise HTTPException(status_code=503, detail="Could not reach product database")
+    except Exception as e:
+        logger.error(f"Error looking up barcode: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/pantry/items")
 async def add_pantry_item(item_data: PantryItemCreate, request: Request):
     """Add a new item to the pantry"""
