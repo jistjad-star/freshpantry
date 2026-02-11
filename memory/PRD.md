@@ -112,6 +112,7 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 ## API Endpoints
 - GET /api/cocktails - Get all cocktail recipes with optional ?alcoholic=true/false filter (NEW)
 - POST /api/shopping-list/add-items - Add multiple items to shopping list (NEW)
+- POST /api/suggestions/generate-cocktail - AI-generate cocktail suggestion from pantry (NEW)
 - PUT /api/recipes/{id} - Update recipe
 - POST /api/recipes/export - Export selected recipes
 - POST /api/recipes/import-batch - Import recipes from JSON
