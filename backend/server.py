@@ -3246,8 +3246,18 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
     content_type = file.content_type or ""
     filename = file.filename or ""
     
+    logger.info(f"Receipt scan - file: name={filename}, content_type={content_type}, size={len(contents)} bytes")
+    
+    # Check if it's a PDF by magic bytes (PDF files start with %PDF)
+    is_pdf = (
+        content_type == "application/pdf" or 
+        filename.lower().endswith('.pdf') or
+        contents[:4] == b'%PDF'
+    )
+    
     # Handle PDF by converting to image
-    if content_type == "application/pdf" or filename.lower().endswith('.pdf'):
+    if is_pdf:
+        logger.info("Detected PDF receipt, converting to image...")
         try:
             import fitz  # PyMuPDF
             
@@ -3256,6 +3266,8 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
             
             if pdf_document.page_count == 0:
                 raise HTTPException(status_code=400, detail="PDF has no pages")
+            
+            logger.info(f"Receipt PDF has {pdf_document.page_count} pages")
             
             # Get first page
             page = pdf_document[0]
@@ -3271,14 +3283,14 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
             image_media_type = "image/png"
             
             pdf_document.close()
-            logger.info("Successfully converted PDF to image for scanning")
+            logger.info(f"Successfully converted receipt PDF to image, base64 length: {len(image_base64)}")
             
-        except ImportError:
-            logger.error("PyMuPDF not installed - cannot process PDFs")
+        except ImportError as e:
+            logger.error(f"PyMuPDF not installed: {e}")
             raise HTTPException(status_code=400, detail="PDF processing not available. Please upload a screenshot or photo instead.")
         except Exception as e:
-            logger.error(f"Error converting PDF: {e}")
-            raise HTTPException(status_code=400, detail="Could not process PDF. Please take a screenshot of the receipt instead.")
+            logger.error(f"Error converting PDF: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"Could not process PDF: {str(e)}. Please take a screenshot of the receipt instead.")
     else:
         # For images (JPEG, PNG, etc.)
         image_base64 = base64.b64encode(contents).decode('utf-8')
@@ -3291,6 +3303,7 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
             image_media_type = "image/webp"
         else:
             image_media_type = "image/jpeg"
+        logger.info(f"Processing receipt as image, media_type={image_media_type}")
     
     try:
         system_message = """You are a helpful assistant that extracts grocery items from supermarket receipts.
