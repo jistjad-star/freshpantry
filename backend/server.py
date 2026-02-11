@@ -2386,7 +2386,19 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
     suggestions = await suggest_meals_with_shared_ingredients(pantry_items, recipes, expiring_soon)
     
     meal_label = f"{meal_type} " if meal_type else ""
-    expiry_label = " using expiring items" if expiring_soon else ""
+    expiry_label = ""
+    
+    if expiring_soon and expiring_item_names:
+        # Filter to show only suggestions that actually use expiring items, but still show some if none match
+        suggestions_with_expiring = [s for s in suggestions if s.get('expiring_ingredients_used', 0) > 0]
+        
+        if suggestions_with_expiring:
+            suggestions = suggestions_with_expiring
+            expiry_label = f" using expiring: {', '.join(expiring_item_names[:3])}"
+        else:
+            # No recipes directly use the expiring ingredients
+            expiry_label = f" (Note: No recipes found using your expiring items: {', '.join(expiring_item_names[:3])}. Try the AI generator!)"
+    
     return {"suggestions": suggestions, "message": f"Found {len(suggestions)} {meal_label}recipes{expiry_label}!"}
 
 @api_router.get("/recipes/grouped")
