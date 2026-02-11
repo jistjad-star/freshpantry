@@ -882,9 +882,9 @@ export default function Pantry() {
                           onClick={() => { 
                             setScannedProduct(null); 
                             setFillLevel("full");
-                            hasDetectedRef.current = false;
-                            lastBarcodeRef.current = null; // Clear last barcode
-                            setTimeout(() => startBarcodeScanner(), 100);
+                            setLookingUpBarcode(false);
+                            // Start scanner after a brief delay
+                            setTimeout(() => startBarcodeScanner(), 150);
                           }}
                           variant="outline"
                           className="flex-1 h-9 text-sm"
