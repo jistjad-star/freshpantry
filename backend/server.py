@@ -1330,19 +1330,66 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
     if not recipes:
         return []
     
-    # Build pantry ingredient set for matching
+    # Build pantry ingredient set with multiple matching keys for each item
     pantry_ingredient_names = set()
+    pantry_items_lookup = {}  # Store original names for better matching
     expiring_ingredients = set()
     
     for item in pantry_items:
-        normalized = normalize_ingredient_name(item.get('name', ''))
+        name = item.get('name', '')
+        normalized = normalize_ingredient_name(name)
+        base_name = get_base_ingredient_name(name)
+        
         if normalized:
             pantry_ingredient_names.add(normalized)
+            pantry_items_lookup[normalized] = name
+            
+            # Also add the base name for fuzzy matching
+            if base_name and base_name != normalized:
+                pantry_ingredient_names.add(base_name)
+                pantry_items_lookup[base_name] = name
+            
+            # Add individual significant words (e.g., "chicken" from "chicken breast fillets")
+            words = normalized.split()
+            for word in words:
+                if len(word) > 3 and word not in ['with', 'from', 'free', 'range', 'fresh', 'large', 'small', 'medium']:
+                    pantry_ingredient_names.add(word)
+                    pantry_items_lookup[word] = name
+            
             # Track expiring items
             if item.get('days_until_expiry') is not None and item['days_until_expiry'] <= 7:
                 expiring_ingredients.add(normalized)
+                if base_name:
+                    expiring_ingredients.add(base_name)
     
-    # Build recipe -> ingredients mapping
+    def ingredient_matches_pantry(recipe_ing_name: str) -> tuple[bool, str]:
+        """Check if a recipe ingredient matches something in pantry"""
+        normalized = normalize_ingredient_name(recipe_ing_name)
+        base_name = get_base_ingredient_name(recipe_ing_name)
+        
+        # Direct match
+        if normalized in pantry_ingredient_names:
+            return True, normalized
+        
+        # Base name match
+        if base_name in pantry_ingredient_names:
+            return True, base_name
+        
+        # Word-level match (e.g., recipe "chicken breast" matches pantry "chicken")
+        recipe_words = set(normalized.split())
+        for word in recipe_words:
+            if len(word) > 3 and word in pantry_ingredient_names:
+                return True, word
+        
+        # Check if any pantry item contains the recipe ingredient or vice versa
+        for pantry_name in pantry_ingredient_names:
+            if len(pantry_name) > 3 and len(normalized) > 3:
+                if pantry_name in normalized or normalized in pantry_name:
+                    return True, pantry_name
+        
+        return False, None
+    
+    # Build recipe -> ingredients mapping with fuzzy matching
     recipe_ingredients = {}
     all_ingredients = {}  # ingredient -> list of recipe ids
     
@@ -1350,12 +1397,21 @@ async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipe
         recipe_id = recipe.get('id')
         recipe_ings = set()
         for ing in recipe.get('ingredients', []):
-            normalized = normalize_ingredient_name(ing.get('name', ''))
+            ing_name = ing.get('name', '')
+            normalized = normalize_ingredient_name(ing_name)
+            base_name = get_base_ingredient_name(ing_name)
+            
             if normalized:
                 recipe_ings.add(normalized)
+                # Also track by base name for better cross-recipe matching
+                if base_name and base_name != normalized:
+                    recipe_ings.add(base_name)
+                
+                # Track for shared ingredient calculation
                 if normalized not in all_ingredients:
                     all_ingredients[normalized] = []
                 all_ingredients[normalized].append(recipe_id)
+                
         recipe_ingredients[recipe_id] = recipe_ings
     
     # Find shared ingredients (appear in 2+ recipes)
