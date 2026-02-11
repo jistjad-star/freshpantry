@@ -544,11 +544,14 @@ export default function Pantry() {
               Scan Barcode
             </Button>
             
-            <BarcodeScanner 
-              open={barcodeDialogOpen} 
-              onOpenChange={setBarcodeDialogOpen}
-              onProductAdded={fetchPantry}
-            />
+            {/* Only render when open - forces fresh mount each time */}
+            {barcodeDialogOpen && (
+              <BarcodeScanner 
+                open={barcodeDialogOpen} 
+                onOpenChange={setBarcodeDialogOpen}
+                onProductAdded={fetchPantry}
+              />
+            )}
             
             {/* Receipt Scan Dialog */}
             <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
