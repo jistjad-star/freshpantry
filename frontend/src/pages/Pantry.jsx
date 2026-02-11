@@ -368,10 +368,7 @@ export default function Pantry() {
   // Clean up scanner when dialog closes
   useEffect(() => {
     if (!barcodeDialogOpen) {
-      forceStopScanner();
-      setScannedProduct(null);
-      setManualBarcode("");
-      hasDetectedRef.current = false;
+      resetBarcodeScanner();
     }
   }, [barcodeDialogOpen]);
   
