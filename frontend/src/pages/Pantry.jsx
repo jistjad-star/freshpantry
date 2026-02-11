@@ -137,6 +137,24 @@ export default function Pantry() {
     }
   };
   
+  const handleConsolidate = async () => {
+    setConsolidating(true);
+    try {
+      const response = await api.consolidatePantry();
+      if (response.data.merged > 0) {
+        toast.success(`Merged ${response.data.merged} duplicate items!`);
+        fetchPantry();
+      } else {
+        toast.info("No duplicates found to merge");
+      }
+    } catch (error) {
+      console.error("Error consolidating pantry:", error);
+      toast.error("Failed to consolidate pantry");
+    } finally {
+      setConsolidating(false);
+    }
+  };
+  
   // Receipt scanning functions
   const handleReceiptUpload = async (e) => {
     const file = e.target.files?.[0];
