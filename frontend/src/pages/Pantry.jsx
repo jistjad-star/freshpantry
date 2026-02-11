@@ -181,24 +181,29 @@ export default function Pantry() {
   
   // Barcode scanner functions
   const startBarcodeScanner = async () => {
-    setScanning(true);
+    // Ensure clean state before starting
     setScannedProduct(null);
-    hasDetectedRef.current = false;
+    setLookingUpBarcode(false);
+    scannerActiveRef.current = true;
+    setScanning(true);
     
     try {
-      // First, explicitly request camera permission
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment',  // Prefer back camera
+          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
         } 
       });
       
-      // Store stream reference for cleanup
+      // Check if we should still be scanning (dialog might have closed)
+      if (!scannerActiveRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      
       streamRef.current = stream;
       
-      // Attach stream to video element
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
@@ -207,90 +212,66 @@ export default function Pantry() {
       const codeReader = new BrowserMultiFormatReader();
       codeReaderRef.current = codeReader;
       
-      // Start continuous scanning from the video stream
       codeReader.decodeFromVideoElement(
         videoRef.current,
         (result, error) => {
-          // Prevent multiple detections
-          if (result && !hasDetectedRef.current) {
-            hasDetectedRef.current = true;
+          // Only process if scanner is still active and we got a result
+          if (result && scannerActiveRef.current) {
             const barcode = result.getText();
             console.log("Barcode detected:", barcode);
             
-            // Stop scanner first, then lookup
-            forceStopScanner();
+            // Immediately disable further detections
+            scannerActiveRef.current = false;
+            
+            // Stop scanner and lookup
+            stopCameraStream();
+            setScanning(false);
             lookupBarcode(barcode);
           }
         }
       );
     } catch (error) {
       console.error("Error starting scanner:", error);
+      scannerActiveRef.current = false;
+      setScanning(false);
+      
       if (error.name === 'NotAllowedError') {
         toast.error("Camera access denied. Please allow camera permissions.");
       } else if (error.name === 'NotFoundError') {
         toast.error("No camera found on this device.");
-      } else if (error.name === 'NotSupportedError' || error.name === 'SecurityError') {
-        toast.error("Camera not supported. Please use HTTPS.");
       } else {
         toast.error("Could not access camera. Please check permissions.");
       }
-      setScanning(false);
     }
   };
   
-  // Force stop - used internally after detection
-  const forceStopScanner = () => {
-    // Stop the code reader first
+  // Just stop the camera stream without resetting other state
+  const stopCameraStream = () => {
     if (codeReaderRef.current) {
       try {
         codeReaderRef.current.reset();
-      } catch (e) {
-        console.log("Error resetting code reader:", e);
-      }
+      } catch (e) {}
       codeReaderRef.current = null;
     }
     
-    // Stop all tracks in the stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
+      streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
     
-    // Clear video element
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    
+  };
+  
+  // User clicks stop button
+  const stopBarcodeScanner = () => {
+    scannerActiveRef.current = false;
+    stopCameraStream();
     setScanning(false);
   };
   
-  // User-triggered stop (button click)
-  const stopBarcodeScanner = () => {
-    hasDetectedRef.current = true; // Prevent any pending detections
-    forceStopScanner();
-  };
-  
-  // Reset all barcode scanner state
-  const resetBarcodeScanner = () => {
-    setScannedProduct(null);
-    setFillLevel("full");
-    setManualBarcode("");
-    setLookingUpBarcode(false);
-    hasDetectedRef.current = false;
-    lastBarcodeRef.current = null;
-    forceStopScanner();
-  };
-  
   const lookupBarcode = async (barcode) => {
-    // Prevent duplicate lookups of the same barcode
-    if (lastBarcodeRef.current === barcode) {
-      console.log("Skipping duplicate barcode lookup:", barcode);
-      return;
-    }
-    lastBarcodeRef.current = barcode;
-    
     setLookingUpBarcode(true);
     try {
       const response = await api.lookupBarcode(barcode);
@@ -299,12 +280,9 @@ export default function Pantry() {
     } catch (error) {
       console.error("Error looking up barcode:", error);
       if (error.response?.status === 404) {
-        toast.error("Product not found in database. Try adding manually.");
-        // Reset so user can scan again
-        lastBarcodeRef.current = null;
+        toast.error("Product not found. Try manual entry.");
       } else {
         toast.error("Could not look up product");
-        lastBarcodeRef.current = null;
       }
     } finally {
       setLookingUpBarcode(false);
