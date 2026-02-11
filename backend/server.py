@@ -3204,14 +3204,16 @@ async def lookup_barcode(barcode: str):
         unit = 'pieces'
         
         if quantity_str:
-            # Try to extract number and unit from quantity string like "500g" or "1L"
+            # Try to extract number and unit from quantity string like "500g", "1L", "400gr"
             import re
-            match = re.search(r'(\d+(?:\.\d+)?)\s*(g|kg|ml|l|cl|oz|lb)(?:\b|$)', quantity_str.lower())
+            match = re.search(r'(\d+(?:\.\d+)?)\s*(gr|g|kg|ml|l|cl|oz|lb)(?:\b|$)', quantity_str.lower())
             if match:
                 quantity = float(match.group(1))
                 unit = match.group(2)
                 # Normalize units
-                if unit == 'cl':
+                if unit == 'gr':
+                    unit = 'g'
+                elif unit == 'cl':
                     quantity *= 10
                     unit = 'ml'
                 elif unit == 'oz':
