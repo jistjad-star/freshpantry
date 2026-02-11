@@ -26,6 +26,9 @@ export const api = {
   exportRecipes: (recipeIds) => axios.post(`${API}/recipes/export`, { recipe_ids: recipeIds }),
   importRecipes: (recipes) => axios.post(`${API}/recipes/import-batch`, { recipes }),
   
+  // Cocktails
+  getCocktails: (alcoholic = null) => axios.get(`${API}/cocktails`, { params: alcoholic !== null ? { alcoholic } : {} }),
+  
   // Share Links
   createShareLink: (recipeIds) => axios.post(`${API}/recipes/share`, { recipe_ids: recipeIds }),
   getSharedRecipes: (shareId) => axios.get(`${API}/recipes/shared/${shareId}`),
