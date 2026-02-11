@@ -524,7 +524,7 @@ export default function WeeklyPlanner() {
                                     {group.recipes.map((recipe) => (
                                       <button
                                         key={recipe.id}
-                                        onClick={() => addRecipeToDay(day, recipe.id)}
+                                        onClick={() => selectRecipeForDay(day, recipe.id)}
                                         className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-[#4A7C59]/10 transition-colors text-sm text-[#1A2E1A]"
                                       >
                                         {recipe.name}
