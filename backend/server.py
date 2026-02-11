@@ -4652,6 +4652,116 @@ If absolutely necessary, you can include 1-2 common staples like salt, pepper, o
         logger.error(f"Error generating recipe: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate recipe")
 
+# ============== AI COCKTAIL GENERATION ==============
+
+class GenerateCocktailRequest(BaseModel):
+    alcoholic: Optional[bool] = None  # None = any, True = alcoholic, False = non-alcoholic
+
+@api_router.post("/suggestions/generate-cocktail")
+async def generate_ai_cocktail_from_pantry(request: Request, data: GenerateCocktailRequest = None):
+    """Generate an AI cocktail suggestion based on pantry ingredients"""
+    user_id = await get_user_id_or_none(request)
+    alcoholic_preference = data.alcoholic if data else None
+    
+    # Get pantry
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    pantry = await db.pantry.find_one(query, {"_id": 0})
+    
+    if not pantry or not pantry.get('items'):
+        raise HTTPException(status_code=400, detail="Add items to your pantry first")
+    
+    if not openai_client:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    
+    # Build ingredient list from pantry
+    pantry_items = []
+    for item in pantry['items']:
+        name = item.get('name', '')
+        quantity = item.get('quantity', '')
+        unit = item.get('unit', '')
+        pantry_items.append(f"{name}: {quantity} {unit}".strip())
+    
+    pantry_list = "\n".join(pantry_items)
+    
+    # Determine drink type preference
+    drink_type_context = ""
+    if alcoholic_preference is True:
+        drink_type_context = "Create an ALCOHOLIC cocktail. Focus on spirits, liqueurs, and classic cocktail ingredients."
+    elif alcoholic_preference is False:
+        drink_type_context = "Create a NON-ALCOHOLIC mocktail/drink. Focus on juices, sodas, syrups, and fresh ingredients."
+    else:
+        drink_type_context = "Create either an alcoholic cocktail or a non-alcoholic mocktail based on what ingredients are available."
+    
+    try:
+        system_msg = f"""You are a creative bartender who makes delicious drinks from available ingredients.
+{drink_type_context}
+
+Look at the pantry items and suggest a cocktail/drink that can be made with mostly what's available.
+Be creative! Consider:
+- Spirits (vodka, gin, rum, whiskey, tequila, etc.)
+- Mixers (juices, sodas, tonic, syrups)
+- Fresh ingredients (fruits, herbs, citrus)
+- Garnishes
+
+Return as JSON with format:
+{{
+    "name": "Cocktail Name",
+    "description": "Brief enticing description of the drink",
+    "is_alcoholic": true/false,
+    "ingredients": [
+        {{"name": "ingredient", "quantity": "2", "unit": "oz", "from_pantry": true}}
+    ],
+    "instructions": ["Step 1: ...", "Step 2: ...", ...],
+    "missing_ingredients": ["any item not in pantry but essential"],
+    "glass_type": "Cocktail glass / Highball / etc.",
+    "garnish": "Lime wheel / Mint sprig / etc.",
+    "flavor_profile": ["sweet", "citrus", "refreshing"]
+}}
+
+Return ONLY valid JSON, no markdown."""
+        
+        user_msg = f"""Here's what's in my pantry:
+{pantry_list}
+
+Suggest a creative {'' if alcoholic_preference is None else ('alcoholic ' if alcoholic_preference else 'non-alcoholic ')}drink I can make!"""
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg}
+            ],
+            temperature=0.9,  # Higher creativity for cocktails
+            max_tokens=1500
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        # Parse JSON response
+        clean_response = ai_response.strip()
+        if clean_response.startswith("```"):
+            clean_response = clean_response.split("```")[1]
+            if clean_response.startswith("json"):
+                clean_response = clean_response[4:]
+        
+        try:
+            cocktail_data = json.loads(clean_response)
+        except json.JSONDecodeError:
+            start = clean_response.find("{")
+            end = clean_response.rfind("}") + 1
+            if start >= 0 and end > start:
+                cocktail_data = json.loads(clean_response[start:end])
+            else:
+                raise HTTPException(status_code=500, detail="Failed to parse AI response")
+        
+        return {
+            "cocktail": cocktail_data,
+            "message": "Cocktail suggestion generated from your pantry!"
+        }
+    except Exception as e:
+        logger.error(f"Error generating cocktail: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate cocktail suggestion")
+
 # ============== SHOPPING LIST COST ESTIMATION ==============
 
 # UK supermarket average prices (£ per standard unit) with loyalty card prices
