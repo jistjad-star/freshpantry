@@ -1446,14 +1446,106 @@ def normalize_ingredient_name(name: str) -> str:
     # Remove common variations and plurals
     name = name.lower().strip()
     # Remove common prefixes/suffixes
-    for word in ['fresh ', 'dried ', 'chopped ', 'diced ', 'minced ', 'sliced ', 'whole ', 'ground ']:
+    for word in ['fresh ', 'dried ', 'chopped ', 'diced ', 'minced ', 'sliced ', 'whole ', 'ground ', 'jar of ', 'can of ', 'tin of ', 'bottle of ', 'pack of ', 'packet of ', 'bag of ']:
         name = name.replace(word, '')
     # Simple plural handling
-    if name.endswith('es') and len(name) > 3:
+    if name.endswith('ies'):
+        name = name[:-3] + 'y'  # berries -> berry
+    elif name.endswith('es') and len(name) > 3:
         name = name[:-2]
-    elif name.endswith('s') and len(name) > 2:
+    elif name.endswith('s') and len(name) > 2 and not name.endswith('ss'):
         name = name[:-1]
     return name.strip()
+
+# Ingredient equivalence mapping for smart consolidation
+INGREDIENT_EQUIVALENTS = {
+    # Garlic conversions (1 clove ≈ 1/2 tsp minced ≈ 1/4 tsp powder)
+    'garlic': {'base_unit': 'clove', 'conversions': {
+        'clove': 1, 'cloves': 1, 'tsp': 2, 'teaspoon': 2, 'tbsp': 6, 'tablespoon': 6,
+        'jar': 30, 'g': 0.2, 'gram': 0.2
+    }},
+    'mushroom': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'pieces': 25, 'piece': 25, 'each': 25, '': 25  # 1 mushroom ≈ 25g
+    }},
+    'onion': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'pieces': 150, 'piece': 150, 'each': 150, '': 150, 'medium': 150, 'large': 200, 'small': 100
+    }},
+    'tomato': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'pieces': 120, 'piece': 120, 'each': 120, '': 120
+    }},
+    'carrot': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'pieces': 60, 'piece': 60, 'each': 60, '': 60
+    }},
+    'potato': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'pieces': 170, 'piece': 170, 'each': 170, '': 170, 'medium': 170, 'large': 250, 'small': 100
+    }},
+    'egg': {'base_unit': 'pieces', 'conversions': {
+        'pieces': 1, 'piece': 1, 'each': 1, '': 1, 'large': 1, 'medium': 1
+    }},
+    'lemon': {'base_unit': 'pieces', 'conversions': {
+        'pieces': 1, 'piece': 1, 'each': 1, '': 1
+    }},
+    'lime': {'base_unit': 'pieces', 'conversions': {
+        'pieces': 1, 'piece': 1, 'each': 1, '': 1
+    }},
+    'butter': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'tbsp': 14, 'tablespoon': 14, 'tsp': 5, 'teaspoon': 5, 'cup': 227, 'stick': 113
+    }},
+    'flour': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'cup': 125, 'tbsp': 8, 'tablespoon': 8
+    }},
+    'sugar': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'cup': 200, 'tbsp': 12.5, 'tablespoon': 12.5, 'tsp': 4, 'teaspoon': 4
+    }},
+    'milk': {'base_unit': 'ml', 'conversions': {
+        'ml': 1, 'l': 1000, 'liter': 1000, 'litre': 1000, 'cup': 240, 'tbsp': 15, 'tablespoon': 15
+    }},
+    'oil': {'base_unit': 'ml', 'conversions': {
+        'ml': 1, 'l': 1000, 'liter': 1000, 'litre': 1000, 'cup': 240, 'tbsp': 15, 'tablespoon': 15, 'tsp': 5, 'teaspoon': 5
+    }},
+    'cream': {'base_unit': 'ml', 'conversions': {
+        'ml': 1, 'l': 1000, 'liter': 1000, 'litre': 1000, 'cup': 240, 'tbsp': 15, 'tablespoon': 15
+    }},
+    'cheese': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'cup': 100, 'slice': 20, 'slices': 20
+    }},
+    'chicken': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'breast': 200, 'breasts': 200, 'thigh': 150, 'thighs': 150, 'pieces': 150, 'piece': 150
+    }},
+    'beef': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'lb': 454, 'pound': 454
+    }},
+    'rice': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'cup': 185
+    }},
+    'pasta': {'base_unit': 'g', 'conversions': {
+        'g': 1, 'gram': 1, 'kg': 1000, 'cup': 100
+    }},
+}
+
+def get_base_ingredient_name(name: str) -> str:
+    """Get the base ingredient name for matching equivalents"""
+    normalized = normalize_ingredient_name(name)
+    # Check if any equivalent key is in the name
+    for key in INGREDIENT_EQUIVALENTS:
+        if key in normalized:
+            return key
+    return normalized
+
+def convert_to_base_unit(name: str, quantity: float, unit: str) -> tuple[float, str]:
+    """Convert an ingredient quantity to its base unit for consolidation"""
+    base_name = get_base_ingredient_name(name)
+    
+    if base_name in INGREDIENT_EQUIVALENTS:
+        equiv = INGREDIENT_EQUIVALENTS[base_name]
+        unit_lower = unit.lower().strip() if unit else ''
+        
+        if unit_lower in equiv['conversions']:
+            base_qty = quantity * equiv['conversions'][unit_lower]
+            return base_qty, equiv['base_unit']
+    
+    # No conversion available, return as-is
+    return quantity, unit
 
 def parse_quantity(qty_str: str) -> float:
     """Parse quantity string to float"""
