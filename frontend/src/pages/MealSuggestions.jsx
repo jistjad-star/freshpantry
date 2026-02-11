@@ -155,10 +155,13 @@ export default function MealSuggestions() {
       toast.success("Cheers! Cocktail suggestion ready 🍹");
     } catch (error) {
       console.error("Error generating cocktail:", error);
-      if (error.response?.data?.detail?.includes("pantry")) {
+      const detail = error.response?.data?.detail || "";
+      if (detail.includes("pantry")) {
         toast.error("Add items to your pantry first!");
+      } else if (detail.includes("API") || detail.includes("key") || error.response?.status === 500) {
+        toast.error("AI service unavailable. Check OpenAI API key.");
       } else {
-        toast.error("Failed to generate cocktail");
+        toast.error("Failed to generate cocktail. Please try again.");
       }
     } finally {
       setGeneratingCocktail(false);
