@@ -167,6 +167,111 @@ export default function Pantry() {
     }
   };
   
+  // Barcode scanner functions
+  const startBarcodeScanner = async () => {
+    setScanning(true);
+    setScannedProduct(null);
+    
+    try {
+      const codeReader = new BrowserMultiFormatReader();
+      codeReaderRef.current = codeReader;
+      
+      // Get available video devices
+      const videoInputDevices = await codeReader.listVideoInputDevices();
+      
+      if (videoInputDevices.length === 0) {
+        toast.error("No camera found");
+        setScanning(false);
+        return;
+      }
+      
+      // Prefer back camera on mobile
+      const backCamera = videoInputDevices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear')
+      );
+      const selectedDevice = backCamera || videoInputDevices[0];
+      
+      // Start continuous scanning
+      await codeReader.decodeFromVideoDevice(
+        selectedDevice.deviceId,
+        videoRef.current,
+        async (result, error) => {
+          if (result) {
+            const barcode = result.getText();
+            console.log("Barcode detected:", barcode);
+            stopBarcodeScanner();
+            await lookupBarcode(barcode);
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Error starting scanner:", error);
+      toast.error("Could not access camera. Please check permissions.");
+      setScanning(false);
+    }
+  };
+  
+  const stopBarcodeScanner = () => {
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+      codeReaderRef.current = null;
+    }
+    setScanning(false);
+  };
+  
+  const lookupBarcode = async (barcode) => {
+    setLookingUpBarcode(true);
+    try {
+      const response = await api.lookupBarcode(barcode);
+      setScannedProduct(response.data);
+      toast.success(`Found: ${response.data.name}`);
+    } catch (error) {
+      console.error("Error looking up barcode:", error);
+      if (error.response?.status === 404) {
+        toast.error("Product not found in database. Try adding manually.");
+      } else {
+        toast.error("Could not look up product");
+      }
+    } finally {
+      setLookingUpBarcode(false);
+    }
+  };
+  
+  const handleManualBarcodeSubmit = async () => {
+    if (!manualBarcode.trim()) return;
+    await lookupBarcode(manualBarcode.trim());
+    setManualBarcode("");
+  };
+  
+  const addScannedProductToPantry = async () => {
+    if (!scannedProduct) return;
+    
+    try {
+      await api.addPantryItem({
+        name: scannedProduct.name,
+        quantity: scannedProduct.quantity || 1,
+        unit: scannedProduct.unit || "pieces",
+        category: scannedProduct.category || "other"
+      });
+      toast.success(`Added ${scannedProduct.name} to pantry!`);
+      setScannedProduct(null);
+      setBarcodeDialogOpen(false);
+      fetchPantry();
+    } catch (error) {
+      console.error("Error adding product:", error);
+      toast.error("Failed to add product");
+    }
+  };
+  
+  // Clean up scanner when dialog closes
+  useEffect(() => {
+    if (!barcodeDialogOpen) {
+      stopBarcodeScanner();
+      setScannedProduct(null);
+    }
+  }, [barcodeDialogOpen]);
+  
   // Receipt scanning functions
   const handleReceiptUpload = async (e) => {
     const file = e.target.files?.[0];
