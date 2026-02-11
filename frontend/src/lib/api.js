@@ -117,6 +117,9 @@ export const api = {
     return axios.get(`${API}/suggestions/meals`, { params });
   },
   generateAIRecipe: (mealType = null, expiringSoon = false) => axios.post(`${API}/suggestions/generate-recipe`, { meal_type: mealType, expiring_soon: expiringSoon }),
+  
+  // Cocktail Suggestions
+  generateAICocktail: (alcoholic = null) => axios.post(`${API}/suggestions/generate-cocktail`, { alcoholic }),
 };
 
 export default api;
