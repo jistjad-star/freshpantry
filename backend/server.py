@@ -4099,12 +4099,14 @@ async def get_shared_recipes_legacy(share_id: str):
 
 class GenerateRecipeRequest(BaseModel):
     meal_type: Optional[str] = None
+    expiring_soon: bool = False
 
 @api_router.post("/suggestions/generate-recipe")
 async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeRequest = None):
     """Generate a new AI recipe based solely on pantry ingredients"""
     user_id = await get_user_id_or_none(request)
     meal_type = data.meal_type if data else None
+    filter_expiring = data.expiring_soon if data else False
     
     # Get pantry
     query = {"user_id": user_id} if user_id else {"user_id": None}
@@ -4142,6 +4144,10 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
     # Sort expiring items by days until expiry
     expiring_items.sort(key=lambda x: x['days_until_expiry'])
     
+    # If filtering by expiring and no expiring items, return error
+    if filter_expiring and not expiring_items:
+        raise HTTPException(status_code=400, detail="No ingredients expiring soon! Your pantry is fresh.")
+    
     meal_context = ""
     if meal_type:
         meal_contexts = {
@@ -4153,7 +4159,33 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
         meal_context = meal_contexts.get(meal_type, "")
     
     try:
-        system_msg = """You are a creative chef that generates delicious recipes.
+        # Different prompts depending on whether we're focusing on expiring ingredients
+        if filter_expiring:
+            system_msg = f"""You are a creative chef focused on reducing food waste.
+Your PRIMARY goal is to create a recipe that USES UP the expiring ingredients provided.
+The recipe MUST include at least 2-3 of the expiring ingredients as main components.
+{meal_context}
+
+Return as JSON with format:
+{{
+    "name": "Recipe Name",
+    "description": "Brief appetizing description highlighting how this uses expiring ingredients",
+    "servings": 4,
+    "prep_time": "15 min",
+    "cook_time": "30 min",
+    "ingredients": [
+        {{"name": "ingredient", "quantity": "2", "unit": "cups", "category": "produce", "from_pantry": true, "is_expiring": true}}
+    ],
+    "instructions": ["Step 1", "Step 2", ...],
+    "missing_ingredients": ["any item not in pantry but needed"],
+    "categories": ["vegan", "quick-easy"],
+    "expiring_used": ["list of expiring ingredients this recipe uses"]
+}}
+
+Categories can be: vegan, vegetarian, pescatarian, low-fat, quick-easy
+Return ONLY valid JSON, no markdown."""
+        else:
+            system_msg = """You are a creative chef that generates delicious recipes.
 Given a list of available ingredients, create a complete recipe that uses primarily those ingredients.
 You can suggest 1-2 common pantry staples that might be missing.
 """ + meal_context + """
@@ -4182,16 +4214,33 @@ Return ONLY valid JSON, no markdown."""
             for item in pantry['items'] if item.get('quantity', 0) > 0
         ])
         
-        # Add expiring items context
-        expiring_context = ""
-        if expiring_items:
+        # Build the prompt based on filter
+        if filter_expiring:
             expiring_text = "\n".join([
-                f"- {item['name']} (expires in {item['days_until_expiry']} days)"
-                for item in expiring_items[:5]
+                f"- {item['name']} ({item['quantity']} {item['unit']}) - EXPIRES IN {item['days_until_expiry']} DAYS!"
+                for item in expiring_items
             ])
-            expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and should be used:\n{expiring_text}"
-        
-        user_prompt = f"""Create a delicious recipe using these available ingredients:
+            user_prompt = f"""Create a recipe that PRIMARILY USES these EXPIRING ingredients:
+
+🚨 EXPIRING SOON - MUST USE:
+{expiring_text}
+
+OTHER AVAILABLE INGREDIENTS (optional to use):
+{pantry_text}
+
+The recipe MUST use at least 2-3 of the expiring ingredients as main components.
+This is about reducing food waste - prioritize the expiring items!"""
+        else:
+            # Standard prompt with expiring items as optional priority
+            expiring_context = ""
+            if expiring_items:
+                expiring_text = "\n".join([
+                    f"- {item['name']} (expires in {item['days_until_expiry']} days)"
+                    for item in expiring_items[:5]
+                ])
+                expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and should be used:\n{expiring_text}"
+            
+            user_prompt = f"""Create a delicious recipe using these available ingredients:
 
 {pantry_text}{expiring_context}
 
