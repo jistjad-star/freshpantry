@@ -248,21 +248,48 @@ export default function Pantry() {
   const addScannedProductToPantry = async () => {
     if (!scannedProduct) return;
     
+    // Calculate actual quantity based on fill level
+    const fillMultipliers = {
+      "full": 1.0,
+      "three-quarters": 0.75,
+      "half": 0.5,
+      "quarter": 0.25,
+      "nearly-empty": 0.1
+    };
+    
+    const multiplier = fillMultipliers[fillLevel] || 1.0;
+    const adjustedQuantity = Math.round(scannedProduct.quantity * multiplier * 10) / 10; // Round to 1 decimal
+    
     try {
       await api.addPantryItem({
         name: scannedProduct.name,
-        quantity: scannedProduct.quantity || 1,
+        quantity: adjustedQuantity,
         unit: scannedProduct.unit || "pieces",
         category: scannedProduct.category || "other"
       });
-      toast.success(`Added ${scannedProduct.name} to pantry!`);
+      toast.success(`Added ${scannedProduct.name} (${adjustedQuantity}${scannedProduct.unit}) to pantry!`);
       setScannedProduct(null);
+      setFillLevel("full"); // Reset for next scan
       setBarcodeDialogOpen(false);
       fetchPantry();
     } catch (error) {
       console.error("Error adding product:", error);
       toast.error("Failed to add product");
     }
+  };
+  
+  // Calculate displayed quantity based on fill level
+  const getAdjustedQuantity = () => {
+    if (!scannedProduct) return 0;
+    const fillMultipliers = {
+      "full": 1.0,
+      "three-quarters": 0.75,
+      "half": 0.5,
+      "quarter": 0.25,
+      "nearly-empty": 0.1
+    };
+    const multiplier = fillMultipliers[fillLevel] || 1.0;
+    return Math.round(scannedProduct.quantity * multiplier * 10) / 10;
   };
   
   // Clean up scanner when dialog closes
