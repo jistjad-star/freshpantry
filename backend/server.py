@@ -3073,28 +3073,97 @@ async def cook_recipe(data: CookRecipeRequest, request: Request):
     missing = []
     
     for recipe_ing in recipe.get('ingredients', []):
-        found = False
-        for pantry_item in pantry['items']:
-            # Match by name (case-insensitive, partial match)
-            if recipe_ing['name'].lower() in pantry_item['name'].lower() or pantry_item['name'].lower() in recipe_ing['name'].lower():
-                # Try to parse quantity
-                try:
-                    recipe_qty = float(recipe_ing['quantity']) * data.servings_multiplier
-                except (ValueError, TypeError):
-                    recipe_qty = 1 * data.servings_multiplier
-                
-                pantry_item['quantity'] = max(0, pantry_item['quantity'] - recipe_qty)
-                pantry_item['last_updated'] = datetime.now(timezone.utc).isoformat()
-                deducted.append({
-                    "name": pantry_item['name'],
-                    "deducted": recipe_qty,
-                    "remaining": pantry_item['quantity']
-                })
-                found = True
-                break
+        recipe_name = recipe_ing['name'].lower().strip()
+        recipe_name_normalized = normalize_ingredient_name(recipe_name)
         
-        if not found:
+        # Try to find a matching pantry item
+        best_match = None
+        best_match_score = 0
+        
+        for pantry_item in pantry['items']:
+            pantry_name = pantry_item['name'].lower().strip()
+            pantry_name_normalized = normalize_ingredient_name(pantry_name)
+            
+            # Calculate match score using multiple methods
+            score = 0
+            
+            # Exact normalized match (best)
+            if recipe_name_normalized == pantry_name_normalized:
+                score = 100
+            # One contains the other (good)
+            elif recipe_name_normalized in pantry_name_normalized or pantry_name_normalized in recipe_name_normalized:
+                score = 80
+            # Key words match (e.g., "chicken" matches "chicken breast", "diced chicken")
+            else:
+                recipe_words = set(recipe_name_normalized.split())
+                pantry_words = set(pantry_name_normalized.split())
+                
+                # Check if the core ingredient word matches
+                common_words = recipe_words & pantry_words
+                if common_words:
+                    # Score based on how many words match
+                    score = min(70, 30 + (len(common_words) * 20))
+                
+                # Also check base ingredient name from equivalents
+                recipe_base = get_base_ingredient_name(recipe_name)
+                pantry_base = get_base_ingredient_name(pantry_name)
+                if recipe_base == pantry_base and len(recipe_base) > 2:
+                    score = max(score, 75)
+            
+            if score > best_match_score:
+                best_match_score = score
+                best_match = pantry_item
+        
+        # Only deduct if we have a reasonable match (score > 50)
+        if best_match and best_match_score >= 50:
+            # Parse recipe quantity
+            try:
+                recipe_qty = float(recipe_ing['quantity']) * data.servings_multiplier
+            except (ValueError, TypeError):
+                recipe_qty = 1 * data.servings_multiplier
+            
+            recipe_unit = recipe_ing.get('unit', '').lower().strip()
+            pantry_unit = best_match.get('unit', '').lower().strip()
+            
+            # Convert to base units for proper deduction
+            recipe_base_qty, recipe_base_unit = convert_to_base_unit(recipe_ing['name'], recipe_qty, recipe_unit)
+            pantry_base_qty, pantry_base_unit = convert_to_base_unit(best_match['name'], best_match['quantity'], pantry_unit)
+            
+            # If units match, deduct directly
+            if recipe_base_unit == pantry_base_unit:
+                deduct_amount = recipe_base_qty
+                # Convert back to pantry units for storage
+                new_pantry_qty = max(0, pantry_base_qty - deduct_amount)
+                
+                # Convert back to original unit if needed
+                if pantry_unit in ['kg', 'kilo'] and pantry_base_unit == 'g':
+                    best_match['quantity'] = round(new_pantry_qty / 1000, 2)
+                elif pantry_unit in ['l', 'liter', 'litre'] and pantry_base_unit == 'ml':
+                    best_match['quantity'] = round(new_pantry_qty / 1000, 2)
+                else:
+                    best_match['quantity'] = round(new_pantry_qty, 2)
+            else:
+                # Units don't match - make a reasonable estimate
+                # Deduct 1 unit if small quantity, or proportionally
+                if recipe_qty <= 3:
+                    best_match['quantity'] = max(0, best_match['quantity'] - recipe_qty)
+                else:
+                    best_match['quantity'] = max(0, best_match['quantity'] - 1)
+            
+            best_match['last_updated'] = datetime.now(timezone.utc).isoformat()
+            deducted.append({
+                "name": best_match['name'],
+                "matched_with": recipe_ing['name'],
+                "deducted": recipe_qty,
+                "unit": recipe_unit,
+                "remaining": best_match['quantity'],
+                "match_score": best_match_score
+            })
+        else:
             missing.append(recipe_ing['name'])
+    
+    # Remove items with 0 or negative quantity
+    pantry['items'] = [item for item in pantry['items'] if item.get('quantity', 0) > 0]
     
     pantry['updated_at'] = datetime.now(timezone.utc).isoformat()
     await db.pantry.update_one(query, {"$set": pantry}, upsert=True)
@@ -3102,6 +3171,7 @@ async def cook_recipe(data: CookRecipeRequest, request: Request):
     return {
         "message": f"Cooked {recipe['name']}",
         "deducted": deducted,
+        "deducted_count": len(deducted),
         "missing_ingredients": missing
     }
 
