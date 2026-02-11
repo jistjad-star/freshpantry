@@ -4363,3 +4363,7 @@ Return ONLY valid JSON:
         logger.error(f"Error converting recipe to vegetarian: {e}")
         raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
 
+
+# Include the router in the main app (must be after all routes are defined)
+app.include_router(api_router)
+
