@@ -4347,13 +4347,9 @@ Return ONLY valid JSON:
         
         await db.recipes.update_one(query, {"$set": update_data})
         
-        return {
-            "success": True,
-            "message": "Recipe converted to vegetarian!",
-            "substitutions": substitutions,
-            "tips": tips,
-            "new_ingredients": new_ingredients
-        }
+        # Fetch and return the updated recipe
+        updated_recipe = await db.recipes.find_one(query, {"_id": 0})
+        return updated_recipe
         
     except Exception as e:
         logger.error(f"Error converting recipe to vegetarian: {e}")
