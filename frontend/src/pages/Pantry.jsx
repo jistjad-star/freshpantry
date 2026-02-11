@@ -559,7 +559,71 @@ export default function Pantry() {
 
   const totalItems = pantry?.items?.length || 0;
   const lowStockCount = pantry?.items?.filter(isLowStock).length || 0;
-  const groupedItems = pantry?.items ? groupByCategory(pantry.items) : {};
+  
+  // Filter items based on showLowStockOnly toggle
+  const filteredItems = showLowStockOnly 
+    ? (pantry?.items || []).filter(isLowStock)
+    : (pantry?.items || []);
+  
+  const groupedItems = groupByCategory(filteredItems);
+  
+  // Selection handlers
+  const toggleItemSelection = (itemId) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+  
+  const selectAllLowStock = () => {
+    const lowStockIds = (pantry?.items || [])
+      .filter(isLowStock)
+      .map(item => item.id);
+    setSelectedItems(new Set(lowStockIds));
+  };
+  
+  const selectAll = () => {
+    const allIds = filteredItems.map(item => item.id);
+    setSelectedItems(new Set(allIds));
+  };
+  
+  const clearSelection = () => {
+    setSelectedItems(new Set());
+  };
+  
+  const exportToShoppingList = async () => {
+    if (selectedItems.size === 0) {
+      toast.error("Select items to export");
+      return;
+    }
+    
+    setExportingToShoppingList(true);
+    try {
+      const itemsToExport = (pantry?.items || [])
+        .filter(item => selectedItems.has(item.id))
+        .map(item => ({
+          name: item.name,
+          quantity: item.typical_purchase || item.min_threshold || 1,
+          unit: item.unit,
+          category: item.category
+        }));
+      
+      await api.addItemsToShoppingList(itemsToExport);
+      toast.success(`Added ${itemsToExport.length} items to shopping list!`);
+      setSelectedItems(new Set());
+      navigate('/shopping-list');
+    } catch (error) {
+      console.error("Error exporting to shopping list:", error);
+      toast.error("Failed to export to shopping list");
+    } finally {
+      setExportingToShoppingList(false);
+    }
+  };
 
   if (loading) {
     return (
