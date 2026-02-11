@@ -644,6 +644,7 @@ export default function Pantry() {
             </h1>
             <p className="text-stone-500">
               {totalItems} item{totalItems !== 1 ? 's' : ''} • {lowStockCount} low stock
+              {showLowStockOnly && ` • Showing low stock only`}
             </p>
           </div>
           
