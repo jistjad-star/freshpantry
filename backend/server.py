@@ -3067,58 +3067,100 @@ async def scan_receipt(request: Request, file: UploadFile = File(...)):
     content_type = file.content_type or ""
     filename = file.filename or ""
     
-    # Handle PDF by extracting text or converting first page to image
+    # Handle PDF by converting to image
     if content_type == "application/pdf" or filename.lower().endswith('.pdf'):
-        # For PDFs, we'll use AI to extract text from the first page
-        image_base64 = base64.b64encode(contents).decode('utf-8')
-        # Note: For PDFs, we send as-is and let the vision model handle it
-        # If it fails, we'll need to use pdf2image library
-        is_pdf = True
+        try:
+            import fitz  # PyMuPDF
+            
+            # Open PDF from bytes
+            pdf_document = fitz.open(stream=contents, filetype="pdf")
+            
+            if pdf_document.page_count == 0:
+                raise HTTPException(status_code=400, detail="PDF has no pages")
+            
+            # Get first page
+            page = pdf_document[0]
+            
+            # Render at higher resolution for better OCR (300 DPI)
+            zoom = 300 / 72  # 72 is default DPI
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            
+            # Convert to PNG bytes
+            image_bytes = pix.tobytes("png")
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            image_media_type = "image/png"
+            
+            pdf_document.close()
+            logger.info("Successfully converted PDF to image for scanning")
+            
+        except ImportError:
+            logger.error("PyMuPDF not installed - cannot process PDFs")
+            raise HTTPException(status_code=400, detail="PDF processing not available. Please upload a screenshot or photo instead.")
+        except Exception as e:
+            logger.error(f"Error converting PDF: {e}")
+            raise HTTPException(status_code=400, detail="Could not process PDF. Please take a screenshot of the receipt instead.")
     else:
         # For images (JPEG, PNG, etc.)
         image_base64 = base64.b64encode(contents).decode('utf-8')
-        is_pdf = False
+        # Determine media type
+        if content_type.startswith("image/"):
+            image_media_type = content_type
+        elif filename.lower().endswith('.png'):
+            image_media_type = "image/png"
+        elif filename.lower().endswith('.webp'):
+            image_media_type = "image/webp"
+        else:
+            image_media_type = "image/jpeg"
     
     try:
         system_message = """You are a helpful assistant that extracts grocery items from supermarket receipts.
         
-Look at this receipt image/document and extract ALL grocery items purchased.
-For each item, determine:
+Look at this receipt image carefully and extract ALL grocery items purchased.
+
+CRITICAL - READ THE ACTUAL VALUES FROM THE RECEIPT:
+- Read the EXACT quantity shown on the receipt (e.g., if it says "2" or "x2", quantity is 2)
+- Read the EXACT weight/size from the product name or line (e.g., "500g", "1L", "2kg", "250ml")
+- Do NOT default everything to 1 gram - actually read the receipt!
+
+For each item, extract:
 - name: The product name (simplified, e.g., "Milk" not "TESCO SEMI SKIMMED MILK 2L")
-- quantity: How many were bought (default 1 if not shown)
-- unit: The unit (e.g., "L", "kg", "pack", "pieces", "g" - infer from product type)
+- quantity: The actual quantity purchased AS SHOWN ON RECEIPT (number of items, OR weight for loose items)
+- unit: The actual unit AS SHOWN ON RECEIPT (e.g., "kg", "g", "L", "ml", "pack", "pieces", "each")
 - category: One of: produce, dairy, protein, grains, pantry, spices, frozen, other
+
+EXAMPLES of what to look for:
+- "BANANAS 0.540kg @ £1.09/kg" → name: "Bananas", quantity: 540, unit: "g", category: "produce"
+- "CHICKEN BREAST 1KG" → name: "Chicken Breast", quantity: 1, unit: "kg", category: "protein"
+- "MILK 2L x2" or "2 x MILK 2L" → name: "Milk", quantity: 4, unit: "L", category: "dairy"
+- "BREAD" (no weight shown) → name: "Bread", quantity: 1, unit: "loaf", category: "grains"
+- "CHEDDAR 250G" → name: "Cheddar Cheese", quantity: 250, unit: "g", category: "dairy"
+- "EGGS x12" → name: "Eggs", quantity: 12, unit: "pieces", category: "protein"
 
 Return ONLY a valid JSON array of items, no markdown or explanation:
 [
+    {"name": "Bananas", "quantity": 540, "unit": "g", "category": "produce"},
     {"name": "Milk", "quantity": 2, "unit": "L", "category": "dairy"},
-    {"name": "Bread", "quantity": 1, "unit": "loaf", "category": "grains"},
     ...
 ]
 
 IMPORTANT:
-- Skip non-food items (bags, vouchers, discounts)
-- Simplify product names (remove brand names, size info)
-- Group similar items together (e.g., 2x bananas = quantity: 2)
-- Infer reasonable units from context"""
+- Skip non-food items (bags, vouchers, discounts, carrier bags)
+- Simplify product names (remove store brand names like TESCO/ASDA/SAINSBURYS)
+- ACTUALLY READ the quantities and weights from the receipt - do not guess!"""
 
-        # Use OpenAI Vision API for receipt scanning
-        if is_pdf:
-            # For PDFs, we can't use vision directly - return error
-            return {"extracted_items": [], "message": "PDF receipts not supported yet. Please take a photo instead."}
-        
         response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",  # Use gpt-4o for better vision accuracy
             messages=[
                 {"role": "system", "content": system_message},
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract all grocery items from this receipt. List each item with quantity, unit, and category."},
+                        {"type": "text", "text": "Extract all grocery items from this receipt. Read the ACTUAL quantities and weights shown - do not default to 1g for everything."},
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_base64}"
+                                "url": f"data:{image_media_type};base64,{image_base64}"
                             }
                         }
                     ]
