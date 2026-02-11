@@ -1001,50 +1001,61 @@ async def extract_ingredients_from_image(image_base64: str) -> tuple[str, List[I
         return "", []
     
     try:
-        system_message = """You are an expert at reading recipe cards and extracting ingredients.
+        system_message = """You are an expert at reading recipe cards and extracting ONLY the ingredients list.
 
-IMPORTANT: Only extract from the INGREDIENTS LIST section - the part that shows items with quantities/measurements.
-DO NOT extract food items mentioned in cooking instructions or method steps.
+CRITICAL RULES - STRICTLY FOLLOW:
 
-Look for:
-- A dedicated "Ingredients" section with quantities (e.g., "2 chicken breasts", "100g flour")
-- Items with measurements like g, ml, tbsp, tsp, cups, pieces
-- Numbered or bulleted ingredient lists
+1. ONLY extract from the INGREDIENTS LIST/SECTION:
+   - Look for a clearly labeled "Ingredients" section
+   - Items with specific quantities (e.g., "2 chicken breasts", "100g flour", "1 can tomatoes")
+   - Numbered or bulleted lists of ingredients with measurements
 
-DO NOT include:
-- Items from cooking steps (e.g., "brown the onions" - don't add onions unless in ingredients list)
-- Serving suggestions
-- Items without any quantity indication
-- Duplicate items
+2. ABSOLUTELY DO NOT include items from:
+   - Cooking method/instructions (e.g., "drizzle oil in pan" - do NOT add oil)
+   - Vague mentions like "a drizzle of", "splash of", "pinch of" without specific quantities
+   - Serving suggestions or garnishes mentioned in steps
+   - Items appearing ONLY in the method/directions section
+
+3. FILTER OUT these cooking step phrases:
+   - "drizzle of oil" / "splash of oil" → SKIP (no specific quantity)
+   - "season to taste" → SKIP
+   - "oil for frying" → SKIP unless quantity specified in ingredients list
+   - "water as needed" → SKIP
+
+4. ONLY include if the item has a SPECIFIC measurement:
+   - ✓ "2 tbsp olive oil" → Include
+   - ✓ "100ml oil" → Include  
+   - ✗ "drizzle of oil" → SKIP
+   - ✗ "oil for cooking" → SKIP
 
 Return ONLY valid JSON:
 {
-    "raw_text": "list ingredient text from ingredients section only",
+    "raw_text": "transcribed ingredient list text only",
     "ingredients": [
         {"name": "chicken breast", "quantity": "2", "unit": "pieces", "category": "protein"},
-        {"name": "olive oil", "quantity": "1", "unit": "tbsp", "category": "pantry"}
+        {"name": "olive oil", "quantity": "2", "unit": "tbsp", "category": "pantry"}
     ]
 }
 
 Categories: produce, dairy, protein, grains, pantry, spices, frozen, other
 
 Rules:
-- ONLY extract from the ingredients list/section, NOT from cooking steps
-- Each ingredient MUST have a quantity - skip items without quantities
-- Simplify names (e.g., "boneless skinless chicken breast" -> "chicken breast")
-- NO duplicates - each ingredient appears once
-- Return valid JSON only, no markdown"""
+- Extract ONLY from dedicated ingredients section, NOT cooking steps
+- Each item MUST have a specific quantity (number + unit)
+- Skip vague quantities like "drizzle", "splash", "some", "as needed"
+- NO duplicates
+- Return valid JSON only"""
 
         logger.info("Sending image to OpenAI Vision API for ingredient extraction...")
         
         response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",  # Use gpt-4o for better accuracy
             messages=[
                 {"role": "system", "content": system_message},
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract ingredients ONLY from the ingredients list section (with quantities). Do NOT include items mentioned in cooking steps. Return as JSON."},
+                        {"type": "text", "text": "Extract ingredients ONLY from the ingredients list section. Do NOT include items from cooking steps like 'drizzle of oil' or 'splash of water'. Only include items with specific quantities."},
                         {
                             "type": "image_url",
                             "image_url": {
