@@ -108,14 +108,7 @@ export default function Pantry() {
   // Barcode scanner state - simplified
   const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
 
-  // Handler for opening the barcode dialog
-  const openBarcodeDialog = () => {
-    setBarcodeDialogOpen(true);
-  };
-
-  const closeBarcodeDialog = () => {
-    setBarcodeDialogOpen(false);
-  };
+  // Barcode dialog handlers removed
   
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
