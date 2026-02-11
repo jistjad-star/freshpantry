@@ -329,14 +329,18 @@ export default function WeeklyPlanner() {
   const savePlan = async () => {
     setSaving(true);
     try {
-      const days = DAYS.map(day => ({ day, recipe_ids: weeklyPlan[day] || [] }));
+      // Convert plan items to recipe IDs for backend (backend stores IDs only for now)
+      const days = DAYS.map(day => ({ 
+        day, 
+        recipe_ids: (weeklyPlan[day] || []).map(item => getRecipeIdFromPlanItem(item))
+      }));
       await api.saveWeeklyPlan({ week_start: currentWeek, days });
       toast.success("Plan saved!");
     } catch (error) { toast.error("Failed to save"); } finally { setSaving(false); }
   };
 
   const generateShoppingList = async () => {
-    const allRecipeIds = DAYS.flatMap(day => weeklyPlan[day] || []);
+    const allRecipeIds = DAYS.flatMap(day => (weeklyPlan[day] || []).map(item => getRecipeIdFromPlanItem(item)));
     const uniqueIds = [...new Set(allRecipeIds)];
     if (uniqueIds.length === 0) { toast.error("Add recipes first"); return; }
     setGenerating(true);
