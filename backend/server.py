@@ -4088,7 +4088,7 @@ If absolutely necessary, you can include 1-2 common staples like salt, pepper, o
 # UK supermarket average prices (£ per standard unit) with loyalty card prices
 # Loyalty cards: Tesco Clubcard, Sainsbury's Nectar, Asda Blue Light (staff only so standard), Morrisons More
 UK_PRICE_DATA = {
-    # Produce
+    # Produce - per item prices
     "tomato": {"price": 0.30, "unit": "each", "tesco": 0.28, "tesco_clubcard": 0.22, "sainsburys": 0.32, "sainsburys_nectar": 0.28, "aldi": 0.22, "lidl": 0.20, "asda": 0.25, "morrisons": 0.29, "morrisons_more": 0.26},
     "onion": {"price": 0.15, "unit": "each", "tesco": 0.15, "tesco_clubcard": 0.12, "sainsburys": 0.18, "sainsburys_nectar": 0.15, "aldi": 0.10, "lidl": 0.10, "asda": 0.12, "morrisons": 0.14, "morrisons_more": 0.12},
     "garlic": {"price": 0.40, "unit": "bulb", "tesco": 0.40, "tesco_clubcard": 0.35, "sainsburys": 0.45, "sainsburys_nectar": 0.40, "aldi": 0.29, "lidl": 0.29, "asda": 0.35, "morrisons": 0.40, "morrisons_more": 0.35},
@@ -4099,22 +4099,40 @@ UK_PRICE_DATA = {
     "lettuce": {"price": 0.65, "unit": "head", "tesco": 0.65, "tesco_clubcard": 0.50, "sainsburys": 0.75, "sainsburys_nectar": 0.60, "aldi": 0.49, "lidl": 0.49, "asda": 0.55, "morrisons": 0.60, "morrisons_more": 0.52},
     "mushroom": {"price": 1.20, "unit": "250g", "tesco": 1.20, "tesco_clubcard": 0.95, "sainsburys": 1.35, "sainsburys_nectar": 1.10, "aldi": 0.89, "lidl": 0.89, "asda": 1.00, "morrisons": 1.15, "morrisons_more": 0.99},
     "spinach": {"price": 1.50, "unit": "bag", "tesco": 1.50, "tesco_clubcard": 1.20, "sainsburys": 1.65, "sainsburys_nectar": 1.35, "aldi": 1.09, "lidl": 1.09, "asda": 1.30, "morrisons": 1.45, "morrisons_more": 1.25},
+    "celery": {"price": 0.75, "unit": "bunch", "tesco": 0.75, "tesco_clubcard": 0.59, "sainsburys": 0.85, "sainsburys_nectar": 0.69, "aldi": 0.55, "lidl": 0.55, "asda": 0.65, "morrisons": 0.72, "morrisons_more": 0.62},
+    "cucumber": {"price": 0.55, "unit": "each", "tesco": 0.55, "tesco_clubcard": 0.45, "sainsburys": 0.65, "sainsburys_nectar": 0.52, "aldi": 0.39, "lidl": 0.39, "asda": 0.48, "morrisons": 0.52, "morrisons_more": 0.45},
+    "courgette": {"price": 0.50, "unit": "each", "tesco": 0.50, "tesco_clubcard": 0.40, "sainsburys": 0.60, "sainsburys_nectar": 0.48, "aldi": 0.35, "lidl": 0.35, "asda": 0.42, "morrisons": 0.48, "morrisons_more": 0.40},
+    "aubergine": {"price": 0.85, "unit": "each", "tesco": 0.85, "tesco_clubcard": 0.69, "sainsburys": 0.99, "sainsburys_nectar": 0.79, "aldi": 0.65, "lidl": 0.65, "asda": 0.75, "morrisons": 0.82, "morrisons_more": 0.70},
+    "lemon": {"price": 0.35, "unit": "each", "tesco": 0.35, "tesco_clubcard": 0.28, "sainsburys": 0.40, "sainsburys_nectar": 0.32, "aldi": 0.25, "lidl": 0.25, "asda": 0.30, "morrisons": 0.33, "morrisons_more": 0.28},
+    "lime": {"price": 0.30, "unit": "each", "tesco": 0.30, "tesco_clubcard": 0.24, "sainsburys": 0.35, "sainsburys_nectar": 0.28, "aldi": 0.20, "lidl": 0.20, "asda": 0.25, "morrisons": 0.28, "morrisons_more": 0.24},
+    "ginger": {"price": 0.80, "unit": "piece", "tesco": 0.80, "tesco_clubcard": 0.65, "sainsburys": 0.95, "sainsburys_nectar": 0.76, "aldi": 0.55, "lidl": 0.55, "asda": 0.68, "morrisons": 0.75, "morrisons_more": 0.65},
+    "spring onion": {"price": 0.60, "unit": "bunch", "tesco": 0.60, "tesco_clubcard": 0.48, "sainsburys": 0.70, "sainsburys_nectar": 0.56, "aldi": 0.45, "lidl": 0.45, "asda": 0.52, "morrisons": 0.58, "morrisons_more": 0.50},
+    "banana": {"price": 0.15, "unit": "each", "tesco": 0.15, "tesco_clubcard": 0.12, "sainsburys": 0.18, "sainsburys_nectar": 0.14, "aldi": 0.11, "lidl": 0.11, "asda": 0.13, "morrisons": 0.14, "morrisons_more": 0.12},
+    "apple": {"price": 0.30, "unit": "each", "tesco": 0.30, "tesco_clubcard": 0.24, "sainsburys": 0.35, "sainsburys_nectar": 0.28, "aldi": 0.22, "lidl": 0.22, "asda": 0.26, "morrisons": 0.29, "morrisons_more": 0.25},
     # Dairy
     "milk": {"price": 1.55, "unit": "liter", "tesco": 1.55, "tesco_clubcard": 1.35, "sainsburys": 1.60, "sainsburys_nectar": 1.45, "aldi": 1.09, "lidl": 1.09, "asda": 1.35, "morrisons": 1.50, "morrisons_more": 1.35},
     "cheese": {"price": 2.50, "unit": "250g", "tesco": 2.50, "tesco_clubcard": 2.00, "sainsburys": 2.75, "sainsburys_nectar": 2.25, "aldi": 1.89, "lidl": 1.89, "asda": 2.20, "morrisons": 2.40, "morrisons_more": 2.00},
+    "cheddar": {"price": 2.50, "unit": "250g", "tesco": 2.50, "tesco_clubcard": 2.00, "sainsburys": 2.75, "sainsburys_nectar": 2.25, "aldi": 1.89, "lidl": 1.89, "asda": 2.20, "morrisons": 2.40, "morrisons_more": 2.00},
+    "parmesan": {"price": 3.50, "unit": "100g", "tesco": 3.50, "tesco_clubcard": 2.80, "sainsburys": 3.90, "sainsburys_nectar": 3.20, "aldi": 2.49, "lidl": 2.49, "asda": 3.00, "morrisons": 3.30, "morrisons_more": 2.85},
     "butter": {"price": 2.00, "unit": "250g", "tesco": 2.00, "tesco_clubcard": 1.65, "sainsburys": 2.20, "sainsburys_nectar": 1.85, "aldi": 1.49, "lidl": 1.49, "asda": 1.75, "morrisons": 1.90, "morrisons_more": 1.65},
     "egg": {"price": 2.30, "unit": "6 pack", "tesco": 2.30, "tesco_clubcard": 1.89, "sainsburys": 2.50, "sainsburys_nectar": 2.10, "aldi": 1.69, "lidl": 1.69, "asda": 2.00, "morrisons": 2.20, "morrisons_more": 1.89},
     "cream": {"price": 1.20, "unit": "300ml", "tesco": 1.20, "tesco_clubcard": 1.00, "sainsburys": 1.35, "sainsburys_nectar": 1.15, "aldi": 0.89, "lidl": 0.89, "asda": 1.05, "morrisons": 1.15, "morrisons_more": 0.99},
     "yogurt": {"price": 1.50, "unit": "500g", "tesco": 1.50, "tesco_clubcard": 1.20, "sainsburys": 1.65, "sainsburys_nectar": 1.35, "aldi": 1.09, "lidl": 1.09, "asda": 1.30, "morrisons": 1.45, "morrisons_more": 1.25},
     # Protein
     "chicken": {"price": 5.50, "unit": "kg", "tesco": 5.50, "tesco_clubcard": 4.50, "sainsburys": 6.00, "sainsburys_nectar": 5.00, "aldi": 4.29, "lidl": 4.29, "asda": 4.80, "morrisons": 5.20, "morrisons_more": 4.50},
+    "chicken breast": {"price": 6.50, "unit": "kg", "tesco": 6.50, "tesco_clubcard": 5.25, "sainsburys": 7.00, "sainsburys_nectar": 5.75, "aldi": 4.99, "lidl": 4.99, "asda": 5.50, "morrisons": 6.00, "morrisons_more": 5.25},
+    "mince": {"price": 4.50, "unit": "500g", "tesco": 4.50, "tesco_clubcard": 3.60, "sainsburys": 5.00, "sainsburys_nectar": 4.00, "aldi": 3.29, "lidl": 3.29, "asda": 3.80, "morrisons": 4.20, "morrisons_more": 3.60},
     "beef": {"price": 8.00, "unit": "kg", "tesco": 8.00, "tesco_clubcard": 6.50, "sainsburys": 9.00, "sainsburys_nectar": 7.50, "aldi": 6.49, "lidl": 6.49, "asda": 7.00, "morrisons": 7.50, "morrisons_more": 6.50},
     "pork": {"price": 5.00, "unit": "kg", "tesco": 5.00, "tesco_clubcard": 4.00, "sainsburys": 5.50, "sainsburys_nectar": 4.50, "aldi": 3.99, "lidl": 3.99, "asda": 4.30, "morrisons": 4.70, "morrisons_more": 4.00},
+    "bacon": {"price": 2.50, "unit": "200g", "tesco": 2.50, "tesco_clubcard": 2.00, "sainsburys": 2.80, "sainsburys_nectar": 2.25, "aldi": 1.79, "lidl": 1.79, "asda": 2.10, "morrisons": 2.35, "morrisons_more": 2.00},
     "salmon": {"price": 12.00, "unit": "kg", "tesco": 12.00, "tesco_clubcard": 9.50, "sainsburys": 13.50, "sainsburys_nectar": 11.00, "aldi": 9.99, "lidl": 9.99, "asda": 10.50, "morrisons": 11.50, "morrisons_more": 9.75},
     "fish": {"price": 8.00, "unit": "kg", "tesco": 8.00, "tesco_clubcard": 6.50, "sainsburys": 9.00, "sainsburys_nectar": 7.50, "aldi": 6.49, "lidl": 6.49, "asda": 7.00, "morrisons": 7.50, "morrisons_more": 6.50},
+    "prawn": {"price": 8.00, "unit": "250g", "tesco": 8.00, "tesco_clubcard": 6.50, "sainsburys": 9.00, "sainsburys_nectar": 7.50, "aldi": 5.99, "lidl": 5.99, "asda": 7.00, "morrisons": 7.50, "morrisons_more": 6.50},
+    "tofu": {"price": 2.00, "unit": "280g", "tesco": 2.00, "tesco_clubcard": 1.60, "sainsburys": 2.25, "sainsburys_nectar": 1.80, "aldi": 1.49, "lidl": 1.49, "asda": 1.70, "morrisons": 1.90, "morrisons_more": 1.60},
     # Pantry
     "rice": {"price": 2.00, "unit": "kg", "tesco": 2.00, "tesco_clubcard": 1.65, "sainsburys": 2.20, "sainsburys_nectar": 1.85, "aldi": 1.49, "lidl": 1.49, "asda": 1.70, "morrisons": 1.90, "morrisons_more": 1.60},
     "pasta": {"price": 1.20, "unit": "500g", "tesco": 1.20, "tesco_clubcard": 0.95, "sainsburys": 1.35, "sainsburys_nectar": 1.10, "aldi": 0.75, "lidl": 0.75, "asda": 0.95, "morrisons": 1.10, "morrisons_more": 0.95},
+    "noodle": {"price": 1.50, "unit": "300g", "tesco": 1.50, "tesco_clubcard": 1.20, "sainsburys": 1.70, "sainsburys_nectar": 1.40, "aldi": 1.09, "lidl": 1.09, "asda": 1.30, "morrisons": 1.45, "morrisons_more": 1.25},
     "flour": {"price": 1.10, "unit": "kg", "tesco": 1.10, "tesco_clubcard": 0.89, "sainsburys": 1.25, "sainsburys_nectar": 1.00, "aldi": 0.75, "lidl": 0.75, "asda": 0.90, "morrisons": 1.05, "morrisons_more": 0.89},
     "sugar": {"price": 1.20, "unit": "kg", "tesco": 1.20, "tesco_clubcard": 0.99, "sainsburys": 1.35, "sainsburys_nectar": 1.10, "aldi": 0.89, "lidl": 0.89, "asda": 1.00, "morrisons": 1.15, "morrisons_more": 0.99},
     "oil": {"price": 2.50, "unit": "liter", "tesco": 2.50, "tesco_clubcard": 2.00, "sainsburys": 2.80, "sainsburys_nectar": 2.30, "aldi": 1.89, "lidl": 1.89, "asda": 2.20, "morrisons": 2.40, "morrisons_more": 2.10},
@@ -4122,9 +4140,22 @@ UK_PRICE_DATA = {
     "bread": {"price": 1.20, "unit": "loaf", "tesco": 1.20, "tesco_clubcard": 0.95, "sainsburys": 1.35, "sainsburys_nectar": 1.10, "aldi": 0.75, "lidl": 0.75, "asda": 0.95, "morrisons": 1.10, "morrisons_more": 0.95},
     "soy sauce": {"price": 1.80, "unit": "bottle", "tesco": 1.80, "tesco_clubcard": 1.45, "sainsburys": 2.00, "sainsburys_nectar": 1.65, "aldi": 1.29, "lidl": 1.29, "asda": 1.50, "morrisons": 1.70, "morrisons_more": 1.45},
     "honey": {"price": 3.50, "unit": "jar", "tesco": 3.50, "tesco_clubcard": 2.85, "sainsburys": 4.00, "sainsburys_nectar": 3.25, "aldi": 2.49, "lidl": 2.49, "asda": 3.00, "morrisons": 3.30, "morrisons_more": 2.85},
-    # Spices
+    "stock": {"price": 1.20, "unit": "pot", "tesco": 1.20, "tesco_clubcard": 0.95, "sainsburys": 1.40, "sainsburys_nectar": 1.15, "aldi": 0.85, "lidl": 0.85, "asda": 1.00, "morrisons": 1.15, "morrisons_more": 0.99},
+    "tin tomato": {"price": 0.65, "unit": "can", "tesco": 0.65, "tesco_clubcard": 0.52, "sainsburys": 0.75, "sainsburys_nectar": 0.60, "aldi": 0.45, "lidl": 0.45, "asda": 0.55, "morrisons": 0.62, "morrisons_more": 0.52},
+    "chopped tomato": {"price": 0.65, "unit": "can", "tesco": 0.65, "tesco_clubcard": 0.52, "sainsburys": 0.75, "sainsburys_nectar": 0.60, "aldi": 0.45, "lidl": 0.45, "asda": 0.55, "morrisons": 0.62, "morrisons_more": 0.52},
+    "coconut milk": {"price": 1.30, "unit": "can", "tesco": 1.30, "tesco_clubcard": 1.05, "sainsburys": 1.50, "sainsburys_nectar": 1.20, "aldi": 0.99, "lidl": 0.99, "asda": 1.15, "morrisons": 1.25, "morrisons_more": 1.05},
+    "passata": {"price": 0.85, "unit": "jar", "tesco": 0.85, "tesco_clubcard": 0.68, "sainsburys": 0.99, "sainsburys_nectar": 0.79, "aldi": 0.59, "lidl": 0.59, "asda": 0.72, "morrisons": 0.82, "morrisons_more": 0.68},
+    # Spices - small amounts are cheap
     "salt": {"price": 0.65, "unit": "pack", "tesco": 0.65, "tesco_clubcard": 0.50, "sainsburys": 0.75, "sainsburys_nectar": 0.60, "aldi": 0.35, "lidl": 0.35, "asda": 0.50, "morrisons": 0.60, "morrisons_more": 0.50},
-    "pepper": {"price": 1.50, "unit": "jar", "tesco": 1.50, "tesco_clubcard": 1.20, "sainsburys": 1.75, "sainsburys_nectar": 1.40, "aldi": 0.99, "lidl": 0.99, "asda": 1.20, "morrisons": 1.40, "morrisons_more": 1.20},
+    "black pepper": {"price": 1.50, "unit": "jar", "tesco": 1.50, "tesco_clubcard": 1.20, "sainsburys": 1.75, "sainsburys_nectar": 1.40, "aldi": 0.99, "lidl": 0.99, "asda": 1.20, "morrisons": 1.40, "morrisons_more": 1.20},
+    "cumin": {"price": 1.20, "unit": "jar", "tesco": 1.20, "tesco_clubcard": 0.95, "sainsburys": 1.40, "sainsburys_nectar": 1.12, "aldi": 0.79, "lidl": 0.79, "asda": 0.99, "morrisons": 1.15, "morrisons_more": 0.95},
+    "paprika": {"price": 1.20, "unit": "jar", "tesco": 1.20, "tesco_clubcard": 0.95, "sainsburys": 1.40, "sainsburys_nectar": 1.12, "aldi": 0.79, "lidl": 0.79, "asda": 0.99, "morrisons": 1.15, "morrisons_more": 0.95},
+    "cinnamon": {"price": 1.30, "unit": "jar", "tesco": 1.30, "tesco_clubcard": 1.05, "sainsburys": 1.50, "sainsburys_nectar": 1.20, "aldi": 0.85, "lidl": 0.85, "asda": 1.05, "morrisons": 1.25, "morrisons_more": 1.05},
+    "chilli": {"price": 0.20, "unit": "each", "tesco": 0.20, "tesco_clubcard": 0.16, "sainsburys": 0.25, "sainsburys_nectar": 0.20, "aldi": 0.12, "lidl": 0.12, "asda": 0.15, "morrisons": 0.18, "morrisons_more": 0.15},
+    "herb": {"price": 1.00, "unit": "pack", "tesco": 1.00, "tesco_clubcard": 0.80, "sainsburys": 1.15, "sainsburys_nectar": 0.92, "aldi": 0.65, "lidl": 0.65, "asda": 0.85, "morrisons": 0.95, "morrisons_more": 0.80},
+    "basil": {"price": 1.00, "unit": "pack", "tesco": 1.00, "tesco_clubcard": 0.80, "sainsburys": 1.15, "sainsburys_nectar": 0.92, "aldi": 0.65, "lidl": 0.65, "asda": 0.85, "morrisons": 0.95, "morrisons_more": 0.80},
+    "coriander": {"price": 0.80, "unit": "bunch", "tesco": 0.80, "tesco_clubcard": 0.64, "sainsburys": 0.95, "sainsburys_nectar": 0.76, "aldi": 0.55, "lidl": 0.55, "asda": 0.68, "morrisons": 0.75, "morrisons_more": 0.65},
+    "parsley": {"price": 0.80, "unit": "bunch", "tesco": 0.80, "tesco_clubcard": 0.64, "sainsburys": 0.95, "sainsburys_nectar": 0.76, "aldi": 0.55, "lidl": 0.55, "asda": 0.68, "morrisons": 0.75, "morrisons_more": 0.65},
 }
 
 # Store display names and their loyalty card info
