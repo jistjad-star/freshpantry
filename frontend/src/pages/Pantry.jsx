@@ -114,6 +114,8 @@ export default function Pantry() {
   const [fillLevel, setFillLevel] = useState("full"); // full, three-quarters, half, quarter, nearly-empty
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
+  const streamRef = useRef(null);
+  const hasDetectedRef = useRef(false); // Prevent multiple detections;
   
   // Receipt scanning state
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
