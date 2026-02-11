@@ -4138,66 +4138,117 @@ STORE_INFO = {
 }
 
 def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> dict:
-    """Estimate price for a shopping item - returns price per item/pack, not per gram"""
+    """Estimate price for a shopping item - proportional to quantity"""
     name_lower = item_name.lower()
     unit_lower = unit.lower() if unit else ""
     
-    # Normalize quantity based on unit - we're estimating per PACK/ITEM, not per gram
-    # If someone needs 300g of something, they probably need to buy 1 pack
-    normalized_qty = 1
-    if quantity > 0:
-        # For grams - convert to packs (typical pack ~250-500g)
-        if 'g' in unit_lower or 'gram' in unit_lower:
-            normalized_qty = max(1, quantity / 250)
-        # For kg
-        elif 'kg' in unit_lower or 'kilo' in unit_lower:
-            normalized_qty = max(1, quantity * 2)  # 500g packs
-        # For ml/l - drinks and liquids
-        elif 'ml' in unit_lower:
-            normalized_qty = max(1, quantity / 500)
-        elif 'l' in unit_lower or 'liter' in unit_lower or 'litre' in unit_lower:
-            normalized_qty = max(1, quantity)
-        # For discrete items like eggs, onions
-        elif any(x in unit_lower for x in ['each', 'piece', 'pcs', '']):
-            if quantity <= 20:
-                normalized_qty = max(1, quantity / 6)  # Pack of 6
-            else:
-                normalized_qty = max(1, quantity / 10)
-        # Default - assume small quantities mean 1 item
-        else:
-            normalized_qty = max(1, min(quantity, 5))  # Cap at 5 to prevent crazy numbers
-    
-    # Round to reasonable pack count
-    normalized_qty = round(normalized_qty, 1)
-    if normalized_qty > 10:
-        normalized_qty = 10  # Cap at 10 packs max
-    
-    # Try to find a matching price entry
+    # First try to find a matching price entry
+    matched_data = None
     for key, data in UK_PRICE_DATA.items():
         if key in name_lower or name_lower in key:
-            base_price = data["price"] * normalized_qty
-            return {
-                "estimated_price": round(base_price, 2),
-                "prices_by_store": {
-                    "tesco": round(data.get("tesco", base_price) * normalized_qty, 2),
-                    "tesco_clubcard": round(data.get("tesco_clubcard", data.get("tesco", base_price)) * normalized_qty, 2),
-                    "sainsburys": round(data.get("sainsburys", base_price) * normalized_qty, 2),
-                    "sainsburys_nectar": round(data.get("sainsburys_nectar", data.get("sainsburys", base_price)) * normalized_qty, 2),
-                    "aldi": round(data.get("aldi", base_price) * normalized_qty, 2),
-                    "lidl": round(data.get("lidl", base_price) * normalized_qty, 2),
-                    "asda": round(data.get("asda", base_price) * normalized_qty, 2),
-                    "morrisons": round(data.get("morrisons", base_price) * normalized_qty, 2),
-                    "morrisons_more": round(data.get("morrisons_more", data.get("morrisons", base_price)) * normalized_qty, 2),
-                },
-                "matched": True
-            }
+            matched_data = data
+            break
     
-    # Default estimate for unknown items - assume ~£2 per item/pack
-    default_price = 2.00 * normalized_qty
+    if matched_data:
+        base_price = matched_data["price"]
+        pack_unit = matched_data.get("unit", "each")
+        
+        # Calculate multiplier based on quantity and unit conversion
+        multiplier = 1.0
+        
+        # Handle weight-based items
+        if 'g' in unit_lower and 'g' not in unit_lower.replace('kg', ''):
+            # Quantity is in grams
+            if 'kg' in pack_unit:
+                multiplier = quantity / 1000  # e.g., 500g = 0.5 of 1kg pack price
+            elif 'g' in pack_unit:
+                pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 250)
+                multiplier = quantity / pack_size
+            else:
+                multiplier = quantity / 250  # Assume 250g typical pack
+        elif 'kg' in unit_lower or 'kilo' in unit_lower:
+            # Quantity is in kg
+            if 'kg' in pack_unit:
+                multiplier = quantity
+            elif 'g' in pack_unit:
+                pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 250)
+                multiplier = (quantity * 1000) / pack_size
+            else:
+                multiplier = quantity * 4  # Assume 250g packs
+        elif 'ml' in unit_lower:
+            # Quantity is in ml
+            if 'liter' in pack_unit or 'litre' in pack_unit or 'l' == pack_unit:
+                multiplier = quantity / 1000
+            elif 'ml' in pack_unit:
+                pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 500)
+                multiplier = quantity / pack_size
+            else:
+                multiplier = quantity / 500
+        elif 'l' in unit_lower and 'ml' not in unit_lower:
+            # Quantity is in liters
+            if 'ml' in pack_unit:
+                pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 500)
+                multiplier = (quantity * 1000) / pack_size
+            else:
+                multiplier = quantity
+        elif any(x in unit_lower for x in ['each', 'piece', 'pcs', 'clove', 'bulb', 'head', 'loaf']):
+            # Discrete items
+            if 'pack' in pack_unit:
+                pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 6)
+                multiplier = quantity / pack_size
+            else:
+                multiplier = quantity
+        elif unit_lower in ['tbsp', 'tablespoon', 'tsp', 'teaspoon']:
+            # Small measurement - estimate as fraction of a bottle/jar
+            if unit_lower in ['tbsp', 'tablespoon']:
+                multiplier = quantity / 20  # ~20 tbsp per bottle/jar
+            else:
+                multiplier = quantity / 60  # ~60 tsp per bottle/jar
+        else:
+            # Default: treat as discrete items or estimate conservatively
+            multiplier = quantity if quantity < 10 else quantity / 6
+        
+        # Allow prices below £1 for small quantities - no artificial floor
+        # Just ensure it's not negative or zero
+        multiplier = max(0.1, multiplier)
+        
+        estimated_price = round(base_price * multiplier, 2)
+        
+        return {
+            "estimated_price": estimated_price,
+            "prices_by_store": {
+                "tesco": round(matched_data.get("tesco", base_price) * multiplier, 2),
+                "tesco_clubcard": round(matched_data.get("tesco_clubcard", matched_data.get("tesco", base_price)) * multiplier, 2),
+                "sainsburys": round(matched_data.get("sainsburys", base_price) * multiplier, 2),
+                "sainsburys_nectar": round(matched_data.get("sainsburys_nectar", matched_data.get("sainsburys", base_price)) * multiplier, 2),
+                "aldi": round(matched_data.get("aldi", base_price) * multiplier, 2),
+                "lidl": round(matched_data.get("lidl", base_price) * multiplier, 2),
+                "asda": round(matched_data.get("asda", base_price) * multiplier, 2),
+                "morrisons": round(matched_data.get("morrisons", base_price) * multiplier, 2),
+                "morrisons_more": round(matched_data.get("morrisons_more", matched_data.get("morrisons", base_price)) * multiplier, 2),
+            },
+            "matched": True
+        }
+    
+    # Default estimate for unknown items - more realistic pricing
+    # Small quantities = smaller prices, not a flat £2
+    if 'g' in unit_lower and quantity < 500:
+        default_price = max(0.50, (quantity / 250) * 1.50)  # ~£1.50 per 250g estimate
+    elif 'ml' in unit_lower and quantity < 500:
+        default_price = max(0.40, (quantity / 500) * 1.50)  # ~£1.50 per 500ml estimate
+    elif quantity < 1:
+        default_price = max(0.20, quantity * 1.50)  # Fractional item
+    elif quantity <= 3:
+        default_price = max(0.30, quantity * 0.50)  # Small discrete items ~50p each
+    else:
+        default_price = min(quantity * 0.40, 5.00)  # Cap at £5 for large quantities
+    
+    default_price = round(default_price, 2)
+    
     return {
-        "estimated_price": round(default_price, 2),
+        "estimated_price": default_price,
         "prices_by_store": {
-            "tesco": round(default_price, 2),
+            "tesco": default_price,
             "tesco_clubcard": round(default_price * 0.85, 2),
             "sainsburys": round(default_price * 1.1, 2),
             "sainsburys_nectar": round(default_price * 0.95, 2),
