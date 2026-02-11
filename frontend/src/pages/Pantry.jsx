@@ -345,14 +345,22 @@ export default function Pantry() {
   // Clean up scanner when dialog closes
   useEffect(() => {
     if (!barcodeDialogOpen) {
-      resetBarcodeScanner();
+      // Full cleanup when dialog closes
+      scannerActiveRef.current = false;
+      stopCameraStream();
+      setScanning(false);
+      setScannedProduct(null);
+      setLookingUpBarcode(false);
+      setManualBarcode("");
+      setFillLevel("full");
     }
   }, [barcodeDialogOpen]);
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      forceStopScanner();
+      scannerActiveRef.current = false;
+      stopCameraStream();
     };
   }, []);
   
