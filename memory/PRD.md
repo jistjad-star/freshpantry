@@ -145,6 +145,12 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - **Added**: "Select All" and "Select Low Stock" buttons
 - **Added**: "Export to List" button - adds selected pantry items to shopping list
 - **Added**: POST /api/shopping-list/add-items endpoint for bulk adding items
+- **Added**: AI Cocktail Suggestions - Generate cocktail/mocktail from pantry ingredients
+- **Added**: Cocktail type filter (Any/Alcoholic/Virgin) in Suggestions page
+- **Added**: POST /api/suggestions/generate-cocktail endpoint
+- **Removed**: Emergent-specific auth endpoints and dependencies
+- **Updated**: CORS to only allow DigitalOcean domains
+- **Updated**: README with complete DigitalOcean deployment guide
 
 ### 2025-02-11 (Session 8)
 - **Added**: "Make Vegan" button on recipe detail page - AI converts all animal products to plant-based alternatives
