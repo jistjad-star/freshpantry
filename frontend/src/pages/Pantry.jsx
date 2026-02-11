@@ -102,6 +102,7 @@ export default function Pantry() {
   const [scannedProduct, setScannedProduct] = useState(null);
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
   const [manualBarcode, setManualBarcode] = useState("");
+  const [fillLevel, setFillLevel] = useState("full"); // full, three-quarters, half, quarter, nearly-empty
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   
