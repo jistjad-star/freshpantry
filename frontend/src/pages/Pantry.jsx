@@ -832,16 +832,16 @@ export default function Pantry() {
                             <img 
                               src={scannedProduct.image_url} 
                               alt={scannedProduct.name}
-                              className="w-20 h-20 object-cover rounded-lg bg-white"
+                              className="w-14 h-14 object-cover rounded-lg bg-white"
                             />
                           )}
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-[#1A2E1A]">{scannedProduct.name}</h4>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-[#1A2E1A] text-sm truncate">{scannedProduct.name}</h4>
                             {scannedProduct.brand && (
-                              <p className="text-sm text-stone-500">{scannedProduct.brand}</p>
+                              <p className="text-xs text-stone-500 truncate">{scannedProduct.brand}</p>
                             )}
-                            <p className="text-sm text-stone-600 mt-1">
-                              Full size: {scannedProduct.quantity} {scannedProduct.unit}
+                            <p className="text-xs text-stone-600 mt-1">
+                              Full: {scannedProduct.quantity} {scannedProduct.unit}
                             </p>
                           </div>
                         </div>
@@ -849,38 +849,36 @@ export default function Pantry() {
                       
                       {/* Fill Level Selector */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-[#1A2E1A]">How full is this item?</Label>
-                        <div className="grid grid-cols-5 gap-2">
+                        <Label className="text-xs font-medium text-[#1A2E1A]">How full?</Label>
+                        <div className="grid grid-cols-5 gap-1">
                           {[
-                            { value: "full", label: "Full", icon: "████", percent: "100%" },
-                            { value: "three-quarters", label: "¾", icon: "███░", percent: "75%" },
-                            { value: "half", label: "Half", icon: "██░░", percent: "50%" },
-                            { value: "quarter", label: "¼", icon: "█░░░", percent: "25%" },
-                            { value: "nearly-empty", label: "Low", icon: "░░░░", percent: "10%" },
+                            { value: "full", label: "Full", icon: "████" },
+                            { value: "three-quarters", label: "¾", icon: "███░" },
+                            { value: "half", label: "½", icon: "██░░" },
+                            { value: "quarter", label: "¼", icon: "█░░░" },
+                            { value: "nearly-empty", label: "Low", icon: "░░░░" },
                           ].map((level) => (
                             <button
                               key={level.value}
                               onClick={() => setFillLevel(level.value)}
-                              className={`p-2 rounded-lg border-2 text-center transition-all ${
+                              className={`p-1.5 rounded-lg border-2 text-center transition-all ${
                                 fillLevel === level.value 
                                   ? 'border-[#4A7C59] bg-[#4A7C59]/10 text-[#4A7C59]' 
                                   : 'border-stone-200 hover:border-stone-300 text-stone-600'
                               }`}
                             >
-                              <div className="text-xs font-mono mb-1">{level.icon}</div>
-                              <div className="text-xs font-medium">{level.label}</div>
+                              <div className="text-[10px] font-mono leading-none mb-0.5">{level.icon}</div>
+                              <div className="text-[10px] font-medium">{level.label}</div>
                             </button>
                           ))}
                         </div>
                         
                         {/* Calculated Quantity Display */}
-                        <div className="bg-stone-50 rounded-lg p-3 mt-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-stone-600">Amount to add:</span>
-                            <span className="text-lg font-semibold text-[#4A7C59]">
-                              {getAdjustedQuantity()} {scannedProduct.unit}
-                            </span>
-                          </div>
+                        <div className="bg-stone-50 rounded-lg p-2 flex justify-between items-center">
+                          <span className="text-xs text-stone-600">Adding:</span>
+                          <span className="text-sm font-semibold text-[#4A7C59]">
+                            {getAdjustedQuantity()} {scannedProduct.unit}
+                          </span>
                         </div>
                       </div>
                       
@@ -890,20 +888,19 @@ export default function Pantry() {
                             setScannedProduct(null); 
                             setFillLevel("full");
                             hasDetectedRef.current = false;
-                            // Automatically start scanning again
                             setTimeout(() => startBarcodeScanner(), 100);
                           }}
                           variant="outline"
-                          className="flex-1"
+                          className="flex-1 h-9 text-sm"
                         >
                           Scan Another
                         </Button>
                         <Button 
                           onClick={addScannedProductToPantry}
-                          className="flex-1 btn-primary"
+                          className="flex-1 btn-primary h-9 text-sm"
                         >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add to Pantry
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add
                         </Button>
                       </div>
                     </div>
