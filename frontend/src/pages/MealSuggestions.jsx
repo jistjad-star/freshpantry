@@ -393,6 +393,182 @@ export default function MealSuggestions() {
           </div>
         </div>
 
+        {/* AI Generated Cocktail - Separate Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-xl font-semibold text-[#1A2E1A] flex items-center gap-2">
+              <GlassWater className="w-5 h-5 text-purple-500" />
+              Cocktail Suggestion
+            </h2>
+            <div className="flex items-center gap-2">
+              {/* Cocktail Type Filter */}
+              <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-full p-1">
+                <button
+                  onClick={() => { setCocktailTypeFilter(null); }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    cocktailTypeFilter === null 
+                      ? 'bg-purple-500 text-white' 
+                      : 'text-stone-500 hover:text-purple-600'
+                  }`}
+                  data-testid="cocktail-filter-any"
+                >
+                  Any
+                </button>
+                <button
+                  onClick={() => { setCocktailTypeFilter(true); }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
+                    cocktailTypeFilter === true 
+                      ? 'bg-purple-500 text-white' 
+                      : 'text-stone-500 hover:text-purple-600'
+                  }`}
+                  data-testid="cocktail-filter-alcoholic"
+                >
+                  <Wine className="w-3 h-3" />
+                  Alcoholic
+                </button>
+                <button
+                  onClick={() => { setCocktailTypeFilter(false); }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
+                    cocktailTypeFilter === false 
+                      ? 'bg-teal-500 text-white' 
+                      : 'text-stone-500 hover:text-teal-600'
+                  }`}
+                  data-testid="cocktail-filter-virgin"
+                >
+                  <GlassWater className="w-3 h-3" />
+                  Virgin
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="fresh-card-static p-6 bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-200" data-testid="ai-cocktail-card">
+            {generatingCocktail ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-400 to-fuchsia-500 flex items-center justify-center mb-4 animate-pulse">
+                  <GlassWater className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-purple-600 font-medium">Mixing up something special...</p>
+                <Loader2 className="w-6 h-6 animate-spin text-purple-500 mt-3" />
+              </div>
+            ) : generatedCocktail ? (
+              <div className="flex items-start gap-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ${
+                  generatedCocktail.is_alcoholic 
+                    ? 'bg-gradient-to-br from-purple-400 to-fuchsia-500' 
+                    : 'bg-gradient-to-br from-teal-400 to-cyan-500'
+                }`}>
+                  {generatedCocktail.is_alcoholic ? (
+                    <Wine className="w-7 h-7 text-white" />
+                  ) : (
+                    <GlassWater className="w-7 h-7 text-white" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-medium uppercase tracking-wider ${
+                      generatedCocktail.is_alcoholic ? 'text-purple-600' : 'text-teal-600'
+                    }`}>
+                      {generatedCocktail.is_alcoholic ? 'Cocktail' : 'Mocktail'}
+                    </span>
+                    <Sparkles className="w-3 h-3 text-purple-500" />
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-[#1A2E1A] mb-1">
+                    {generatedCocktail.name}
+                  </h3>
+                  <p className="text-sm text-stone-600 mb-3 line-clamp-2">
+                    {generatedCocktail.description}
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500 mb-4">
+                    {generatedCocktail.glass_type && (
+                      <span className="flex items-center gap-1 px-2 py-1 bg-white rounded-full">
+                        🥃 {generatedCocktail.glass_type}
+                      </span>
+                    )}
+                    {generatedCocktail.garnish && (
+                      <span className="flex items-center gap-1 px-2 py-1 bg-white rounded-full">
+                        🍋 {generatedCocktail.garnish}
+                      </span>
+                    )}
+                    {generatedCocktail.flavor_profile?.length > 0 && (
+                      <span className="flex items-center gap-1 px-2 py-1 bg-white rounded-full">
+                        ✨ {generatedCocktail.flavor_profile.slice(0, 2).join(', ')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Ingredients preview */}
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-stone-500 mb-2">Ingredients:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {generatedCocktail.ingredients?.slice(0, 8).map((ing, i) => (
+                        <span 
+                          key={i} 
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            ing.from_pantry 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-purple-100 text-purple-700'
+                          }`}
+                        >
+                          {ing.quantity} {ing.unit} {ing.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {generatedCocktail.missing_ingredients?.length > 0 && (
+                    <p className="text-xs text-purple-600 mb-4 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      You may need: {generatedCocktail.missing_ingredients.join(", ")}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button 
+                      onClick={saveGeneratedCocktail}
+                      disabled={savingCocktail}
+                      className={`text-white ${
+                        generatedCocktail.is_alcoholic 
+                          ? 'bg-purple-500 hover:bg-purple-600' 
+                          : 'bg-teal-500 hover:bg-teal-600'
+                      }`}
+                      data-testid="save-ai-cocktail"
+                    >
+                      {savingCocktail ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                      Save Cocktail
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={generateAICocktail}
+                      disabled={generatingCocktail}
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                      data-testid="try-another-cocktail"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Try Another
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <GlassWater className="w-12 h-12 text-purple-300 mx-auto mb-3" />
+                <p className="text-stone-500 mb-4">Get a cocktail suggestion based on your pantry!</p>
+                <Button 
+                  onClick={generateAICocktail}
+                  disabled={generatingCocktail}
+                  className="bg-purple-500 hover:bg-purple-600 text-white"
+                  data-testid="generate-cocktail-btn"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Suggest a Drink
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Your Recipes That Match */}
         <div>
           <div className="flex items-center justify-between mb-4">
