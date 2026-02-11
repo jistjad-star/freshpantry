@@ -102,6 +102,8 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - POST /api/recipes/share - Create private import token (NEW - replaces old share)
 - GET /api/recipes/shared/{token} - Get minimal share preview (NEW)
 - POST /api/recipes/import-shared/{token} - Import safe fields only (NEW)
+- POST /api/recipes/{recipe_id}/make-vegan - Convert recipe to vegan with AI
+- POST /api/recipes/{recipe_id}/make-vegetarian - Convert recipe to vegetarian with AI
 
 ## Changelog
 
