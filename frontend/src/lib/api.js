@@ -75,6 +75,7 @@ export const api = {
   generateShoppingList: (recipeIds) => axios.post(`${API}/shopping-list/generate`, { recipe_ids: recipeIds }),
   updateShoppingList: (items) => axios.put(`${API}/shopping-list`, { items }),
   addShoppingItem: (item) => axios.post(`${API}/shopping-list/add-item`, item),
+  addItemsToShoppingList: (items) => axios.post(`${API}/shopping-list/add-items`, { items }),
   deleteShoppingItem: (id) => axios.delete(`${API}/shopping-list/item/${id}`),
   estimateShoppingCosts: () => axios.get(`${API}/shopping-list/estimate-costs`),
 
