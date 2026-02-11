@@ -4501,7 +4501,7 @@ STORE_INFO = {
 def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> dict:
     """Estimate price for a shopping item - proportional to quantity"""
     name_lower = item_name.lower()
-    unit_lower = unit.lower() if unit else ""
+    unit_lower = unit.lower().strip() if unit else ""
     
     # First try to find a matching price entry
     matched_data = None
@@ -4510,24 +4510,37 @@ def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> 
             matched_data = data
             break
     
+    # If no exact match, try partial word matching
+    if not matched_data:
+        name_words = name_lower.split()
+        for key, data in UK_PRICE_DATA.items():
+            if any(key in word or word in key for word in name_words if len(word) > 3):
+                matched_data = data
+                break
+    
     if matched_data:
         base_price = matched_data["price"]
-        pack_unit = matched_data.get("unit", "each")
+        pack_unit = matched_data.get("unit", "each").lower()
         
         # Calculate multiplier based on quantity and unit conversion
         multiplier = 1.0
         
-        # Handle weight-based items
-        if 'g' in unit_lower and 'g' not in unit_lower.replace('kg', ''):
+        # Determine if unit is grams (but not kg)
+        is_grams = ('g' in unit_lower and 'kg' not in unit_lower) or unit_lower == 'g' or unit_lower == 'gram' or unit_lower == 'grams'
+        is_kg = 'kg' in unit_lower or 'kilo' in unit_lower
+        is_ml = 'ml' in unit_lower
+        is_liters = ('l' in unit_lower and 'ml' not in unit_lower) or unit_lower in ['l', 'liter', 'litre', 'liters', 'litres']
+        
+        if is_grams:
             # Quantity is in grams
             if 'kg' in pack_unit:
-                multiplier = quantity / 1000  # e.g., 500g = 0.5 of 1kg pack price
+                multiplier = quantity / 1000
             elif 'g' in pack_unit:
                 pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 250)
                 multiplier = quantity / pack_size
             else:
                 multiplier = quantity / 250  # Assume 250g typical pack
-        elif 'kg' in unit_lower or 'kilo' in unit_lower:
+        elif is_kg:
             # Quantity is in kg
             if 'kg' in pack_unit:
                 multiplier = quantity
@@ -4535,43 +4548,44 @@ def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> 
                 pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 250)
                 multiplier = (quantity * 1000) / pack_size
             else:
-                multiplier = quantity * 4  # Assume 250g packs
-        elif 'ml' in unit_lower:
+                multiplier = quantity * 4
+        elif is_ml:
             # Quantity is in ml
-            if 'liter' in pack_unit or 'litre' in pack_unit or 'l' == pack_unit:
+            if 'liter' in pack_unit or 'litre' in pack_unit or pack_unit == 'l':
                 multiplier = quantity / 1000
             elif 'ml' in pack_unit:
                 pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 500)
                 multiplier = quantity / pack_size
             else:
                 multiplier = quantity / 500
-        elif 'l' in unit_lower and 'ml' not in unit_lower:
+        elif is_liters:
             # Quantity is in liters
             if 'ml' in pack_unit:
                 pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 500)
                 multiplier = (quantity * 1000) / pack_size
             else:
                 multiplier = quantity
-        elif any(x in unit_lower for x in ['each', 'piece', 'pcs', 'clove', 'bulb', 'head', 'loaf']):
-            # Discrete items
+        elif any(x in unit_lower for x in ['each', 'piece', 'pcs', 'clove', 'bulb', 'head', 'loaf', '']):
+            # Discrete items or no unit specified
             if 'pack' in pack_unit:
                 pack_size = float(''.join(filter(str.isdigit, pack_unit)) or 6)
                 multiplier = quantity / pack_size
+            elif 'g' in pack_unit:
+                # Item is sold by weight, estimate pieces
+                multiplier = max(0.5, quantity / 2)
             else:
                 multiplier = quantity
         elif unit_lower in ['tbsp', 'tablespoon', 'tsp', 'teaspoon']:
             # Small measurement - estimate as fraction of a bottle/jar
             if unit_lower in ['tbsp', 'tablespoon']:
-                multiplier = quantity / 20  # ~20 tbsp per bottle/jar
+                multiplier = quantity / 20
             else:
-                multiplier = quantity / 60  # ~60 tsp per bottle/jar
+                multiplier = quantity / 60
         else:
-            # Default: treat as discrete items or estimate conservatively
-            multiplier = quantity if quantity < 10 else quantity / 6
+            multiplier = max(0.5, quantity / 2)
         
-        # Allow prices below £1 for small quantities - no artificial floor
-        # Just ensure it's not negative or zero
-        multiplier = max(0.1, multiplier)
+        # Ensure reasonable multiplier
+        multiplier = max(0.1, min(multiplier, 20))  # Cap at 20x base price
         
         estimated_price = round(base_price * multiplier, 2)
         
@@ -4591,18 +4605,28 @@ def estimate_item_price(item_name: str, quantity: float = 1, unit: str = "") -> 
             "matched": True
         }
     
-    # Default estimate for unknown items - more realistic pricing
-    # Small quantities = smaller prices, not a flat £2
-    if 'g' in unit_lower and quantity < 500:
-        default_price = max(0.50, (quantity / 250) * 1.50)  # ~£1.50 per 250g estimate
-    elif 'ml' in unit_lower and quantity < 500:
-        default_price = max(0.40, (quantity / 500) * 1.50)  # ~£1.50 per 500ml estimate
+    # Default estimate for unknown items - REALISTIC UK supermarket pricing
+    # Most items are £1-5 range
+    is_grams = ('g' in unit_lower and 'kg' not in unit_lower) or unit_lower in ['g', 'gram', 'grams']
+    is_kg = 'kg' in unit_lower or 'kilo' in unit_lower
+    is_ml = 'ml' in unit_lower
+    is_liters = ('l' in unit_lower and 'ml' not in unit_lower) or unit_lower in ['l', 'liter', 'litre']
+    
+    if is_grams:
+        # Price per 100g is typically £0.50-£1.50 for most items
+        default_price = max(0.50, min((quantity / 100) * 0.80, 8.00))
+    elif is_kg:
+        default_price = max(1.00, min(quantity * 5.00, 15.00))
+    elif is_ml:
+        default_price = max(0.30, min((quantity / 100) * 0.40, 6.00))
+    elif is_liters:
+        default_price = max(1.00, min(quantity * 2.00, 8.00))
     elif quantity < 1:
-        default_price = max(0.20, quantity * 1.50)  # Fractional item
-    elif quantity <= 3:
-        default_price = max(0.30, quantity * 0.50)  # Small discrete items ~50p each
+        default_price = max(0.30, quantity * 2.00)
+    elif quantity <= 6:
+        default_price = max(0.50, min(quantity * 0.80, 4.00))
     else:
-        default_price = min(quantity * 0.40, 5.00)  # Cap at £5 for large quantities
+        default_price = min(quantity * 0.50, 6.00)
     
     default_price = round(default_price, 2)
     
