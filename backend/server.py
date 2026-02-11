@@ -3013,6 +3013,56 @@ async def add_custom_item(item: ShoppingListItem, request: Request):
     
     return shopping_list
 
+class AddItemsToShoppingListRequest(BaseModel):
+    items: List[dict]
+
+@api_router.post("/shopping-list/add-items", response_model=ShoppingList)
+async def add_items_to_shopping_list(data: AddItemsToShoppingListRequest, request: Request):
+    """Add multiple items to the shopping list (from pantry low stock export)"""
+    user_id = await get_user_id_or_none(request)
+    
+    query = {"user_id": user_id} if user_id else {"user_id": None}
+    shopping_list = await db.shopping_lists.find_one(query, {"_id": 0})
+    
+    if not shopping_list:
+        shopping_list = ShoppingList(items=[], user_id=user_id).model_dump()
+        shopping_list['created_at'] = shopping_list['created_at'].isoformat() if hasattr(shopping_list['created_at'], 'isoformat') else shopping_list['created_at']
+        shopping_list['updated_at'] = shopping_list['updated_at'].isoformat() if hasattr(shopping_list['updated_at'], 'isoformat') else shopping_list['updated_at']
+        await db.shopping_lists.insert_one(shopping_list)
+    
+    # Add each item to the shopping list
+    added_count = 0
+    for item_data in data.items:
+        # Check if item already exists (by name, case-insensitive)
+        existing = next(
+            (i for i in shopping_list['items'] 
+             if normalize_ingredient_name(i.get('name', '')) == normalize_ingredient_name(item_data.get('name', ''))),
+            None
+        )
+        
+        if not existing:
+            new_item = ShoppingListItem(
+                name=item_data.get('name', ''),
+                quantity=str(item_data.get('quantity', '1')),
+                unit=item_data.get('unit', ''),
+                category=item_data.get('category', 'other'),
+                checked=False,
+                recipe_source="Pantry Low Stock"
+            ).model_dump()
+            shopping_list['items'].append(new_item)
+            added_count += 1
+    
+    shopping_list['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.shopping_lists.update_one(query, {"$set": shopping_list})
+    
+    if isinstance(shopping_list.get('created_at'), str):
+        shopping_list['created_at'] = datetime.fromisoformat(shopping_list['created_at'])
+    if isinstance(shopping_list.get('updated_at'), str):
+        shopping_list['updated_at'] = datetime.fromisoformat(shopping_list['updated_at'])
+    
+    return shopping_list
+
 @api_router.delete("/shopping-list/item/{item_id}")
 async def delete_shopping_item(item_id: str, request: Request):
     """Delete an item from the shopping list"""
