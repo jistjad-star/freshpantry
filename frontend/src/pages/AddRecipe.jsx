@@ -428,7 +428,7 @@ export default function AddRecipe() {
               type="file"
               ref={fileInputRef}
               onChange={handleImageUpload}
-              accept="image/*"
+              accept="image/*,.pdf,application/pdf"
               multiple
               className="hidden"
             />
