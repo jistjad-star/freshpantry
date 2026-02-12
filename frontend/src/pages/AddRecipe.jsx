@@ -677,93 +677,159 @@ export default function AddRecipe() {
 
             {/* Screenshot Input */}
             {inputMethod === 'screenshot' && (
-              <div className="space-y-4">
-                {imagePreviews.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-3">
-                    {imagePreviews.map((preview, i) => (
-                      <div key={i} className="relative group aspect-square">
-                        <img src={preview} alt="" className="w-full h-full object-cover rounded-lg" />
+              <div className="space-y-6">
+                {/* Two separate upload boxes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Ingredients Upload Box */}
+                  <div className="border-2 border-dashed border-[#4A7C59]/30 rounded-xl p-4 bg-[#4A7C59]/5">
+                    <h4 className="font-medium text-[#1A2E1A] mb-3 flex items-center gap-2">
+                      <span className="bg-[#4A7C59] text-white text-xs px-2 py-0.5 rounded">1</span>
+                      Ingredients Photos
+                    </h4>
+                    
+                    {ingredientPreviews.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          {ingredientPreviews.map((preview, i) => (
+                            <div key={i} className="relative group aspect-square">
+                              <img src={preview} alt="" className="w-full h-full object-cover rounded-lg" />
+                              <button
+                                onClick={() => removeIngredientImage(i)}
+                                className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => ingredientFileRef.current?.click()}
+                            className="aspect-square rounded-lg border border-dashed border-[#4A7C59]/50 flex flex-col items-center justify-center text-[#4A7C59]/70 hover:text-[#4A7C59] transition-colors"
+                          >
+                            <Plus className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
                         <button
-                          onClick={() => removeImage(i)}
-                          className="absolute top-1 right-1 bg-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                          onClick={() => ingredientCameraRef.current?.click()}
+                          className="flex-1 p-4 rounded-lg border border-dashed border-stone-300 hover:border-[#4A7C59] text-center transition-colors group"
                         >
-                          <Trash2 className="w-3 h-3 text-red-500" />
+                          <Camera className="w-6 h-6 mx-auto mb-2 text-stone-400 group-hover:text-[#4A7C59]" />
+                          <p className="text-xs text-stone-500 group-hover:text-[#4A7C59]">Take Photo</p>
+                        </button>
+                        <button
+                          onClick={() => ingredientFileRef.current?.click()}
+                          className="flex-1 p-4 rounded-lg border border-dashed border-stone-300 hover:border-[#4A7C59] text-center transition-colors group"
+                        >
+                          <Upload className="w-6 h-6 mx-auto mb-2 text-stone-400 group-hover:text-[#4A7C59]" />
+                          <p className="text-xs text-stone-500 group-hover:text-[#4A7C59]">Upload</p>
                         </button>
                       </div>
-                    ))}
-                    {/* Add more buttons */}
-                    <button
-                      onClick={() => cameraInputRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-stone-200 hover:border-[#4A7C59] flex flex-col items-center justify-center text-stone-400 hover:text-[#4A7C59] transition-colors"
-                    >
-                      <Camera className="w-5 h-5" />
-                      <span className="text-xs mt-1">Scan</span>
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-stone-200 hover:border-[#4A7C59] flex flex-col items-center justify-center text-stone-400 hover:text-[#4A7C59] transition-colors"
-                    >
-                      <Upload className="w-5 h-5" />
-                      <span className="text-xs mt-1">Upload</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => cameraInputRef.current?.click()}
-                      className="p-8 rounded-xl border-2 border-dashed border-stone-200 hover:border-[#4A7C59] text-center transition-colors group"
-                    >
-                      <Camera className="w-10 h-10 mx-auto mb-3 text-stone-300 group-hover:text-[#4A7C59]" />
-                      <p className="text-stone-600 font-medium group-hover:text-[#4A7C59]">Take Photo</p>
-                      <p className="text-xs text-stone-400 mt-1">Use camera to scan recipe card</p>
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-8 rounded-xl border-2 border-dashed border-stone-200 hover:border-[#4A7C59] text-center transition-colors group"
-                    >
-                      <Upload className="w-10 h-10 mx-auto mb-3 text-stone-300 group-hover:text-[#4A7C59]" />
-                      <p className="text-stone-600 font-medium group-hover:text-[#4A7C59]">Upload Images</p>
-                      <p className="text-xs text-stone-400 mt-1">Select screenshots or photos</p>
-                    </button>
-                  </div>
-                )}
-                
-                {images.length > 0 && (
-                  <>
-                    {/* Suggestion: Separate text areas for ingredients and steps */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
-                      <p className="font-medium mb-1">💡 Tip: For best results</p>
-                      <p>Upload separate images for ingredients list and cooking steps, or use the text boxes below to help the AI.</p>
-                    </div>
+                    )}
+                    <p className="text-xs text-stone-400 mt-2 text-center">Photos of ingredient list</p>
                     
-                    {/* Optional manual ingredient text for screenshot mode */}
-                    <details className="group">
-                      <summary className="cursor-pointer text-sm text-stone-500 hover:text-[#4A7C59] flex items-center gap-2">
-                        <span className="text-xs bg-stone-100 px-2 py-1 rounded">Optional</span>
-                        Add ingredient text to help AI extraction
-                      </summary>
-                      <div className="mt-3 space-y-3">
-                        <Textarea
-                          placeholder="Paste or type ingredients here (optional - helps AI extract more accurately)"
-                          value={pasteIngredients}
-                          onChange={(e) => setPasteIngredients(e.target.value)}
-                          className="fresh-input min-h-[100px] font-mono text-sm"
-                          data-testid="screenshot-ingredients-input"
-                        />
-                        <Textarea
-                          placeholder="Paste or type cooking steps here (optional)"
-                          value={pasteInstructions}
-                          onChange={(e) => setPasteInstructions(e.target.value)}
-                          className="fresh-input min-h-[100px] font-mono text-sm"
-                          data-testid="screenshot-instructions-input"
-                        />
+                    {/* Hidden inputs for ingredients */}
+                    <input
+                      ref={ingredientFileRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleIngredientImageUpload}
+                      className="hidden"
+                    />
+                    <input
+                      ref={ingredientCameraRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleIngredientImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  
+                  {/* Instructions Upload Box */}
+                  <div className="border-2 border-dashed border-orange-300/50 rounded-xl p-4 bg-orange-50/50">
+                    <h4 className="font-medium text-[#1A2E1A] mb-3 flex items-center gap-2">
+                      <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">2</span>
+                      Steps/Instructions Photos
+                    </h4>
+                    
+                    {instructionPreviews.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          {instructionPreviews.map((preview, i) => (
+                            <div key={i} className="relative group aspect-square">
+                              <img src={preview} alt="" className="w-full h-full object-cover rounded-lg" />
+                              <button
+                                onClick={() => removeInstructionImage(i)}
+                                className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => instructionFileRef.current?.click()}
+                            className="aspect-square rounded-lg border border-dashed border-orange-300 flex flex-col items-center justify-center text-orange-400 hover:text-orange-500 transition-colors"
+                          >
+                            <Plus className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                    </details>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => instructionCameraRef.current?.click()}
+                          className="flex-1 p-4 rounded-lg border border-dashed border-stone-300 hover:border-orange-400 text-center transition-colors group"
+                        >
+                          <Camera className="w-6 h-6 mx-auto mb-2 text-stone-400 group-hover:text-orange-500" />
+                          <p className="text-xs text-stone-500 group-hover:text-orange-500">Take Photo</p>
+                        </button>
+                        <button
+                          onClick={() => instructionFileRef.current?.click()}
+                          className="flex-1 p-4 rounded-lg border border-dashed border-stone-300 hover:border-orange-400 text-center transition-colors group"
+                        >
+                          <Upload className="w-6 h-6 mx-auto mb-2 text-stone-400 group-hover:text-orange-500" />
+                          <p className="text-xs text-stone-500 group-hover:text-orange-500">Upload</p>
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-xs text-stone-400 mt-2 text-center">Photos of cooking steps</p>
                     
-                    <Button onClick={parseFromScreenshots} disabled={loading} className="btn-primary w-full">
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract from {images.length} Image{images.length > 1 ? 's' : ''}</>}
-                    </Button>
-                  </>
+                    {/* Hidden inputs for instructions */}
+                    <input
+                      ref={instructionFileRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleInstructionImageUpload}
+                      className="hidden"
+                    />
+                    <input
+                      ref={instructionCameraRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleInstructionImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+                
+                {/* Extract button - shown when at least one image is uploaded */}
+                {(ingredientImages.length > 0 || instructionImages.length > 0) && (
+                  <Button onClick={parseFromScreenshots} disabled={loading} className="btn-primary w-full">
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Extract Recipe ({ingredientImages.length + instructionImages.length} image{ingredientImages.length + instructionImages.length > 1 ? 's' : ''})
+                      </>
+                    )}
+                  </Button>
                 )}
               </div>
             )}
