@@ -834,7 +834,7 @@ export default function AddRecipe() {
                       ref={instructionCameraRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      capture
                       onChange={handleInstructionImageUpload}
                       className="hidden"
                     />
