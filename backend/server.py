@@ -2095,9 +2095,140 @@ async def scrape_recipe_from_url(url: str) -> dict:
                             break
             
             return recipe_data
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 403:
+            logger.warning(f"403 Forbidden from {url}, trying alternative scraping method...")
+            # Try with alternative approach using a different endpoint
+            return await scrape_recipe_fallback(url)
+        logger.error(f"Error scraping recipe: {e}")
+        raise HTTPException(status_code=400, detail=f"Could not fetch recipe from URL: {str(e)}")
     except Exception as e:
         logger.error(f"Error scraping recipe: {e}")
         raise HTTPException(status_code=400, detail=f"Could not fetch recipe from URL: {str(e)}")
+
+async def scrape_recipe_fallback(url: str) -> dict:
+    """Fallback scraping method for sites that block regular requests"""
+    try:
+        # Try using a web archive or cache service
+        alternative_urls = [
+            f"https://webcache.googleusercontent.com/search?q=cache:{url}",
+        ]
+        
+        # Also try with different headers (mobile user agent)
+        mobile_headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
+        
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client_http:
+            # First try with mobile user agent on original URL
+            try:
+                response = await client_http.get(url, headers=mobile_headers)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    return await extract_recipe_from_soup(soup, url)
+            except Exception as e:
+                logger.warning(f"Mobile UA attempt failed: {e}")
+            
+            # Try alternative URLs
+            for alt_url in alternative_urls:
+                try:
+                    response = await client_http.get(alt_url, headers=mobile_headers)
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        result = await extract_recipe_from_soup(soup, url)
+                        if result.get('name') or result.get('ingredients_text'):
+                            return result
+                except Exception as e:
+                    logger.warning(f"Alternative URL {alt_url} failed: {e}")
+                    continue
+        
+        # If all else fails, raise a helpful error
+        raise HTTPException(
+            status_code=400, 
+            detail=f"This website blocks automated access. Please copy and paste the recipe text manually using the 'Paste Text' option."
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Fallback scraping failed: {e}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Could not access this recipe website. Please copy and paste the recipe text manually."
+        )
+
+async def extract_recipe_from_soup(soup: BeautifulSoup, url: str) -> dict:
+    """Extract recipe data from BeautifulSoup object"""
+    recipe_data = {
+        'name': '',
+        'description': '',
+        'ingredients_text': '',
+        'instructions_text': '',
+        'image_url': None,
+        'source_url': url
+    }
+    
+    # Try JSON-LD first
+    json_ld_scripts = soup.find_all('script', type='application/ld+json')
+    for script in json_ld_scripts:
+        try:
+            if not script.string:
+                continue
+            data = json.loads(script.string)
+            if isinstance(data, dict) and '@graph' in data:
+                data = data['@graph']
+            if isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict) and item.get('@type') == 'Recipe':
+                        data = item
+                        break
+            if isinstance(data, dict) and data.get('@type') == 'Recipe':
+                recipe_data['name'] = data.get('name', '')
+                recipe_data['description'] = data.get('description', '')
+                
+                ingredients = data.get('recipeIngredient', [])
+                if ingredients:
+                    recipe_data['ingredients_text'] = '\n'.join(ingredients)
+                
+                instructions = data.get('recipeInstructions', [])
+                if instructions:
+                    inst_text = []
+                    for inst in instructions:
+                        if isinstance(inst, str):
+                            inst_text.append(inst)
+                        elif isinstance(inst, dict):
+                            inst_text.append(inst.get('text', ''))
+                    recipe_data['instructions_text'] = '\n'.join(inst_text)
+                
+                logger.info(f"Fallback: Found recipe from JSON-LD: {recipe_data['name']}")
+                return recipe_data
+        except (json.JSONDecodeError, TypeError):
+            continue
+    
+    # Fallback to HTML parsing
+    # Title
+    for selector in ['h1', '.recipe-title', '.entry-title']:
+        elem = soup.select_one(selector)
+        if elem and elem.get_text(strip=True):
+            recipe_data['name'] = elem.get_text(strip=True)
+            break
+    
+    # Ingredients - look for common patterns
+    ing_container = soup.select_one('.ingredients, .recipe-ingredients, [class*="ingredient"]')
+    if ing_container:
+        items = ing_container.find_all('li')
+        if items:
+            recipe_data['ingredients_text'] = '\n'.join([li.get_text(strip=True) for li in items])
+    
+    # Instructions
+    inst_container = soup.select_one('.instructions, .directions, .recipe-instructions, [class*="instruction"], [class*="direction"]')
+    if inst_container:
+        items = inst_container.find_all('li')
+        if items:
+            recipe_data['instructions_text'] = '\n'.join([li.get_text(strip=True) for li in items])
+    
+    return recipe_data
 
 async def extract_recipe_with_ai(url: str, html_content: str) -> dict:
     """Use AI to extract recipe from webpage content when scraping fails"""
