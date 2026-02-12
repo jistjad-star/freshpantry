@@ -2947,6 +2947,21 @@ async def scrape_recipe_url(import_data: RecipeImport):
     """Scrape a recipe URL and return data without saving - rewrites instructions for copyright safety"""
     scraped = await scrape_recipe_from_url(import_data.url)
     
+    # Check if the site was blocked
+    if scraped.get('blocked'):
+        return {
+            "name": "",
+            "description": "",
+            "ingredients": [],
+            "instructions": [],
+            "source_url": scraped['source_url'],
+            "image_url": "",
+            "prep_time": "",
+            "cook_time": "",
+            "blocked": True,
+            "message": scraped.get('message', 'This website blocks automated access. Please copy and paste the recipe text manually.')
+        }
+    
     # If basic scraping failed to get ingredients/instructions, try AI extraction
     if not scraped['ingredients_text'] and not scraped['instructions_text']:
         logger.info("Basic scraping didn't find recipe data, trying AI extraction...")
