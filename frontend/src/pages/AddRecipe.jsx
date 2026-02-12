@@ -92,12 +92,21 @@ export default function AddRecipe() {
     return match ? match[0] : text.trim();
   };
 
+  // Helper to create preview - returns object URL for images, special marker for other files
+  const createPreview = (file) => {
+    if (file.type.startsWith('image/')) {
+      return { type: 'image', url: URL.createObjectURL(file), name: file.name };
+    } else {
+      return { type: 'file', url: null, name: file.name, fileType: file.type };
+    }
+  };
+
   // Handle ingredient image uploads
   const handleIngredientImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       setIngredientImages(prev => [...prev, ...files]);
-      setIngredientPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+      setIngredientPreviews(prev => [...prev, ...files.map(createPreview)]);
       setInputMethod('screenshot');
     }
   };
@@ -107,7 +116,7 @@ export default function AddRecipe() {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       setInstructionImages(prev => [...prev, ...files]);
-      setInstructionPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+      setInstructionPreviews(prev => [...prev, ...files.map(createPreview)]);
       setInputMethod('screenshot');
     }
   };
