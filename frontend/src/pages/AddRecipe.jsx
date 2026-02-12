@@ -734,7 +734,7 @@ export default function AddRecipe() {
                     <input
                       ref={ingredientFileRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                       multiple
                       onChange={handleIngredientImageUpload}
                       className="hidden"
@@ -796,13 +796,13 @@ export default function AddRecipe() {
                         </button>
                       </div>
                     )}
-                    <p className="text-xs text-stone-400 mt-2 text-center">Photos of cooking steps</p>
+                    <p className="text-xs text-stone-400 mt-2 text-center">Photos or documents of cooking steps</p>
                     
                     {/* Hidden inputs for instructions */}
                     <input
                       ref={instructionFileRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                       multiple
                       onChange={handleInstructionImageUpload}
                       className="hidden"
