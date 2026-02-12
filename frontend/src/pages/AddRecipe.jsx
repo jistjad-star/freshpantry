@@ -17,6 +17,12 @@ export default function AddRecipe() {
   const cameraInputRef = useRef(null);
   const photoInputRef = useRef(null);
   
+  // Refs for separate ingredient/instruction uploads
+  const ingredientFileRef = useRef(null);
+  const ingredientCameraRef = useRef(null);
+  const instructionFileRef = useRef(null);
+  const instructionCameraRef = useRef(null);
+  
   // Form state
   const [loading, setLoading] = useState(false);
   const [inputMethod, setInputMethod] = useState(null); // 'url', 'screenshot', 'paste'
