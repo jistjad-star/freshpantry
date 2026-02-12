@@ -1038,7 +1038,7 @@ export default function Pantry() {
                       return (
                         <div 
                           key={item.id}
-                          className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
+                          className={`flex items-stretch gap-2 p-3 rounded-xl transition-all ${
                             isSelected
                               ? 'bg-[#4A7C59]/10 border-2 border-[#4A7C59]'
                               : lowStock 
@@ -1047,20 +1047,22 @@ export default function Pantry() {
                           }`}
                           data-testid={`pantry-item-${item.id}`}
                         >
-                          {/* Selection Checkbox */}
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleItemSelection(item.id)}
-                            className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]"
-                            data-testid={`select-item-${item.id}`}
-                          />
+                          {/* Left side: Checkbox + Alert Icon */}
+                          <div className="flex flex-col items-center justify-center gap-1 flex-shrink-0 w-8">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleItemSelection(item.id)}
+                              className="border-stone-300 data-[state=checked]:bg-[#4A7C59] data-[state=checked]:border-[#4A7C59]"
+                              data-testid={`select-item-${item.id}`}
+                            />
+                            {lowStock && (
+                              <AlertTriangle className="w-4 h-4 text-[#E07A5F]" />
+                            )}
+                          </div>
                           
-                          {lowStock && (
-                            <AlertTriangle className="w-4 h-4 text-[#E07A5F] flex-shrink-0" />
-                          )}
-                          
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-medium truncate ${lowStock ? 'text-[#E07A5F]' : 'text-[#1A2E1A]'}`}>
+                          {/* Middle: Item info (name, quantity, expiry) */}
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <p className={`font-medium truncate text-sm ${lowStock ? 'text-[#E07A5F]' : 'text-[#1A2E1A]'}`}>
                               {item.name}
                             </p>
                             
@@ -1070,11 +1072,11 @@ export default function Pantry() {
                                   type="number"
                                   defaultValue={item.quantity}
                                   id={`edit-input-${item.id}`}
-                                  className="w-20 h-8 text-sm fresh-input"
+                                  className="w-16 h-7 text-sm fresh-input"
                                   autoFocus
                                   data-testid={`edit-qty-${item.id}`}
                                 />
-                                <span className="text-sm text-stone-500">{item.unit}</span>
+                                <span className="text-xs text-stone-500">{item.unit}</span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -1082,38 +1084,38 @@ export default function Pantry() {
                                     const input = document.getElementById(`edit-input-${item.id}`);
                                     if (input) updateItemQuantity(item.id, input.value);
                                   }}
-                                  className="h-8 w-8 p-0 text-[#4A7C59] hover:bg-[#4A7C59]/10"
+                                  className="h-7 w-7 p-0 text-[#4A7C59] hover:bg-[#4A7C59]/10"
                                   data-testid={`save-qty-${item.id}`}
                                 >
-                                  <Check className="w-4 h-4" />
+                                  <Check className="w-3 h-3" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setEditingItem(null)}
-                                  className="h-8 w-8 p-0"
+                                  className="h-7 w-7 p-0"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <X className="w-3 h-3" />
                                 </Button>
                               </div>
                             ) : (
-                              <div>
-                                <p className="text-sm text-stone-500">
-                                  <span className={`font-medium ${lowStock ? 'text-[#E07A5F]' : 'text-[#4A7C59]'}`}>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <span className="text-xs text-stone-500">
+                                  <span className={`font-semibold ${lowStock ? 'text-[#E07A5F]' : 'text-[#4A7C59]'}`}>
                                     {item.quantity}
                                   </span>
                                   {" "}{item.unit}
                                   {item.min_threshold > 0 && (
-                                    <span className="text-stone-400"> / min {item.min_threshold}</span>
+                                    <span className="text-stone-400"> (min: {item.min_threshold})</span>
                                   )}
-                                </p>
+                                </span>
                                 {/* Expiry date badge */}
                                 {(() => {
                                   const daysUntil = getDaysUntilExpiry(item);
                                   const status = getExpiryStatus(daysUntil);
                                   if (!status) return null;
                                   return (
-                                    <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded mt-1 ${status.color}`}>
+                                    <span className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded ${status.color}`}>
                                       <CalendarClock className="w-3 h-3" />
                                       {status.label}
                                     </span>
@@ -1123,46 +1125,51 @@ export default function Pantry() {
                             )}
                           </div>
                           
+                          {/* Right side: Action buttons (vertical stack for compact layout) */}
                           {!isEditing && (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openExpiryDialog(item)}
-                                className={`h-8 w-8 p-0 ${item.expiry_date ? 'text-orange-500' : 'text-stone-400'} hover:text-orange-600`}
-                                title="Set sell by date"
-                                data-testid={`expiry-item-${item.id}`}
-                              >
-                                <CalendarClock className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openAlertDialog(item)}
-                                className={`h-8 w-8 p-0 ${item.min_threshold > 0 ? 'text-[#4A7C59]' : 'text-stone-400'} hover:text-[#4A7C59]`}
-                                title="Set low stock alert"
-                                data-testid={`alert-item-${item.id}`}
-                              >
-                                <Bell className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setEditingItem(item.id)}
-                                className="h-8 w-8 p-0 text-stone-400 hover:text-[#4A7C59]"
-                                data-testid={`edit-item-${item.id}`}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteItem(item.id)}
-                                className="h-8 w-8 p-0 text-stone-400 hover:text-[#E07A5F]"
-                                data-testid={`delete-item-${item.id}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                            <div className="flex flex-col justify-center gap-0.5 flex-shrink-0">
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openExpiryDialog(item)}
+                                  className={`h-7 w-7 p-0 ${item.expiry_date ? 'text-orange-500' : 'text-stone-400'} hover:text-orange-600`}
+                                  title="Set sell by date"
+                                  data-testid={`expiry-item-${item.id}`}
+                                >
+                                  <CalendarClock className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openAlertDialog(item)}
+                                  className={`h-7 w-7 p-0 ${item.min_threshold > 0 ? 'text-[#4A7C59]' : 'text-stone-400'} hover:text-[#4A7C59]`}
+                                  title="Set low stock alert"
+                                  data-testid={`alert-item-${item.id}`}
+                                >
+                                  <Bell className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingItem(item.id)}
+                                  className="h-7 w-7 p-0 text-stone-400 hover:text-[#4A7C59]"
+                                  data-testid={`edit-item-${item.id}`}
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteItem(item.id)}
+                                  className="h-7 w-7 p-0 text-stone-400 hover:text-[#E07A5F]"
+                                  data-testid={`delete-item-${item.id}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>
