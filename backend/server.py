@@ -961,13 +961,12 @@ def guess_category(ingredient_name: str) -> str:
     return 'other'
 
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
-    """Use AI to parse raw ingredient text into structured data"""
-    if not openai_client:
-        logger.warning("No OpenAI API key found, returning empty ingredients")
-        return []
+    """Use AI to parse raw ingredient text into structured data, with simple parser fallback"""
     
-    try:
-        system_message = """You are a helpful assistant that parses recipe ingredients into structured JSON format.
+    # Try AI parsing first if available
+    if openai_client:
+        try:
+            system_message = """You are a helpful assistant that parses recipe ingredients into structured JSON format.
 
 CRITICAL: You must ONLY extract items from an INGREDIENTS LIST, NOT from cooking instructions.
 
@@ -993,31 +992,34 @@ For each ingredient, extract:
 
 Return ONLY a valid JSON array, no markdown or explanation."""
 
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": f"Parse ONLY the ingredients list (NOT cooking steps) from this recipe '{recipe_name}':\n\n{raw_text}"}
-            ],
-            max_tokens=1500
-        )
-        
-        result = response.choices[0].message.content
-        
-        # Parse the JSON response
-        import json
-        clean_response = result.strip()
-        if clean_response.startswith("```"):
-            clean_response = clean_response.split("```")[1]
-            if clean_response.startswith("json"):
-                clean_response = clean_response[4:]
-        clean_response = clean_response.strip()
-        
-        ingredients_data = json.loads(clean_response)
-        return [Ingredient(**ing) for ing in ingredients_data]
-    except Exception as e:
-        logger.error(f"Error parsing ingredients with AI: {e}")
-        return []
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": f"Parse ONLY the ingredients list (NOT cooking steps) from this recipe '{recipe_name}':\n\n{raw_text}"}
+                ],
+                max_tokens=1500
+            )
+            
+            result = response.choices[0].message.content
+            
+            # Parse the JSON response
+            clean_response = result.strip()
+            if clean_response.startswith("```"):
+                clean_response = clean_response.split("```")[1]
+                if clean_response.startswith("json"):
+                    clean_response = clean_response[4:]
+            clean_response = clean_response.strip()
+            
+            ingredients_data = json.loads(clean_response)
+            return [Ingredient(**ing) for ing in ingredients_data]
+        except Exception as e:
+            logger.error(f"Error parsing ingredients with AI: {e}")
+            logger.info("Falling back to simple ingredient parser")
+    
+    # Fallback to simple parser when AI is unavailable or fails
+    logger.info("Using simple ingredient parser (AI unavailable)")
+    return parse_ingredients_simple(raw_text)
 
 def suggest_recipe_categories(ingredients: List[dict], prep_time: str = "", cook_time: str = "") -> List[str]:
     """Suggest recipe categories based on ingredients and cooking time"""
