@@ -702,7 +702,14 @@ export default function AddRecipe() {
                         <div className="grid grid-cols-3 gap-2">
                           {ingredientPreviews.map((preview, i) => (
                             <div key={i} className="relative group aspect-square">
-                              <img src={preview} alt="" className="w-full h-full object-cover rounded-lg" />
+                              {preview.type === 'image' ? (
+                                <img src={preview.url} alt="" className="w-full h-full object-cover rounded-lg" />
+                              ) : (
+                                <div className="w-full h-full bg-stone-100 rounded-lg flex flex-col items-center justify-center p-2">
+                                  <FileText className="w-6 h-6 text-[#4A7C59] mb-1" />
+                                  <span className="text-xs text-stone-500 text-center truncate w-full">{preview.name}</span>
+                                </div>
+                              )}
                               <button
                                 onClick={() => removeIngredientImage(i)}
                                 className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow"
