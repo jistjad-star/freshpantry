@@ -656,9 +656,41 @@ export default function AddRecipe() {
                 )}
                 
                 {images.length > 0 && (
-                  <Button onClick={parseFromScreenshots} disabled={loading} className="btn-primary w-full">
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract from {images.length} Image{images.length > 1 ? 's' : ''}</>}
-                  </Button>
+                  <>
+                    {/* Suggestion: Separate text areas for ingredients and steps */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+                      <p className="font-medium mb-1">💡 Tip: For best results</p>
+                      <p>Upload separate images for ingredients list and cooking steps, or use the text boxes below to help the AI.</p>
+                    </div>
+                    
+                    {/* Optional manual ingredient text for screenshot mode */}
+                    <details className="group">
+                      <summary className="cursor-pointer text-sm text-stone-500 hover:text-[#4A7C59] flex items-center gap-2">
+                        <span className="text-xs bg-stone-100 px-2 py-1 rounded">Optional</span>
+                        Add ingredient text to help AI extraction
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        <Textarea
+                          placeholder="Paste or type ingredients here (optional - helps AI extract more accurately)"
+                          value={pasteIngredients}
+                          onChange={(e) => setPasteIngredients(e.target.value)}
+                          className="fresh-input min-h-[100px] font-mono text-sm"
+                          data-testid="screenshot-ingredients-input"
+                        />
+                        <Textarea
+                          placeholder="Paste or type cooking steps here (optional)"
+                          value={pasteInstructions}
+                          onChange={(e) => setPasteInstructions(e.target.value)}
+                          className="fresh-input min-h-[100px] font-mono text-sm"
+                          data-testid="screenshot-instructions-input"
+                        />
+                      </div>
+                    </details>
+                    
+                    <Button onClick={parseFromScreenshots} disabled={loading} className="btn-primary w-full">
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract from {images.length} Image{images.length > 1 ? 's' : ''}</>}
+                    </Button>
+                  </>
                 )}
               </div>
             )}
