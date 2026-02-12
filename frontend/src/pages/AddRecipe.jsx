@@ -769,7 +769,7 @@ export default function AddRecipe() {
                   <div className="border-2 border-dashed border-orange-300/50 rounded-xl p-4 bg-orange-50/50">
                     <h4 className="font-medium text-[#1A2E1A] mb-3 flex items-center gap-2">
                       <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">2</span>
-                      Steps/Instructions Photos
+                      Steps/Instructions Files
                     </h4>
                     
                     {instructionPreviews.length > 0 ? (
@@ -777,7 +777,14 @@ export default function AddRecipe() {
                         <div className="grid grid-cols-3 gap-2">
                           {instructionPreviews.map((preview, i) => (
                             <div key={i} className="relative group aspect-square">
-                              <img src={preview} alt="" className="w-full h-full object-cover rounded-lg" />
+                              {preview.type === 'image' ? (
+                                <img src={preview.url} alt="" className="w-full h-full object-cover rounded-lg" />
+                              ) : (
+                                <div className="w-full h-full bg-orange-50 rounded-lg flex flex-col items-center justify-center p-2">
+                                  <FileText className="w-6 h-6 text-orange-500 mb-1" />
+                                  <span className="text-xs text-stone-500 text-center truncate w-full">{preview.name}</span>
+                                </div>
+                              )}
                               <button
                                 onClick={() => removeInstructionImage(i)}
                                 className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow"
