@@ -29,13 +29,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# MongoDB connection - handle missing/invalid URL gracefully
+# MongoDB connection - optimized for production use
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 db_name = os.environ.get('DB_NAME', 'freshpantry')
 
 try:
-    client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
+    # Connection pooling configuration for optimal performance
+    client = AsyncIOMotorClient(
+        mongo_url,
+        serverSelectionTimeoutMS=5000,      # Timeout for server selection
+        connectTimeoutMS=10000,              # Connection timeout
+        socketTimeoutMS=45000,               # Socket timeout for operations
+        maxPoolSize=100,                     # Maximum connections in pool
+        minPoolSize=10,                      # Minimum connections to maintain
+        maxIdleTimeMS=30000,                 # Close idle connections after 30s
+        retryWrites=True,                    # Automatically retry write operations
+        retryReads=True,                     # Automatically retry read operations
+        w='majority',                        # Write concern for data durability
+    )
     db = client[db_name]
+    logger.info(f"MongoDB client initialized with connection pooling (pool size: 10-100)")
 except Exception as e:
     logging.error(f"MongoDB connection error: {e}")
     client = None
