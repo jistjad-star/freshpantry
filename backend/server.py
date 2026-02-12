@@ -863,6 +863,103 @@ def estimate_cooking_times_from_instructions(instructions: List[str], recipe_nam
     
     return prep_time, cook_time
 
+def parse_ingredients_simple(raw_text: str) -> List[Ingredient]:
+    """Simple regex-based ingredient parser - fallback when AI is unavailable"""
+    ingredients = []
+    lines = raw_text.strip().split('\n')
+    
+    # Common units to recognize
+    units = r'(?:cups?|tbsps?|tablespoons?|tsps?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|l|liters?|litres?|pieces?|cloves?|cans?|jars?|bunche?s?|handfuls?|pinche?s?|slices?|sticks?|sprigs?|heads?)'
+    
+    for line in lines:
+        line = line.strip()
+        if not line or len(line) < 2:
+            continue
+        
+        # Try to match: quantity unit ingredient
+        # Pattern: number (optional fraction) optional unit rest-is-name
+        match = re.match(
+            rf'^(\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?)\s*({units})?\s+(.+)$',
+            line, re.IGNORECASE
+        )
+        
+        if match:
+            qty = match.group(1).replace(',', '.')
+            unit = match.group(2) or ''
+            name = match.group(3).strip()
+            
+            # Clean up name - remove trailing prep instructions
+            name = re.sub(r',?\s*(diced|chopped|minced|sliced|crushed|finely|roughly|to taste|optional).*$', '', name, flags=re.IGNORECASE).strip()
+            
+            ingredients.append(Ingredient(
+                name=name,
+                quantity=qty,
+                unit=unit.lower() if unit else '',
+                category=guess_category(name)
+            ))
+        else:
+            # No match - try simpler pattern or use whole line
+            simple_match = re.match(r'^(\d+(?:[.,/]\d+)?)\s+(.+)$', line)
+            if simple_match:
+                qty = simple_match.group(1).replace(',', '.')
+                name = simple_match.group(2).strip()
+                ingredients.append(Ingredient(
+                    name=name,
+                    quantity=qty,
+                    unit='',
+                    category=guess_category(name)
+                ))
+            elif not any(word in line.lower() for word in ['step', 'preheat', 'cook', 'stir', 'mix', 'heat', 'serve']):
+                # Likely an ingredient without quantity
+                ingredients.append(Ingredient(
+                    name=line,
+                    quantity='',
+                    unit='',
+                    category=guess_category(line)
+                ))
+    
+    return ingredients
+
+def guess_category(ingredient_name: str) -> str:
+    """Guess ingredient category based on name"""
+    name_lower = ingredient_name.lower()
+    
+    # Produce
+    if any(v in name_lower for v in ['lettuce', 'tomato', 'onion', 'garlic', 'pepper', 'carrot', 'celery', 
+                                       'broccoli', 'spinach', 'mushroom', 'potato', 'cucumber', 'lemon', 
+                                       'lime', 'orange', 'apple', 'banana', 'avocado', 'zucchini', 'squash',
+                                       'cabbage', 'kale', 'herbs', 'parsley', 'cilantro', 'basil', 'mint']):
+        return 'produce'
+    
+    # Protein
+    if any(p in name_lower for p in ['chicken', 'beef', 'pork', 'lamb', 'fish', 'salmon', 'shrimp', 
+                                       'prawn', 'turkey', 'bacon', 'sausage', 'mince', 'steak', 'meat',
+                                       'tofu', 'tempeh', 'seitan']):
+        return 'protein'
+    
+    # Dairy
+    if any(d in name_lower for d in ['milk', 'cheese', 'cream', 'butter', 'yogurt', 'yoghurt', 'egg']):
+        return 'dairy'
+    
+    # Grains
+    if any(g in name_lower for g in ['rice', 'pasta', 'bread', 'flour', 'oat', 'noodle', 'couscous', 
+                                       'quinoa', 'cereal', 'tortilla', 'wrap']):
+        return 'grains'
+    
+    # Spices
+    if any(s in name_lower for s in ['salt', 'pepper', 'cumin', 'paprika', 'oregano', 'thyme', 
+                                       'cinnamon', 'nutmeg', 'chili', 'curry', 'turmeric', 'ginger',
+                                       'seasoning', 'spice']):
+        return 'spices'
+    
+    # Pantry
+    if any(p in name_lower for p in ['oil', 'vinegar', 'sauce', 'stock', 'broth', 'can', 'tin', 
+                                       'honey', 'sugar', 'syrup', 'mustard', 'ketchup', 'mayo',
+                                       'soy sauce', 'worcestershire', 'paste']):
+        return 'pantry'
+    
+    return 'other'
+
 async def parse_ingredients_with_ai(raw_text: str, recipe_name: str) -> List[Ingredient]:
     """Use AI to parse raw ingredient text into structured data"""
     if not openai_client:
