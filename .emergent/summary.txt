@@ -2,18 +2,22 @@
 The user wants to build a full-stack application that converts recipes into weekly shopping lists.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Recipe Management**: Allow users to input recipes, which are then parsed by AI. The app should generate AI images, auto-categorize recipes (including Vegan, Vegetarian, Can be Vegan), allow scaling of servings, and group recipes. All instructions must be immediately rewritten by AI to be copyright-safe. Users can edit, rate, and favorite recipes. A new Cocktails section with alcoholic/non-alcoholic filtering has been requested.
-2.  **User Accounts & Sharing**: The app must support Google Sign-In. Users can share recipes via private, tokenized links.
-3.  **Pantry & Suggestions**: A pantry system to track ingredients with custom alerts. The app suggests meals based on pantry items, can AI-generate new recipes from pantry contents, and supports adding items via barcode scanning or receipt uploads (image/PDF).
+1.  **Recipe Management**: Allow users to input recipes, which are then parsed by AI. The app should generate AI images, auto-categorize recipes (including Vegan, Vegetarian, Can be Vegan), allow scaling of servings, and group recipes. All instructions must be immediately rewritten by AI to be copyright-safe. Users can edit, rate, and favorite recipes. A Cocktails section with alcoholic/non-alcoholic filtering has been implemented. The AI ingredient parsing from cooking steps is still faulty and duplicates ingredients.
+2.  **User Accounts & Sharing**: The app must support Google Sign-In for deployment on DigitalOcean. Emergent-specific auth has been removed. Users can share recipes via private, tokenized links.
+3.  **Pantry & Suggestions**: A pantry system to track ingredients with custom alerts. The app suggests meals based on pantry items, can AI-generate new recipes (including cocktails) from pantry contents, and supports adding items via barcode scanning or receipt uploads. The barcode scanner is currently buggy. A running low filter and select all for export to the shopping list have been added. The UI formatting needs improvement.
 4.  **Weekly Planner**: A planner to organize meals. It should allow adjusting servings per meal and have a Surprise Me feature to auto-populate the week.
 5.  **Smart Shopping List**: Generates a shopping list from the weekly plan, consolidating items and subtracting pantry ingredients. It should also provide realistic cost estimations.
-6.  **UI/UX**: A calm and foody design. UI should be intuitive, with features like clicking a planned meal to get I Cooked It or Go to Recipe options.
+6.  **UI/UX**: A calm and foody design. The bottom navigation bar on mobile devices is currently too crowded and does not fit all icons.
 7.  **Recipe Conversion**: Buttons within a recipe to automatically convert it to a Vegan or Vegetarian version using AI.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application using FastAPI, MongoDB, and React with Google OAuth2 authentication. All AI features use the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+A full-stack application (FastAPI, MongoDB, React) with a standard Google OAuth2 flow, prepared for DigitalOcean deployment. Emergent-specific authentication has been removed.
+
+The application includes:
+-   **Core Features**: Recipe library, recipe detail view, weekly planner, shopping list, and pantry.
+-   **AI Integration**: Uses the standard usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -50,145 +54,144 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit SDK with a user-provided API key.
+  -V, --version         show program's version number and exit SDK for recipe parsing, image generation, meal/cocktail suggestions, and recipe conversion (Make Vegan/Vegetarian).
+-   **New Features**: A Cocktails section with filtering, and an AI cocktail suggestion feature.
+-   **Pantry Enhancements**: Barcode scanning (currently buggy), receipt upload, manual entry, a Running Low filter, and the ability to select multiple items to export to the shopping list.
+-   **Deployment Readiness**: The codebase has been stripped of Emergent-specific dependencies, and the  includes DigitalOcean deployment instructions.
 
-The app features a dashboard, recipe library, recipe detail view (with Make Vegan/Vegetarian buttons), an  page, a weekly planner (with servings adjustment and a Surprise Me button), a shopping list (with cost estimation), and a pantry. The pantry supports adding items via receipt upload (now handling multi-page text-based PDFs), barcode scanning (with a fill level prompt), and manual entry. A button to consolidate duplicate pantry items has also been added. Logic for fuzzy matching ingredients has been implemented in several areas to improve accuracy.
-
-The backend  file remains a large monolith, and routing has been re-ordered to fix deployment issues on DigitalOcean.
+The backend  remains a large monolithic file.
 
 **Last working item**:
--   Last item agent was working: Implementing a new Cocktails section. The agent started by modifying the backend Pydantic models (, ) in  to include a  (e.g., 'meal', 'cocktail') and an  flag.
--   Status: IN PROGRESS
+-   Last item agent was working: The user reported two issues simultaneously:
+    1.  **Add Recipe**: The AI is still extracting ingredients from the cooking instructions, causing duplicates in the ingredient list.
+    2.  **UI Fix**: The bottom navigation bar icons do not fit on a mobile screen.
+-   Status: IN PROGRESS (Fixes were attempted but user has not verified them)
 -   Agent Testing Done: N
 -   Which testing method agent to use? both
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1**: Complete the Cocktails feature. (Priority: P0)
--   **Issue 2**: PDF uploads are still reported as failing by the user. (Priority: P1)
--   **Issue 3**: Ingredient consolidation in the pantry is not perfect (e.g., Plant Based Burger vs. Beyond Burger Plant Based Burger are not merging). (Priority: P1)
--   **Issue 4**: I cooked this button doesn't always find matching ingredients in the pantry due to name variations. (Priority: P2)
--   **Issue 5**: The AI-generated meal suggestion filter for expiring soon items is not working as expected. (Priority: P2)
--   **Issue 6**: Meal suggestion filtering for breakfast and lunch is returning dinner meals. (Priority: P2)
+-   **Issue 1**: Barcode scanner is not working correctly. (Priority: P0)
+-   **Issue 2**: AI ingredient parsing is adding duplicates from cooking steps. (Priority: P0)
+-   **Issue 3**: Mobile navigation bar icons don't fit on the screen. (Priority: P1)
+-   **Issue 4**: Tidy up pantry list formatting. (Priority: P1)
+-   **Issue 5**: AI meal suggestion filter for expiring soon items is not effective. (Priority: P2)
+-   **Issue 6**: Fuzzy matching for ingredient consolidation in the pantry is imperfect. (Priority: P2)
+-   **Issue 7**: I cooked this button fails on ingredient name variations. (Priority: P2)
+-   **Issue 8**: PDF uploads are reportedly failing. (Priority: P2)
 
 **Issues Detail**:
 -   **Issue 1**:
-    -   **Description**: Add a new Cocktails section to the app, separate from meals, with filters for alcoholic and non-alcoholic.
-    -   **Attempted fixes**: The backend data models (, ) in  have been updated to support  and  fields.
+    -   **Description**: The barcode scanner has multiple bugs. It gets stuck in a loop, showing the previously scanned item instead of allowing a new scan. The camera sometimes fails to launch.
+    -   **Attempted fixes**: The agent has rewritten the barcode scanner logic multiple times. The latest attempt involved refactoring the scanner into a separate, isolated  component and conditionally rendering it within the  page to force a full remount and state reset each time it's opened. This has not solved the problem.
     -   **Next debug checklist**:
-        1.  Create a new backend endpoint  in  that filters recipes where  and accepts an  query parameter.
-        2.  Create a new frontend page .
-        3.  Add a link to the new page in the main navigation ().
-        4.  On the  page, fetch data from the new endpoint and display the results.
-        5.  Add filter UI (e.g., buttons, dropdown) for All, Alcoholic, and Non-Alcoholic.
-        6.  Update the  page to allow setting the  to Cocktail and toggling the  flag when adding a new recipe.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a new top-level feature requested by the user.
+        1.  Review  and .
+        2.  Investigate the state management interaction between the parent () and the child () component, especially when the dialog is closed and reopened.
+        3.  Ensure all state and refs (, , etc.) are being properly and fully reset. The conditional rendering () should have worked, so there might be a more subtle state issue.
+        4.  Log the state within the  component at every step of its lifecycle (mount, scan, add, close) to trace where the old data is persisting.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a core feature and a major source of user frustration, blocking a key pantry workflow.
     -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: frontend
     -   **Blocked on other issue**: None
 
 -   **Issue 2**:
-    -   **Description**: The user reports that PDF uploads for recipes and receipts are still not working.
-    -   **Attempted fixes**: The agent implemented robust PDF handling using  to convert PDFs to images or extract text directly, which works for multi-page text-based PDFs. File input  attributes were updated. The backend logic was confirmed to work locally, but fails in the preview environment due to an invalid API key ( is not a valid OpenAI key). The root cause is an environment configuration issue in preview, not a code issue.
+    -   **Description**: When adding a recipe by pasting text, the AI ingredient parser incorrectly identifies ingredients listed within the cooking instructions/method, leading to duplicates.
+    -   **Attempted fixes**: The agent strengthened the AI prompts in  within the  and  functions, adding more explicit instructions to differentiate between the ingredient list and the method.
     -   **Next debug checklist**:
-        1.  Re-confirm with the user that their  is correctly set in their DigitalOcean environment.
-        2.  Add more explicit frontend error handling in  and  to display the specific error message from the backend if an upload fails.
-        3.  Explain to the user that testing in the preview environment is blocked by the API key issue, but the code is expected to work in their production environment.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical usability issue and a recurring point of user frustration.
-    -   **Status**: BLOCKED (on environment configuration)
+        1.  Re-examine the prompts in  for .
+        2.  Consider a two-step AI process: first, an AI call to strictly separate the ingredients list section from the instructions section. Second, run the existing  function only on the identified ingredients list text.
+        3.  Test with the user's specific examples that are failing.
+    -   **Why fix this issue and what will be achieved with the fix?**: Improves the accuracy and usability of the core Add Recipe feature.
+    -   **Status**: IN PROGRESS
     -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Should Test frontend/backend/both after fix?**: backend
     -   **Blocked on other issue**: None
 
 -   **Issue 3**:
-    -   **Description**: The pantry consolidation logic isn't catching all duplicates, especially when brand names are involved.
-    -   **Attempted fixes**: Fuzzy matching logic was added to the receipt processing flow, and a manual Consolidate Pantry button/endpoint was created.
+    -   **Description**: The bottom navigation bar in  has too many items (8) to fit on a standard mobile screen, causing layout issues.
+    -   **Attempted fixes**: The agent modified the Tailwind CSS classes in , changing  to , adding , and reducing font size () and padding ().
     -   **Next debug checklist**:
-        1.  Review the  function and the logic in  in .
-        2.  The matching may need to be more aggressive, potentially using a library like  and stripping common brand names before comparison.
-        3.  Improve the AI prompt used for consolidation to be more effective.
-    -   **Why fix this issue and what will be achieved with the fix?**: Improves data quality in the pantry, leading to better meal suggestions and shopping list accuracy.
+        1.  Review .
+        2.  The current fix is insufficient. Consider a different UI pattern for mobile, such as a More button that opens a menu for less frequent items, or reducing the number of visible icons to 5 and hiding the rest in a different menu.
+        3.  The agent used , which is not ideal for icon labels. A better approach is to rely on icons alone for the mobile bar and show labels on hover/active or on wider screens.
+    -   **Why fix this issue and what will be achieved with the fix?**: Essential for mobile usability.
     -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: backend
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: frontend
     -   **Blocked on other issue**: None
 
 -   **Issue 4**:
-    -   **Description**: The I cooked this feature fails to deduct from the pantry when recipe ingredient names don't exactly match pantry item names.
-    -   **Attempted fixes**: The  endpoint was updated to use a more intelligent matching logic.
+    -   **Description**: The user provided a screenshot showing that the pantry list items are poorly formatted and misaligned.
+    -   **Attempted fixes**: None yet, this is a new request.
     -   **Next debug checklist**:
-        1.  Re-examine the  endpoint in .
-        2.  Ensure it uses the same robust  function as other parts of the application.
-        3.  Test with specific examples provided by the user.
-    -   **Why fix this issue and what will be achieved with the fix?**: Core functionality of the pantry system.
-    -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: backend
+        1.  Analyze the user's screenshot ().
+        2.  Inspect the JSX and CSS for the pantry item rendering loop in .
+        3.  Use Flexbox or Grid properties to ensure consistent alignment of item name, quantity, unit, and expiry date across all items, especially when some items have longer names than others.
+    -   **Why fix this issue and what will be achieved with the fix?**: Improves UI/UX and readability of the pantry.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: frontend
     -   **Blocked on other issue**: None
 
 -   **Issue 5**:
-    -   **Description**: The AI-generated meal suggestion does not correctly prioritize expiring ingredients when the filter is active.
-    -   **Attempted fixes**: The agent added an  boolean to the  Pydantic model and updated the frontend to pass this flag.
-    -   **Next debug checklist**:
-        1.  Verify the prompt engineering in the  endpoint in . The prompt must strongly instruct the AI to use the provided expiring ingredients.
-        2.  Test the frontend component  to ensure the state  is correctly passed in the API call.
-    -   **Why fix this issue and what will be achieved with the fix?**: Fulfills a key value proposition of reducing food waste.
-    -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on other issue**: None
+    -   **Description**: The meal suggestion feature, when filtered for expiring soon, fails to suggest relevant recipes (e.g., for an expiring Plant Based Burger).
+    -   **Attempted fixes**: Agent modified  in  to use all pantry items for matching but prioritize expiring ones in the sorting and response message. This was intended to always return some suggestions.
+    -   **Status**: USER VERIFICATION PENDING
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: backend
 
 -   **Issue 6**:
-    -   **Description**: Filtering meal suggestions by breakfast or lunch returns dinner meals.
-    -   **Attempted fixes**: The agent discovered that recipes were not being tagged with a  on creation. A fix was implemented to rely on more robust keyword-based filtering in  instead of querying a non-existent field.
-    -   **Next debug checklist**:
-        1.  Review the keyword lists (, , etc.) in  to ensure they are comprehensive.
-        2.  Test the  endpoint with various  parameters to verify the filtering logic.
-    -   **Why fix this issue and what will be achieved with the fix?**: Improves the user experience of finding relevant meal suggestions.
+    -   **Description**: Pantry consolidation logic doesn't catch all duplicates (e.g., brand name variations).
+    -   **Attempted fixes**: A  endpoint with fuzzy matching was created.
     -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: N
+    -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: backend
-    -   **Blocked on other issue**: None
+
+-   **Issue 7**:
+    -   **Description**: I cooked this feature fails to deduct pantry items with slightly different names.
+    -   **Attempted fixes**: The  endpoint was updated to use fuzzy matching.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: backend
+
+-   **Issue 8**:
+    -   **Description**: User reports PDF uploads are not working.
+    -   **Attempted fixes**: This was diagnosed as an invalid  in the preview environment. The code itself ( logic) is believed to be correct. The user is now deploying to DigitalOcean where this should work with a valid key.
+    -   **Status**: BLOCKED (on user's production environment testing)
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: both
 
 **In progress Task List**:
--   **Task 1**: Implement the Cocktails feature. (Priority: P0)
-    -   **Where to resume**: . The next step is to create the  endpoint.
-    -   **What will be achieved with this?**: A new, filterable section for cocktail recipes.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: None
+None. The agent was focused on fixing user-reported issues.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks**:
-    -   **P0**: Propose and execute the refactoring of the monolithic  file. This is the highest priority technical debt and is slowing down all development.
-    -   **P1**: Conduct a full end-to-end test of all recently added features (Planner serving adjustment, Surprise Me, Barcode scanning, Pantry consolidation, Meal click actions).
--   **Future Tasks**:
-    -   **P1**: Drag-and-Drop functionality for the Weekly Planner UI.
-    -   **P2**: Integration with Whisk.com for add to basket functionality.
-    -   **P2**: Push notifications or email summaries for expiring pantry items.
+**Upcoming Tasks**:
+-   **P0**: Propose and execute the refactoring of the monolithic  file. This is the highest priority technical debt and is slowing down all development.
+-   **P1**: Conduct a full end-to-end test of all features, as many have been added or changed without comprehensive regression testing.
+
+**Future Tasks**:
+-   **P1**: Drag-and-Drop functionality for the Weekly Planner UI.
+-   **P2**: Integration with Whisk.com for add to basket functionality.
+-   **P2**: Push notifications or email summaries for expiring pantry items.
 
 **Completed work in this session**
--   **Feature: Make Vegan/Vegetarian**: Completed the UI and backend logic for AI-powered recipe conversion.
--   **Bugfix: DigitalOcean Blank Page**: Fixed a critical deployment blocker by reordering API router inclusion before static file serving in .
--   **Feature: Advanced PDF Receipt Scanning**: Rewrote the receipt scanning logic to use  for direct text extraction from multi-page, text-based PDFs (like the user's Tesco basket).
--   **Feature: Planner Enhancements**:
-    -   Added the ability to adjust servings when adding a recipe to the planner.
-    -   Added a Surprise Me button to auto-populate the weekly plan.
-    -   Made meal cards in the planner clickable, showing a dialog with I Cooked It and Go to Recipe options.
--   **Feature: Pantry Barcode Scanning**: Implemented barcode scanning using  and an Open Food Facts API lookup on the backend. Includes a prompt for item fill level (Full, Half, Empty) to adjust quantity.
--   **Feature: Pantry Consolidation**: Added a Consolidate button and endpoint to merge duplicate items in the pantry.
--   **Bugfix: Unrealistic Price Estimation**: Fixed the cost estimation logic to correctly calculate prices for fractional quantities instead of rounding up, making prices much more realistic.
--   **Bugfix: Ingredient Matching**: Improved fuzzy matching logic in I Cooked This and Meal Suggestion features to better match ingredients with slight name variations.
--   **Dependency Management**: Removed the defunct  package from  and added .
+-   **Cocktails Feature**: Added a Cocktails section with a dedicated page, backend endpoint (), and alcoholic/non-alcoholic filtering. Updated the Add Recipe form to support cocktail types.
+-   **Pantry Enhancements**: Added a Running Low filter, Select All checkbox, and an Export to Shopping List button.
+-   **AI Cocktail Suggestions**: Implemented a new feature to generate cocktail ideas from pantry ingredients, with a dedicated backend endpoint () and UI section.
+-   **DigitalOcean Readiness**: Removed all Emergent-specific authentication code ( endpoint,  page) and updated CORS policy to make the application portable. Updated  with DigitalOcean deployment instructions.
+-   **Bugfix (Cocktail AI)**: Fixed a  in the cocktail generation endpoint by adding the missing . Also switched the model to  for consistency.
+-   **Bugfix (Barcode API)**: Fixed the  endpoint to correctly return a 404 error on Product not found instead of a generic 500 error.
+-   **Refactor (Barcode Scanner)**: The barcode scanning logic was extracted from  into its own isolated component, , to fix state-related bugs.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Monolithic Backend ()**: This is the project's most significant technical debt. The file is now extremely large (>4500 lines) and difficult to maintain. It urgently needs to be refactored into a modular structure (, , ).
--   **Issue 2: Unused Files**: The root directory may still contain unused deployment helper files (, ) which should be removed.
+-   **Issue 1: Monolithic Backend ()**: This is the project's most significant technical debt. The file is over 4700 lines and urgently needs to be refactored into a modular structure (, , ).
+-   **Issue 2: Unused Files**: The root directory may still contain unused deployment helper files which should be removed.
 
 **Known issue recurrence from previous fork**
--   **Fuzzy String Matching**: The user has repeatedly encountered issues where slight variations in ingredient names cause features to fail (pantry consolidation, meal suggestions, pantry deduction). While several fixes have been applied, this remains a systemic challenge requiring a robust, centralized solution.
--   **PDF Uploads**: The user has reported this as broken multiple times. The agent has diagnosed it as an environment-specific API key issue, but from the user's perspective, it is a recurring failure.
+-   **Fuzzy String Matching**: Remains a systemic challenge for pantry consolidation, meal suggestions, and pantry deduction.
+-   **PDF Uploads**: A recurring user complaint, though diagnosed as an environment-specific API key issue.
+-   **Barcode Scanner Bugs**: This has become the most prominent recurring issue in the current session, with multiple failed fix attempts causing significant user frustration.
 
 **Code Architecture**
 
@@ -233,63 +236,67 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit)** for all AI features (GPT-4o, DALL-E).
--   **PDF Processing**:  library for extracting text and images from PDF files.
--   **Barcode Scanning**: Open Food Facts API for product lookup.
+  -V, --version         show program's version number and exit)** for all AI features (using ). Requires a user-provided API key.
+-   **Deployment**: The app is being prepared for a standard Docker deployment on DigitalOcean.
 
 **key DB schema**
--   **recipes**:  (New fields added).
+-   **recipes**: .
 -   **pantry_items**: 
 -   **users**: 
 
 **changes in tech stack**
--   **ADDED**:  (backend),  (frontend).
+-   None. No new libraries were added.  was confirmed to be removed.
 
 **All files of reference**
--   : Heavily modified for all new features and bug fixes.
--   : Major refactor for new planner features.
--   : Major refactor for barcode scanning and consolidation.
--   : Updated for filter fixes.
--   : Updated to allow PDF uploads.
--   : Updated with several new endpoints.
--   : Updated with new dependencies.
--   : Updated with new dependencies.
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+-   
 
 **Areas that need refactoring**:
--   ** MUST BE BROKEN DOWN.** This is the highest priority refactoring task. Its size and complexity are a major risk to future development.
+-   ** MUST BE BROKEN DOWN.** This is the highest priority refactoring task. Its size and complexity are a major risk and slow down debugging and development.
+-   The local  statements scattered throughout  should be consolidated into a single global import at the top of the file.
 
 **key api endpoints**
--   : (New) Merges duplicate items in the pantry.
--   : (New) Looks up a product by its barcode.
--   : (Updated) Now handles multi-page text-based PDFs.
--   : (Updated) Now handles PDFs by converting them to images.
--   : (Updated) Now accepts an  filter.
--   : (Updated) Uses fuzzy matching to deduct ingredients.
+-   : (New) Generates a cocktail recipe from pantry items.
+-   : (New) Fetches all cocktail recipes, with filtering.
+-   : (New) Adds a batch of items to the shopping list.
+-   : (Updated) Now correctly returns 404, not 500.
 
 **Critical Info for New Agent**
--   **OpenAI API Key is Essential**: The preview environment uses a non-functional Emergent placeholder key () for the  variable. This causes all OpenAI-dependent features (parsing, generation, etc.) to fail with a 401 error in preview. The code itself is correct and relies on a valid key, which the user has configured in their production DigitalOcean environment. You must explain this to the user and not mistake it for a code bug.
--   **Fuzzy Matching is a Core Problem**: Many user-reported bugs stem from inexact string matching of ingredients. A robust, centralized fuzzy matching utility is needed across the application (pantry, shopping list, meal suggestions).
--   **Prioritize Backend Refactor**: You must strongly advocate for refactoring the  monolith after completing the current high-priority user requests. It is a major source of risk and development friction.
+-   **USER IS DEPLOYING TO DIGITALOCEAN**: Do not focus on the preview environment. The user saves to GitHub and builds on DigitalOcean. All solutions must be platform-agnostic.
+-   **OPENAI API KEY**: AI features failing with a  error in the preview environment is expected due to an invalid placeholder key. This is not a code bug. The user has a valid key in their production environment. Do not waste time fixing this.
+-   **BARCODE SCANNER IS THE TOP PAIN POINT**: The user is very frustrated with this feature. Multiple fixes have failed. Your top priority should be to debug this with extreme care. The last attempt was to refactor it into a separate  component and render it conditionally. This did not work. Trace the state management between  and  meticulously.
+-   **PRIORITIZE BACKEND REFACTOR**: After fixing the critical user-facing bugs, you must strongly advocate for and plan the refactoring of . The monolith is the root cause of many bugs (like the missing  import) and slows down all work.
 
 **documents and test reports created in this job**
--    (updated with Make Vegan feature)
+-   
+-    (updated with Cocktail and DigitalOcean-readiness info)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user**: Can you add recipes for cocktails, similar to meals but with filters, alcoholic and non-alcoholic. (IN PROGRESS)
-2.  **user**: When a meal is selected in planner, clicking it should give options I cooked it or take me to recipe. (RESOLVED)
-3.  **user**: Pantry items are not consolidating correctly (e.g., two types of plant-based burgers are separate). (IN PROGRESS - fix attempted)
-4.  **user**: Can I scan barcodes of food items to upload to the pantry? (RESOLVED - feature added)
-5.  **user**: After scanning a barcode, can you add a prompt for full, half, nearly empty to calculate quantity? (RESOLVED - feature added)
-6.  **user**: Prices are unrealistic. (RESOLVED - fix implemented and verified)
-7.  **user**: Filter for breakfast and lunch is returning dinner meals. (RESOLVED - fix implemented)
-8.  **user**: Meal suggestions have low % likeness even with items in pantry. (RESOLVED - fuzzy matching improved)
-9.  **user**: The I cooked this button doesn't use up pantry ingredients with slightly different names. (IN PROGRESS - fix attempted)
-10. **user**: The AI-generated meal suggestion doesn't consider expiry dates when the filter is on. (IN PROGRESS - fix attempted)
+1.  **user**: Barcode and Cocktail AI issues still persist. This is wasting time. Fix it. (IN PROGRESS)
+2.  **user**: The issue with cocktail AI is that it doesn't work on my DigitalOcean deployment, while other AI features do. (RESOLVED - fixed  import error in backend)
+3.  **user**: Barcode scanner isn't working but cocktails are. (IN PROGRESS)
+4.  **user**: A log shows the barcode lookup returning a 500 error for a 404 not found. (RESOLVED - fixed error handling in backend)
+5.  **user**: After scanning, the scanner goes back to the previous item. Cocktail AI gives no result despite having ingredients. (IN PROGRESS)
+6.  **user**: Can you make the barcode scanning pop-up slimmer? (RESOLVED)
+7.  **user**: After I scan and add an item, trying to scan another just shows the previous item again. (IN PROGRESS)
+8.  **user**: Barcode scanner freezes and turns black after scanning. (IN PROGRESS)
+9.  **user**: The barcode scanner camera doesn't launch. (IN PROGRESS)
+10. **user**: Add Recipe is duplicating ingredients from cooking steps. Fit all icons on the bottom nav bar. (IN PROGRESS)
+11. **user**: Can you tidy the pantry list formatting? (NOT STARTED)
 
 **Project Health Check:**
--   **Broken**: None.
+-   **Broken**: The Barcode Scanning feature is fundamentally broken and causes user frustration.
 -   **Mocked**: None.
--   **Fragile**: The backend is extremely fragile due to the monolithic . Changes have a high risk of unintended side effects.
+-   **Fragile**: The backend is extremely fragile due to the monolithic . Changes have a high risk of unintended side effects and bugs.
 
 **3rd Party Integrations**
 -   **OpenAI SDK (usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
@@ -329,43 +336,907 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit)**: Requires User-provided .
--   **Google OAuth 2.0**: Requires User-provided Google credentials.
+  -V, --version         show program's version number and exit)**: Requires User-provided . Used for all AI features.
+-   **Google OAuth 2.0**: Requires User-provided Google credentials for  and .
 -   **Open Food Facts API**: Used for barcode lookup (no key required).
 
 **Testing status**
--   **Testing agent used after significant changes**: NO (not for the latest large batch of features).
+-   **Testing agent used after significant changes**: YES, but only once early in the session. Many subsequent bug fixes and changes were made without the testing agent.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: Yes, temporary test scripts were created and deleted to validate PDF processing and API endpoints. No permanent test files exist.
--   **Known regressions**: None confirmed, but the risk is high given the extensive changes and lack of automated tests.
+-   **Test files created**: No permanent test files exist.
+-   **Known regressions**: The barcode scanner functionality has regressed and is currently broken.
 
 **Credentials to test flow:**
--   A valid  is required for full application functionality. Testing in the preview environment will be limited.
+-   A valid  is required for AI features.
+-   Valid  and  are required for authentication.
+-   The  environment variable must be set to the public URL of the application for Google OAuth redirects to work.
 
 **What agent forgot to execute**
 -   The critical refactoring of  has been deferred again.
--   Unused files in the root directory (, ) have not been cleaned up.
 -   No permanent automated tests (============================= test session starts ==============================
 platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0
 rootdir: /app
 plugins: anyio-4.12.1
-collected 97 items
+collected 109 items
 
-backend/tests/test_expiry_features.py .............                      [ 13%]
-backend/tests/test_expiry_receipt.py .....F.....                         [ 24%]
-backend/tests/test_features_iteration5.py FFFFFFFFFF                     [ 35%]
-backend/tests/test_iteration11_features.py FFFFFFFFFFFFFF                [ 49%]
-backend/tests/test_iteration12_critical_fixes.py FFFFFFFFFF              [ 59%]
-backend/tests/test_pantry_features.py FFFFFFFF                           [ 68%]
-backend/tests/test_parse_image.py FFFFFF                                 [ 74%]
-backend/tests/test_reviews_and_sorting.py FFFFFFFFFFFFFF                 [ 88%]
+backend/tests/test_cocktails_pantry_features.py FFFFFFFFFFFF             [ 11%]
+backend/tests/test_expiry_features.py .............                      [ 22%]
+backend/tests/test_expiry_receipt.py .....F.....                         [ 33%]
+backend/tests/test_features_iteration5.py FFFFFFFFFF                     [ 42%]
+backend/tests/test_iteration11_features.py FFFFFFFFFFFFFF                [ 55%]
+backend/tests/test_iteration12_critical_fixes.py FFFFFFFFFF              [ 64%]
+backend/tests/test_pantry_features.py FFFFFFFF                           [ 71%]
+backend/tests/test_parse_image.py FFFFFF                                 [ 77%]
+backend/tests/test_reviews_and_sorting.py FFFFFFFFFFFFFF                 [ 89%]
 backend/tests/test_share_feature.py .....F.....                          [100%]
 
 =================================== FAILURES ===================================
+____ TestCocktailsEndpoint.test_cocktails_endpoint_returns_empty_initially _____
+
+self = <test_cocktails_pantry_features.TestCocktailsEndpoint object at 0xf8c8246e6d50>
+
+    def test_cocktails_endpoint_returns_empty_initially(self):
+        """GET /api/cocktails should return empty array when no cocktails exist"""
+>       response = requests.get(
+            f"{BASE_URL}/api/cocktails",
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/cocktails', params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/cocktails': No scheme supplied. Perhaps you meant https:///api/cocktails?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+__ TestCocktailsEndpoint.test_cocktails_endpoint_accepts_alcoholic_true_param __
+
+self = <test_cocktails_pantry_features.TestCocktailsEndpoint object at 0xf8c823784690>
+
+    def test_cocktails_endpoint_accepts_alcoholic_true_param(self):
+        """GET /api/cocktails?alcoholic=true should filter alcoholic cocktails"""
+>       response = requests.get(
+            f"{BASE_URL}/api/cocktails",
+            params={"alcoholic": "true"},
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/cocktails'
+params = OrderedDict([('alcoholic', 'true')])
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/cocktails': No scheme supplied. Perhaps you meant https:///api/cocktails?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+_ TestCocktailsEndpoint.test_cocktails_endpoint_accepts_alcoholic_false_param __
+
+self = <test_cocktails_pantry_features.TestCocktailsEndpoint object at 0xf8c823784cd0>
+
+    def test_cocktails_endpoint_accepts_alcoholic_false_param(self):
+        """GET /api/cocktails?alcoholic=false should filter non-alcoholic cocktails"""
+>       response = requests.get(
+            f"{BASE_URL}/api/cocktails",
+            params={"alcoholic": "false"},
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/cocktails'
+params = OrderedDict([('alcoholic', 'false')])
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/cocktails': No scheme supplied. Perhaps you meant https:///api/cocktails?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+___________ TestCreateCocktailRecipe.test_create_alcoholic_cocktail ____________
+
+self = <test_cocktails_pantry_features.TestCreateCocktailRecipe object at 0xf8c823785490>
+
+    def test_create_alcoholic_cocktail(self):
+        """POST /api/recipes should create a cocktail with recipe_type='cocktail' and is_alcoholic=true"""
+        cocktail_data = {
+            "name": "TEST_Margarita",
+            "description": "Classic margarita cocktail",
+            "servings": 1,
+            "prep_time": "5 min",
+            "cook_time": "",
+            "ingredients": [
+                {"name": "Tequila", "quantity": "2", "unit": "oz", "category": "pantry"},
+                {"name": "Lime juice", "quantity": "1", "unit": "oz", "category": "produce"},
+                {"name": "Triple sec", "quantity": "1", "unit": "oz", "category": "pantry"},
+                {"name": "Salt", "quantity": "1", "unit": "pinch", "category": "spices"}
+            ],
+            "instructions": ["Rim glass with salt", "Shake ingredients with ice", "Strain into glass"],
+            "recipe_type": "cocktail",
+            "is_alcoholic": True,
+            "skip_image_generation": True
+        }
+    
+>       response = requests.post(
+            f"{BASE_URL}/api/recipes",
+            json=cocktail_data,
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [POST]>, url = '/api/recipes', params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No scheme supplied. Perhaps you meant https:///api/recipes?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+_________ TestCreateCocktailRecipe.test_create_non_alcoholic_cocktail __________
+
+self = <test_cocktails_pantry_features.TestCreateCocktailRecipe object at 0xf8c823785ad0>
+
+    def test_create_non_alcoholic_cocktail(self):
+        """POST /api/recipes should create a cocktail with recipe_type='cocktail' and is_alcoholic=false"""
+        cocktail_data = {
+            "name": "TEST_Virgin Mojito",
+            "description": "Refreshing non-alcoholic mojito",
+            "servings": 1,
+            "prep_time": "5 min",
+            "cook_time": "",
+            "ingredients": [
+                {"name": "Lime juice", "quantity": "1", "unit": "oz", "category": "produce"},
+                {"name": "Mint leaves", "quantity": "10", "unit": "leaves", "category": "produce"},
+                {"name": "Sugar", "quantity": "2", "unit": "tsp", "category": "pantry"},
+                {"name": "Soda water", "quantity": "4", "unit": "oz", "category": "pantry"}
+            ],
+            "instructions": ["Muddle mint with sugar and lime", "Add ice", "Top with soda water"],
+            "recipe_type": "cocktail",
+            "is_alcoholic": False,
+            "skip_image_generation": True
+        }
+    
+>       response = requests.post(
+            f"{BASE_URL}/api/recipes",
+            json=cocktail_data,
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [POST]>, url = '/api/recipes', params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No scheme supplied. Perhaps you meant https:///api/recipes?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+___ TestCreateCocktailRecipe.test_cocktails_filter_returns_created_cocktails ___
+
+self = <test_cocktails_pantry_features.TestCreateCocktailRecipe object at 0xf8c823785ed0>
+
+    def test_cocktails_filter_returns_created_cocktails(self):
+        """GET /api/cocktails should return the created cocktails"""
+        # Get all cocktails
+>       response = requests.get(
+            f"{BASE_URL}/api/cocktails",
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/cocktails', params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/cocktails': No scheme supplied. Perhaps you meant https:///api/cocktails?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+________ TestCreateCocktailRecipe.test_cocktails_filter_alcoholic_true _________
+
+self = <test_cocktails_pantry_features.TestCreateCocktailRecipe object at 0xf8c8237860d0>
+
+    def test_cocktails_filter_alcoholic_true(self):
+        """GET /api/cocktails?alcoholic=true should only return alcoholic cocktails"""
+>       response = requests.get(
+            f"{BASE_URL}/api/cocktails",
+            params={"alcoholic": "true"},
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/cocktails'
+params = OrderedDict([('alcoholic', 'true')])
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/cocktails': No scheme supplied. Perhaps you meant https:///api/cocktails?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+________ TestCreateCocktailRecipe.test_cocktails_filter_alcoholic_false ________
+
+self = <test_cocktails_pantry_features.TestCreateCocktailRecipe object at 0xf8c823786410>
+
+    def test_cocktails_filter_alcoholic_false(self):
+        """GET /api/cocktails?alcoholic=false should only return non-alcoholic cocktails"""
+>       response = requests.get(
+            f"{BASE_URL}/api/cocktails",
+            params={"alcoholic": "false"},
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/cocktails'
+params = OrderedDict([('alcoholic', 'false')])
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/cocktails': No scheme supplied. Perhaps you meant https:///api/cocktails?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+__________ TestAddItemsToShoppingList.test_add_items_to_shopping_list __________
+
+self = <test_cocktails_pantry_features.TestAddItemsToShoppingList object at 0xf8c823786c10>
+
+    def test_add_items_to_shopping_list(self):
+        """POST /api/shopping-list/add-items should add multiple items"""
+        items_data = {
+            "items": [
+                {"name": "TEST_Milk", "quantity": 2, "unit": "L", "category": "dairy"},
+                {"name": "TEST_Eggs", "quantity": 12, "unit": "pieces", "category": "dairy"},
+                {"name": "TEST_Bread", "quantity": 1, "unit": "loaf", "category": "grains"}
+            ]
+        }
+    
+>       response = requests.post(
+            f"{BASE_URL}/api/shopping-list/add-items",
+            json=items_data,
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:209: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [POST]>, url = '/api/shopping-list/add-items'
+params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/shopping-list/add-items': No scheme supplied. Perhaps you meant https:///api/shopping-list/add-items?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+_________ TestAddItemsToShoppingList.test_add_items_does_not_duplicate _________
+
+self = <test_cocktails_pantry_features.TestAddItemsToShoppingList object at 0xf8c823787250>
+
+    def test_add_items_does_not_duplicate(self):
+        """POST /api/shopping-list/add-items should not add duplicate items"""
+        # Try to add the same items again
+        items_data = {
+            "items": [
+                {"name": "TEST_Milk", "quantity": 1, "unit": "L", "category": "dairy"},
+                {"name": "TEST_New Item", "quantity": 5, "unit": "pieces", "category": "other"}
+            ]
+        }
+    
+>       response = requests.post(
+            f"{BASE_URL}/api/shopping-list/add-items",
+            json=items_data,
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:237: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [POST]>, url = '/api/shopping-list/add-items'
+params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/shopping-list/add-items': No scheme supplied. Perhaps you meant https:///api/shopping-list/add-items?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+_________ TestAddItemsToShoppingList.test_add_items_sets_recipe_source _________
+
+self = <test_cocktails_pantry_features.TestAddItemsToShoppingList object at 0xf8c823787890>
+
+    def test_add_items_sets_recipe_source(self):
+        """POST /api/shopping-list/add-items should set recipe_source to 'Pantry Low Stock'"""
+        # Get current shopping list
+>       response = requests.get(
+            f"{BASE_URL}/api/shopping-list",
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/shopping-list'
+params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/shopping-list': No scheme supplied. Perhaps you meant https:///api/shopping-list?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
+____________________ TestCleanup.test_cleanup_test_recipes _____________________
+
+self = <test_cocktails_pantry_features.TestCleanup object at 0xf8c82378c090>
+
+    def test_cleanup_test_recipes(self):
+        """Delete test recipes created during tests"""
+        # Get all recipes
+>       response = requests.get(
+            f"{BASE_URL}/api/recipes",
+            headers={"Authorization": f"Bearer {SESSION_TOKEN}"}
+        )
+
+backend/tests/test_cocktails_pantry_features.py:282: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/requests/api.py:73: in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:575: in request
+    prep = self.prepare_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:484: in prepare_request
+    p.prepare(
+/root/.venv/lib/python3.11/site-packages/requests/models.py:367: in prepare
+    self.prepare_url(url, params)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <PreparedRequest [GET]>, url = '/api/recipes', params = OrderedDict()
+
+    def prepare_url(self, url, params):
+        """Prepares the given HTTP URL."""
+        #: Accept objects that have string representations.
+        #: We're unable to blindly call unicode/str functions
+        #: as this will include the bytestring indicator (b'')
+        #: on python 3.x.
+        #: https://github.com/psf/requests/pull/2238
+        if isinstance(url, bytes):
+            url = url.decode("utf8")
+        else:
+            url = str(url)
+    
+        # Remove leading whitespaces from url
+        url = url.lstrip()
+    
+        # Don't do any URL preparation for non-HTTP schemes like `mailto`,
+        # `data` etc to work around exceptions from `url_parse`, which
+        # handles RFC 3986 only.
+        if ":" in url and not url.lower().startswith("http"):
+            self.url = url
+            return
+    
+        # Support for unicode domain names and paths.
+        try:
+            scheme, auth, host, port, path, query, fragment = parse_url(url)
+        except LocationParseError as e:
+            raise InvalidURL(*e.args)
+    
+        if not scheme:
+>           raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
+E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No scheme supplied. Perhaps you meant https:///api/recipes?
+
+/root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestReceiptScanning.test_scan_receipt_endpoint_exists _____________
 
-self = <test_expiry_receipt.TestReceiptScanning object at 0xfc1e5c7063d0>
-api_client = <requests.sessions.Session object at 0xfc1e5c732990>
+self = <test_expiry_receipt.TestReceiptScanning object at 0xf8c82351bc90>
+api_client = <requests.sessions.Session object at 0xf8c823618410>
 
     def test_scan_receipt_endpoint_exists(self, api_client):
         """Test that POST /api/pantry/scan-receipt endpoint exists"""
@@ -396,7 +1267,7 @@ E        +  where 520 = <Response [520]>.status_code
 backend/tests/test_expiry_receipt.py:138: AssertionError
 __________ TestRecipeCategoriesAPI.test_create_recipe_with_categories __________
 
-self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xfc1e5c6daa10>
+self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xf8c82360f590>
 
     def test_create_recipe_with_categories(self):
         """Test creating a recipe with categories"""
@@ -472,7 +1343,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestRecipeCategoriesAPI.test_update_recipe_categories _____________
 
-self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xfc1e5c6db010>
+self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xf8c82360fbd0>
 
     def test_update_recipe_categories(self):
         """Test updating recipe categories via PUT endpoint"""
@@ -548,7 +1419,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __________ TestRecipeCategoriesAPI.test_update_categories_remove_all ___________
 
-self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xfc1e5c706c90>
+self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xf8c823607710>
 
     def test_update_categories_remove_all(self):
         """Test removing all categories from a recipe"""
@@ -621,7 +1492,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________ TestRecipeCategoriesAPI.test_update_categories_invalid_recipe _________
 
-self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xfc1e5c704810>
+self = <test_features_iteration5.TestRecipeCategoriesAPI object at 0xf8c8235188d0>
 
     def test_update_categories_invalid_recipe(self):
         """Test updating categories for non-existent recipe"""
@@ -687,7 +1558,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/non-exi
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______________ TestPantryCookAPI.test_cook_recipe_deducts_pantry _______________
 
-self = <test_features_iteration5.TestPantryCookAPI object at 0xfc1e5c6dad90>
+self = <test_features_iteration5.TestPantryCookAPI object at 0xf8c82360d590>
 
     def test_cook_recipe_deducts_pantry(self):
         """Test that cooking a recipe deducts ingredients from pantry"""
@@ -759,7 +1630,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/items': 
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________ TestPantryCookAPI.test_cook_recipe_with_missing_ingredients __________
 
-self = <test_features_iteration5.TestPantryCookAPI object at 0xfc1e5c6dbad0>
+self = <test_features_iteration5.TestPantryCookAPI object at 0xf8c82360d050>
 
     def test_cook_recipe_with_missing_ingredients(self):
         """Test cooking a recipe when some ingredients are not in pantry"""
@@ -833,7 +1704,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________________ TestPantryCookAPI.test_cook_recipe_not_found _________________
 
-self = <test_features_iteration5.TestPantryCookAPI object at 0xfc1e5c6dbf10>
+self = <test_features_iteration5.TestPantryCookAPI object at 0xf8c82360d210>
 
     def test_cook_recipe_not_found(self):
         """Test cooking a non-existent recipe"""
@@ -898,7 +1769,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/cook': N
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________ TestPantryCookAPI.test_cook_recipe_with_servings_multiplier __________
 
-self = <test_features_iteration5.TestPantryCookAPI object at 0xfc1e5c6e4710>
+self = <test_features_iteration5.TestPantryCookAPI object at 0xf8c82360ced0>
 
     def test_cook_recipe_with_servings_multiplier(self):
         """Test cooking with different servings multiplier"""
@@ -969,7 +1840,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/items': 
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________ TestRecipeFilterByCategory.test_recipes_have_categories_field _________
 
-self = <test_features_iteration5.TestRecipeFilterByCategory object at 0xfc1e5c6e4490>
+self = <test_features_iteration5.TestRecipeFilterByCategory object at 0xf8c82360d3d0>
 
     def test_recipes_have_categories_field(self):
         """Test that recipes endpoint returns categories field"""
@@ -1033,7 +1904,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___ TestRecipeFilterByCategory.test_create_recipes_with_different_categories ___
 
-self = <test_features_iteration5.TestRecipeFilterByCategory object at 0xfc1e5c6e5210>
+self = <test_features_iteration5.TestRecipeFilterByCategory object at 0xf8c82360dd90>
 
     def test_create_recipes_with_different_categories(self):
         """Test creating recipes with different categories for filter testing"""
@@ -1106,8 +1977,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________________ TestAuthAndBasicEndpoints.test_auth_me ____________________
 
-self = <test_iteration11_features.TestAuthAndBasicEndpoints object at 0xfc1e5c6e7ad0>
-api_client = <requests.sessions.Session object at 0xfc1e5b9a4250>
+self = <test_iteration11_features.TestAuthAndBasicEndpoints object at 0xf8c82378edd0>
+api_client = <requests.sessions.Session object at 0xf8c82356bb90>
 
     def test_auth_me(self, api_client):
         """Test /api/auth/me returns user data"""
@@ -1168,8 +2039,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/auth/me': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___________________ TestAuthAndBasicEndpoints.test_api_root ____________________
 
-self = <test_iteration11_features.TestAuthAndBasicEndpoints object at 0xfc1e5c6cb550>
-api_client = <requests.sessions.Session object at 0xfc1e5b9a4190>
+self = <test_iteration11_features.TestAuthAndBasicEndpoints object at 0xf8c82378e890>
+api_client = <requests.sessions.Session object at 0xf8c822843f90>
 
     def test_api_root(self, api_client):
         """Test API root endpoint"""
@@ -1230,8 +2101,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/': No scheme su
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _ TestMealSuggestionsRelatedRecipeCount.test_suggestions_endpoint_returns_related_recipe_count _
 
-self = <test_iteration11_features.TestMealSuggestionsRelatedRecipeCount object at 0xfc1e5c6cad90>
-api_client = <requests.sessions.Session object at 0xfc1e5ba3dc90>
+self = <test_iteration11_features.TestMealSuggestionsRelatedRecipeCount object at 0xf8c82378c4d0>
+api_client = <requests.sessions.Session object at 0xf8c8228acdd0>
 
     def test_suggestions_endpoint_returns_related_recipe_count(self, api_client):
         """Test /api/suggestions/meals returns related_recipe_count field"""
@@ -1293,8 +2164,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/suggestions/mea
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _ TestMealSuggestionsRelatedRecipeCount.test_suggestions_with_expiring_filter __
 
-self = <test_iteration11_features.TestMealSuggestionsRelatedRecipeCount object at 0xfc1e5c6cbad0>
-api_client = <requests.sessions.Session object at 0xfc1e5b9caa10>
+self = <test_iteration11_features.TestMealSuggestionsRelatedRecipeCount object at 0xf8c82378c350>
+api_client = <requests.sessions.Session object at 0xf8c822870810>
 
     def test_suggestions_with_expiring_filter(self, api_client):
         """Test /api/suggestions/meals?expiring_soon=true"""
@@ -1356,8 +2227,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/suggestions/mea
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______ TestRecipeCreationWithImageChoice.test_create_recipe_with_ai_image ______
 
-self = <test_iteration11_features.TestRecipeCreationWithImageChoice object at 0xfc1e5c6c8690>
-api_client = <requests.sessions.Session object at 0xfc1e5b8cafd0>
+self = <test_iteration11_features.TestRecipeCreationWithImageChoice object at 0xf8c82378ca50>
+api_client = <requests.sessions.Session object at 0xf8c822876c50>
 
     def test_create_recipe_with_ai_image(self, api_client):
         """Test creating recipe with AI image generation (skip_image_generation=false)"""
@@ -1432,8 +2303,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______ TestRecipeCreationWithImageChoice.test_create_recipe_with_no_image ______
 
-self = <test_iteration11_features.TestRecipeCreationWithImageChoice object at 0xfc1e5c6c8b10>
-api_client = <requests.sessions.Session object at 0xfc1e5ba6bdd0>
+self = <test_iteration11_features.TestRecipeCreationWithImageChoice object at 0xf8c823964750>
+api_client = <requests.sessions.Session object at 0xf8c8234fc650>
 
     def test_create_recipe_with_no_image(self, api_client):
         """Test creating recipe with no image (skip_image_generation=true)"""
@@ -1508,8 +2379,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __ TestRecipeCreationWithImageChoice.test_create_recipe_with_own_base64_image __
 
-self = <test_iteration11_features.TestRecipeCreationWithImageChoice object at 0xfc1e5c6db9d0>
-api_client = <requests.sessions.Session object at 0xfc1e5ba1fcd0>
+self = <test_iteration11_features.TestRecipeCreationWithImageChoice object at 0xf8c82378e910>
+api_client = <requests.sessions.Session object at 0xf8c823596650>
 
     def test_create_recipe_with_own_base64_image(self, api_client):
         """Test creating recipe with user's own base64 image"""
@@ -1587,8 +2458,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestWeeklyPlannerSuggestions.test_get_recipes_grouped _____________
 
-self = <test_iteration11_features.TestWeeklyPlannerSuggestions object at 0xfc1e5c6cb1d0>
-api_client = <requests.sessions.Session object at 0xfc1e5b97f490>
+self = <test_iteration11_features.TestWeeklyPlannerSuggestions object at 0xf8c82360f710>
+api_client = <requests.sessions.Session object at 0xf8c822872350>
 
     def test_get_recipes_grouped(self, api_client):
         """Test /api/recipes/grouped endpoint"""
@@ -1650,8 +2521,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/grouped
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______________ TestWeeklyPlannerSuggestions.test_weekly_plan_crud ______________
 
-self = <test_iteration11_features.TestWeeklyPlannerSuggestions object at 0xfc1e5c6c8e90>
-api_client = <requests.sessions.Session object at 0xfc1e5c732050>
+self = <test_iteration11_features.TestWeeklyPlannerSuggestions object at 0xf8c823628790>
+api_client = <requests.sessions.Session object at 0xf8c822877250>
 
     def test_weekly_plan_crud(self, api_client):
         """Test weekly plan save and retrieve"""
@@ -1720,8 +2591,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/weekly-plan?wee
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________ TestRecipeLibraryImages.test_get_recipes_returns_image_urls __________
 
-self = <test_iteration11_features.TestRecipeLibraryImages object at 0xfc1e5c6c9390>
-api_client = <requests.sessions.Session object at 0xfc1e5ba51110>
+self = <test_iteration11_features.TestRecipeLibraryImages object at 0xf8c8236284d0>
+api_client = <requests.sessions.Session object at 0xf8c8228ae810>
 
     def test_get_recipes_returns_image_urls(self, api_client):
         """Test that recipes have image_url field"""
@@ -1782,8 +2653,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________________ TestPantryExpiringItems.test_get_expiring_soon ________________
 
-self = <test_iteration11_features.TestPantryExpiringItems object at 0xfc1e5c6c95d0>
-api_client = <requests.sessions.Session object at 0xfc1e5b960690>
+self = <test_iteration11_features.TestPantryExpiringItems object at 0xf8c823629a50>
+api_client = <requests.sessions.Session object at 0xf8c8236d2990>
 
     def test_get_expiring_soon(self, api_client):
         """Test /api/pantry/expiring-soon endpoint"""
@@ -1845,8 +2716,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/expiring
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___________ TestPantryExpiringItems.test_add_pantry_item_with_expiry ___________
 
-self = <test_iteration11_features.TestPantryExpiringItems object at 0xfc1e5c6ca0d0>
-api_client = <requests.sessions.Session object at 0xfc1e5b926c50>
+self = <test_iteration11_features.TestPantryExpiringItems object at 0xf8c823628e50>
+api_client = <requests.sessions.Session object at 0xf8c823540d50>
 
     def test_add_pantry_item_with_expiry(self, api_client):
         """Test adding pantry item with expiry date"""
@@ -1919,8 +2790,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/items': 
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _______ TestRecipeImportImageConversion.test_scrape_recipe_url_endpoint ________
 
-self = <test_iteration11_features.TestRecipeImportImageConversion object at 0xfc1e5c6c9d90>
-api_client = <requests.sessions.Session object at 0xfc1e5c732b90>
+self = <test_iteration11_features.TestRecipeImportImageConversion object at 0xf8c823629e90>
+api_client = <requests.sessions.Session object at 0xf8c82356b090>
 
     def test_scrape_recipe_url_endpoint(self, api_client):
         """Test /api/recipes/scrape-url endpoint exists"""
@@ -1983,8 +2854,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/scrape-
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _____ TestCompositeScoreCalculation.test_suggestions_have_composite_score ______
 
-self = <test_iteration11_features.TestCompositeScoreCalculation object at 0xfc1e5c809550>
-api_client = <requests.sessions.Session object at 0xfc1e5b8d04d0>
+self = <test_iteration11_features.TestCompositeScoreCalculation object at 0xf8c82362ae90>
+api_client = <requests.sessions.Session object at 0xf8c822872390>
 
     def test_suggestions_have_composite_score(self, api_client):
         """Test that suggestions include composite_score field"""
@@ -2046,7 +2917,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/suggestions/mea
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __________ TestRecipeGroupingAPI.test_recipes_grouped_endpoint_exists __________
 
-self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xfc1e5c809a10>
+self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xf8c823628390>
 
     def test_recipes_grouped_endpoint_exists(self):
         """Test that the grouped endpoint exists and returns 200"""
@@ -2111,7 +2982,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/grouped
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________ TestRecipeGroupingAPI.test_recipes_grouped_response_structure _________
 
-self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xfc1e5c80a210>
+self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xf8c8237865d0>
 
     def test_recipes_grouped_response_structure(self):
         """Test that response has correct structure"""
@@ -2176,7 +3047,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/grouped
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestRecipeGroupingAPI.test_recipes_grouped_count_field ____________
 
-self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xfc1e5c80a650>
+self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xf8c823787ad0>
 
     def test_recipes_grouped_count_field(self):
         """CRITICAL: Each group must have count >= 2 (sharing 2+ ingredients)"""
@@ -2241,7 +3112,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/grouped
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________ TestRecipeGroupingAPI.test_recipes_grouped_recipe_structure __________
 
-self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xfc1e5c80acd0>
+self = <test_iteration12_critical_fixes.TestRecipeGroupingAPI object at 0xf8c823785390>
 
     def test_recipes_grouped_recipe_structure(self):
         """Test that each recipe in a group has id and name"""
@@ -2306,7 +3177,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/grouped
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______ TestRecipeCreationWithImageChoice.test_create_recipe_with_ai_image ______
 
-self = <test_iteration12_critical_fixes.TestRecipeCreationWithImageChoice object at 0xfc1e5c80b390>
+self = <test_iteration12_critical_fixes.TestRecipeCreationWithImageChoice object at 0xf8c823784590>
 
     def test_create_recipe_with_ai_image(self):
         """Test creating recipe with AI image generation (skip_image_generation=False)"""
@@ -2382,7 +3253,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______ TestRecipeCreationWithImageChoice.test_create_recipe_without_image ______
 
-self = <test_iteration12_critical_fixes.TestRecipeCreationWithImageChoice object at 0xfc1e5c80bed0>
+self = <test_iteration12_critical_fixes.TestRecipeCreationWithImageChoice object at 0xf8c823634350>
 
     def test_create_recipe_without_image(self):
         """Test creating recipe with no image (skip_image_generation=True)"""
@@ -2457,7 +3328,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _____ TestRecipeCreationWithImageChoice.test_create_recipe_with_own_image ______
 
-self = <test_iteration12_critical_fixes.TestRecipeCreationWithImageChoice object at 0xfc1e5c6aa350>
+self = <test_iteration12_critical_fixes.TestRecipeCreationWithImageChoice object at 0xf8c823634150>
 
     def test_create_recipe_with_own_image(self):
         """Test creating recipe with user's own image (base64)"""
@@ -2536,7 +3407,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___________ TestMealSuggestionsAPI.test_suggestions_endpoint_exists ____________
 
-self = <test_iteration12_critical_fixes.TestMealSuggestionsAPI object at 0xfc1e5c80bdd0>
+self = <test_iteration12_critical_fixes.TestMealSuggestionsAPI object at 0xf8c82362aa90>
 
     def test_suggestions_endpoint_exists(self):
         """Test that suggestions endpoint exists"""
@@ -2601,7 +3472,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/suggestions/mea
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __________ TestMealSuggestionsAPI.test_suggestions_response_structure __________
 
-self = <test_iteration12_critical_fixes.TestMealSuggestionsAPI object at 0xfc1e5c80a310>
+self = <test_iteration12_critical_fixes.TestMealSuggestionsAPI object at 0xf8c823628f50>
 
     def test_suggestions_response_structure(self):
         """Test suggestions response structure"""
@@ -2666,7 +3537,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/suggestions/mea
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __________________ TestHealthEndpoint.test_api_root_endpoint ___________________
 
-self = <test_iteration12_critical_fixes.TestHealthEndpoint object at 0xfc1e5c6c92d0>
+self = <test_iteration12_critical_fixes.TestHealthEndpoint object at 0xf8c823637d10>
 
     def test_api_root_endpoint(self):
         """Test API root endpoint returns OK"""
@@ -2730,7 +3601,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/': No scheme su
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___________ TestPantryAlerts.test_add_pantry_item_with_min_threshold ___________
 
-self = <test_pantry_features.TestPantryAlerts object at 0xfc1e5c6a8d50>
+self = <test_pantry_features.TestPantryAlerts object at 0xf8c8236354d0>
 
     def test_add_pantry_item_with_min_threshold(self):
         """Test adding a pantry item with min_threshold (alert threshold)"""
@@ -2806,7 +3677,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/items': 
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestPantryAlerts.test_update_pantry_item_min_threshold ____________
 
-self = <test_pantry_features.TestPantryAlerts object at 0xfc1e5c6a9750>
+self = <test_pantry_features.TestPantryAlerts object at 0xf8c823636550>
 
     def test_update_pantry_item_min_threshold(self):
         """Test updating min_threshold on an existing pantry item"""
@@ -2873,7 +3744,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry': No sch
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __________ TestPantryAlerts.test_add_pantry_item_with_zero_threshold ___________
 
-self = <test_pantry_features.TestPantryAlerts object at 0xfc1e5c6a9e50>
+self = <test_pantry_features.TestPantryAlerts object at 0xf8c823636890>
 
     def test_add_pantry_item_with_zero_threshold(self):
         """Test adding item with zero threshold (no alert)"""
@@ -2948,7 +3819,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/items': 
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____ TestParseIngredients.test_parse_ingredients_with_separate_instructions ____
 
-self = <test_pantry_features.TestParseIngredients object at 0xfc1e5c6aa610>
+self = <test_pantry_features.TestParseIngredients object at 0xf8c8236374d0>
 
     def test_parse_ingredients_with_separate_instructions(self):
         """Test that parse-ingredients accepts separate ingredients_text and instructions_text"""
@@ -3020,7 +3891,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/parse-ingredien
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _______ TestParseIngredients.test_parse_ingredients_without_instructions _______
 
-self = <test_pantry_features.TestParseIngredients object at 0xfc1e5c6ab410>
+self = <test_pantry_features.TestParseIngredients object at 0xf8c823636f50>
 
     def test_parse_ingredients_without_instructions(self):
         """Test that parse-ingredients works with only ingredients_text"""
@@ -3092,7 +3963,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/parse-ingredien
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _____________________ TestPantryEndpoints.test_get_pantry ______________________
 
-self = <test_pantry_features.TestPantryEndpoints object at 0xfc1e5c6ab6d0>
+self = <test_pantry_features.TestPantryEndpoints object at 0xf8c823646c90>
 
     def test_get_pantry(self):
         """Test getting pantry"""
@@ -3158,7 +4029,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry': No sch
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _____________ TestPantryEndpoints.test_add_and_delete_pantry_item ______________
 
-self = <test_pantry_features.TestPantryEndpoints object at 0xfc1e5c6abf90>
+self = <test_pantry_features.TestPantryEndpoints object at 0xf8c823645c90>
 
     def test_add_and_delete_pantry_item(self):
         """Test adding and deleting a pantry item"""
@@ -3234,7 +4105,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/pantry/items': 
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________________ TestHealthCheck.test_api_root_endpoint ____________________
 
-self = <test_pantry_features.TestHealthCheck object at 0xfc1e5c6be810>
+self = <test_pantry_features.TestHealthCheck object at 0xf8c823647e50>
 
     def test_api_root_endpoint(self):
         """Test /api/ root endpoint"""
@@ -3298,8 +4169,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/': No scheme su
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________ TestParseImageEndpoint.test_parse_image_extracts_ingredients _________
 
-self = <test_parse_image.TestParseImageEndpoint object at 0xfc1e5c67d3d0>
-test_image_with_ingredients = <_io.BytesIO object at 0xfc1e5c6b7a10>
+self = <test_parse_image.TestParseImageEndpoint object at 0xf8c8237abe90>
+test_image_with_ingredients = <_io.BytesIO object at 0xf8c8235149f0>
 
     def test_parse_image_extracts_ingredients(self, test_image_with_ingredients):
         """Test that the API extracts ingredients from an image with text"""
@@ -3366,8 +4237,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/parse-image': N
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___________ TestParseImageEndpoint.test_parse_image_returns_raw_text ___________
 
-self = <test_parse_image.TestParseImageEndpoint object at 0xfc1e5c67e5d0>
-test_image_with_ingredients = <_io.BytesIO object at 0xfc1e5b8e7330>
+self = <test_parse_image.TestParseImageEndpoint object at 0xf8c8237ab6d0>
+test_image_with_ingredients = <_io.BytesIO object at 0xf8c82276c4a0>
 
     def test_parse_image_returns_raw_text(self, test_image_with_ingredients):
         """Test that the API returns the raw extracted text"""
@@ -3434,8 +4305,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/parse-image': N
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________ TestParseImageEndpoint.test_parse_image_handles_blank_image __________
 
-self = <test_parse_image.TestParseImageEndpoint object at 0xfc1e5c67e910>
-blank_image = <_io.BytesIO object at 0xfc1e5b8e7240>
+self = <test_parse_image.TestParseImageEndpoint object at 0xf8c8237a9410>
+blank_image = <_io.BytesIO object at 0xf8c82276ffb0>
 
     def test_parse_image_handles_blank_image(self, blank_image):
         """Test that the API handles images with no text gracefully"""
@@ -3502,7 +4373,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/parse-image': N
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestParseImageEndpoint.test_parse_image_requires_file _____________
 
-self = <test_parse_image.TestParseImageEndpoint object at 0xfc1e5c67f110>
+self = <test_parse_image.TestParseImageEndpoint object at 0xf8c8237aa090>
 
     def test_parse_image_requires_file(self):
         """Test that the API returns error when no file is provided"""
@@ -3567,7 +4438,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/parse-image': N
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________________________ TestAPIHealth.test_api_root __________________________
 
-self = <test_parse_image.TestAPIHealth object at 0xfc1e5c67fb50>
+self = <test_parse_image.TestAPIHealth object at 0xf8c8237ab050>
 
     def test_api_root(self):
         """Test that the API root endpoint is accessible"""
@@ -3631,7 +4502,7 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/': No scheme su
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _____________________ TestAPIHealth.test_recipes_endpoint ______________________
 
-self = <test_parse_image.TestAPIHealth object at 0xfc1e5c6f5450>
+self = <test_parse_image.TestAPIHealth object at 0xf8c8237a99d0>
 
     def test_recipes_endpoint(self):
         """Test that recipes endpoint is accessible"""
@@ -3695,8 +4566,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _______ TestCORSAndAuth.test_auth_me_returns_200_for_authenticated_user ________
 
-self = <test_reviews_and_sorting.TestCORSAndAuth object at 0xfc1e5c6f79d0>
-api_client = <requests.sessions.Session object at 0xfc1e5b818c90>
+self = <test_reviews_and_sorting.TestCORSAndAuth object at 0xf8c8236d3ad0>
+api_client = <requests.sessions.Session object at 0xf8c8235420d0>
 
     def test_auth_me_returns_200_for_authenticated_user(self, api_client):
         """CORS fix - verify /api/auth/me returns 200 (not 401) for authenticated users"""
@@ -3757,8 +4628,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/auth/me': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______ TestCORSAndAuth.test_auth_me_returns_401_for_unauthenticated_user _______
 
-self = <test_reviews_and_sorting.TestCORSAndAuth object at 0xfc1e5c67e110>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b8c9510>
+self = <test_reviews_and_sorting.TestCORSAndAuth object at 0xf8c8237abed0>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c823537ad0>
 
     def test_auth_me_returns_401_for_unauthenticated_user(self, unauthenticated_client):
         """Verify unauthenticated requests get 401"""
@@ -3819,8 +4690,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/auth/me': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _______________ TestRecipesSorting.test_get_recipes_default_sort _______________
 
-self = <test_reviews_and_sorting.TestRecipesSorting object at 0xfc1e5c6f4650>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5c80b5d0>
+self = <test_reviews_and_sorting.TestRecipesSorting object at 0xf8c8236d0b10>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c822836e50>
 
     def test_get_recipes_default_sort(self, unauthenticated_client):
         """GET /api/recipes without sort_by returns recipes"""
@@ -3881,8 +4752,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestRecipesSorting.test_get_recipes_sort_by_popularity ____________
 
-self = <test_reviews_and_sorting.TestRecipesSorting object at 0xfc1e5c6f4310>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b9e5a90>
+self = <test_reviews_and_sorting.TestRecipesSorting object at 0xf8c8236d0210>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c82285d290>
 
     def test_get_recipes_sort_by_popularity(self, unauthenticated_client):
         """GET /api/recipes?sort_by=popularity returns recipes sorted by rating"""
@@ -3944,8 +4815,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes?sort_by
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ______________ TestRecipesSorting.test_get_recipes_sort_by_newest ______________
 
-self = <test_reviews_and_sorting.TestRecipesSorting object at 0xfc1e5c6f4590>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b9bd350>
+self = <test_reviews_and_sorting.TestRecipesSorting object at 0xf8c8236d0990>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c823637250>
 
     def test_get_recipes_sort_by_newest(self, unauthenticated_client):
         """GET /api/recipes?sort_by=newest returns recipes sorted by created_at"""
@@ -4007,8 +4878,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes?sort_by
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _________________ TestReviewsCRUD.test_get_reviews_for_recipe __________________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c6f4f10>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b861b10>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8236d1f50>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c8227b4f50>
 
     def test_get_reviews_for_recipe(self, unauthenticated_client):
         """GET /api/recipes/{recipe_id}/reviews returns reviews"""
@@ -4071,8 +4942,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/3c4acbd
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 __________________ TestReviewsCRUD.test_add_review_to_recipe ___________________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c724a10>
-api_client = <requests.sessions.Session object at 0xfc1e5c6c8f10>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8236d1d90>
+api_client = <requests.sessions.Session object at 0xf8c822891810>
 
     def test_add_review_to_recipe(self, api_client):
         """POST /api/recipes/{recipe_id}/reviews adds a review"""
@@ -4141,9 +5012,9 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/3c4acbd
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________ TestReviewsCRUD.test_add_review_updates_recipe_average_rating _________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c725090>
-api_client = <requests.sessions.Session object at 0xfc1e5b9c8050>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b887010>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8234fb810>
+api_client = <requests.sessions.Session object at 0xf8c82360a590>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c823608f50>
 
     def test_add_review_updates_recipe_average_rating(self, api_client, unauthenticated_client):
         """Adding a review updates the recipe's average_rating and review_count"""
@@ -4207,8 +5078,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/3c4acbd
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _______________ TestReviewsCRUD.test_add_review_without_comment ________________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c725750>
-api_client = <requests.sessions.Session object at 0xfc1e5b863490>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8234fa6d0>
+api_client = <requests.sessions.Session object at 0xf8c823579a50>
 
     def test_add_review_without_comment(self, api_client):
         """POST review with rating only (no comment) works"""
@@ -4274,8 +5145,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/3c4acbd
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________________ TestReviewsCRUD.test_add_review_invalid_rating ________________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c725dd0>
-api_client = <requests.sessions.Session object at 0xfc1e5b9fdcd0>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8234fb490>
+api_client = <requests.sessions.Session object at 0xf8c82288d4d0>
 
     def test_add_review_invalid_rating(self, api_client):
         """POST review with invalid rating fails validation"""
@@ -4342,8 +5213,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/3c4acbd
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ____________ TestReviewsCRUD.test_add_review_to_nonexistent_recipe _____________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c7264d0>
-api_client = <requests.sessions.Session object at 0xfc1e5b88e990>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8234f80d0>
+api_client = <requests.sessions.Session object at 0xf8c822927510>
 
     def test_add_review_to_nonexistent_recipe(self, api_client):
         """POST review to non-existent recipe returns 404"""
@@ -4408,8 +5279,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/nonexis
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ___________ TestReviewsCRUD.test_get_reviews_for_nonexistent_recipe ____________
 
-self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xfc1e5c726c10>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b818a50>
+self = <test_reviews_and_sorting.TestReviewsCRUD object at 0xf8c8234f8450>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c82360be50>
 
     def test_get_reviews_for_nonexistent_recipe(self, unauthenticated_client):
         """GET reviews for non-existent recipe returns empty list"""
@@ -4471,8 +5342,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/nonexis
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _____________ TestRecipeRatingFields.test_recipe_has_rating_fields _____________
 
-self = <test_reviews_and_sorting.TestRecipeRatingFields object at 0xfc1e5c7274d0>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b863710>
+self = <test_reviews_and_sorting.TestRecipeRatingFields object at 0xf8c823524990>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c8228a5250>
 
     def test_recipe_has_rating_fields(self, unauthenticated_client):
         """Verify recipe response includes average_rating and review_count"""
@@ -4535,8 +5406,8 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes/3c4acbd
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 _______ TestRecipeRatingFields.test_recipes_list_includes_rating_fields ________
 
-self = <test_reviews_and_sorting.TestRecipeRatingFields object at 0xfc1e5c727bd0>
-unauthenticated_client = <requests.sessions.Session object at 0xfc1e5b88c3d0>
+self = <test_reviews_and_sorting.TestRecipeRatingFields object at 0xf8c823525910>
+unauthenticated_client = <requests.sessions.Session object at 0xf8c82365b8d0>
 
     def test_recipes_list_includes_rating_fields(self, unauthenticated_client):
         """Verify recipes list includes rating fields for card display"""
@@ -4597,9 +5468,9 @@ E           requests.exceptions.MissingSchema: Invalid URL '/api/recipes': No sc
 /root/.venv/lib/python3.11/site-packages/requests/models.py:438: MissingSchema
 ________ TestShareCreation.test_share_creates_token_or_compliance_fails ________
 
-self = <test_share_feature.TestShareCreation object at 0xfc1e5ba33250>
-test_user1 = {'token': 'test_share_session1_1770824197278', 'user_id': 'test-share-user1-1770824197278'}
-test_recipe = {'average_rating': 0.0, 'categories': ['vegan', 'quick-easy'], 'cook_time': '0 min', 'created_at': '2026-02-11T15:36:37.795433Z', ...}
+self = <test_share_feature.TestShareCreation object at 0xf8c823595e50>
+test_user1 = {'token': 'test_share_session1_1770846579477', 'user_id': 'test-share-user1-1770846579477'}
+test_recipe = {'average_rating': 0.0, 'categories': ['vegan', 'quick-easy'], 'cook_time': '0 min', 'created_at': '2026-02-11T21:49:40.057317Z', ...}
 
     def test_share_creates_token_or_compliance_fails(self, test_user1, test_recipe):
         """POST /api/recipes/share should create a token or fail compliance"""
@@ -4658,6 +5529,18 @@ backend/tests/test_expiry_features.py::TestPantryExpiryFeatures::test_remove_pan
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ============================
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCocktailsEndpoint::test_cocktails_endpoint_returns_empty_initially
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCocktailsEndpoint::test_cocktails_endpoint_accepts_alcoholic_true_param
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCocktailsEndpoint::test_cocktails_endpoint_accepts_alcoholic_false_param
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCreateCocktailRecipe::test_create_alcoholic_cocktail
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCreateCocktailRecipe::test_create_non_alcoholic_cocktail
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCreateCocktailRecipe::test_cocktails_filter_returns_created_cocktails
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCreateCocktailRecipe::test_cocktails_filter_alcoholic_true
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCreateCocktailRecipe::test_cocktails_filter_alcoholic_false
+FAILED backend/tests/test_cocktails_pantry_features.py::TestAddItemsToShoppingList::test_add_items_to_shopping_list
+FAILED backend/tests/test_cocktails_pantry_features.py::TestAddItemsToShoppingList::test_add_items_does_not_duplicate
+FAILED backend/tests/test_cocktails_pantry_features.py::TestAddItemsToShoppingList::test_add_items_sets_recipe_source
+FAILED backend/tests/test_cocktails_pantry_features.py::TestCleanup::test_cleanup_test_recipes
 FAILED backend/tests/test_expiry_receipt.py::TestReceiptScanning::test_scan_receipt_endpoint_exists
 FAILED backend/tests/test_features_iteration5.py::TestRecipeCategoriesAPI::test_create_recipe_with_categories
 FAILED backend/tests/test_features_iteration5.py::TestRecipeCategoriesAPI::test_update_recipe_categories
@@ -4722,4 +5605,5 @@ FAILED backend/tests/test_reviews_and_sorting.py::TestReviewsCRUD::test_get_revi
 FAILED backend/tests/test_reviews_and_sorting.py::TestRecipeRatingFields::test_recipe_has_rating_fields
 FAILED backend/tests/test_reviews_and_sorting.py::TestRecipeRatingFields::test_recipes_list_includes_rating_fields
 FAILED backend/tests/test_share_feature.py::TestShareCreation::test_share_creates_token_or_compliance_fails
-================== 64 failed, 33 passed, 5 warnings in 9.39s ===================) have been created, increasing regression risk.</analysis>
+================== 76 failed, 33 passed, 5 warnings in 9.42s ===================) have been created, increasing regression risk.
+-   Unused files in the root directory were not cleaned up.</analysis>
