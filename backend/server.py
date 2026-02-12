@@ -2694,6 +2694,22 @@ async def scrape_recipe_url(import_data: RecipeImport):
     """Scrape a recipe URL and return data without saving - rewrites instructions for copyright safety"""
     scraped = await scrape_recipe_from_url(import_data.url)
     
+    # If basic scraping failed to get ingredients/instructions, try AI extraction
+    if not scraped['ingredients_text'] and not scraped['instructions_text']:
+        logger.info("Basic scraping didn't find recipe data, trying AI extraction...")
+        try:
+            async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client_http:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+                response = await client_http.get(import_data.url, headers=headers)
+                ai_extracted = await extract_recipe_with_ai(import_data.url, response.text)
+                if ai_extracted and (ai_extracted['ingredients_text'] or ai_extracted['instructions_text']):
+                    scraped = ai_extracted
+                    logger.info("AI extraction succeeded")
+        except Exception as e:
+            logger.error(f"AI extraction fallback failed: {e}")
+    
     if not scraped['name']:
         scraped['name'] = "Imported Recipe"
     
@@ -2720,7 +2736,8 @@ async def scrape_recipe_url(import_data: RecipeImport):
         "source_url": scraped['source_url'],
         "image_url": "",  # Don't use source image (copyright)
         "prep_time": prep_time,
-        "cook_time": cook_time
+        "cook_time": cook_time,
+        "extraction_method": "ai" if not scraped.get('_from_html') else "html"
     }
 
 # ============== FAVORITES ==============
