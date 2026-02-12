@@ -2109,12 +2109,7 @@ async def scrape_recipe_from_url(url: str) -> dict:
 async def scrape_recipe_fallback(url: str) -> dict:
     """Fallback scraping method for sites that block regular requests"""
     try:
-        # Try using a web archive or cache service
-        alternative_urls = [
-            f"https://webcache.googleusercontent.com/search?q=cache:{url}",
-        ]
-        
-        # Also try with different headers (mobile user agent)
+        # Try with different headers (mobile user agent)
         mobile_headers = {
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -2122,41 +2117,41 @@ async def scrape_recipe_fallback(url: str) -> dict:
         }
         
         async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client_http:
-            # First try with mobile user agent on original URL
+            # Try with mobile user agent on original URL
             try:
                 response = await client_http.get(url, headers=mobile_headers)
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
-                    return await extract_recipe_from_soup(soup, url)
+                    result = await extract_recipe_from_soup(soup, url)
+                    if result.get('name') or result.get('ingredients_text'):
+                        return result
             except Exception as e:
                 logger.warning(f"Mobile UA attempt failed: {e}")
-            
-            # Try alternative URLs
-            for alt_url in alternative_urls:
-                try:
-                    response = await client_http.get(alt_url, headers=mobile_headers)
-                    if response.status_code == 200:
-                        soup = BeautifulSoup(response.text, 'html.parser')
-                        result = await extract_recipe_from_soup(soup, url)
-                        if result.get('name') or result.get('ingredients_text'):
-                            return result
-                except Exception as e:
-                    logger.warning(f"Alternative URL {alt_url} failed: {e}")
-                    continue
         
-        # If all else fails, raise a helpful error
-        raise HTTPException(
-            status_code=400, 
-            detail=f"This website blocks automated access. Please copy and paste the recipe text manually using the 'Paste Text' option."
-        )
-    except HTTPException:
-        raise
+        # Return a special response indicating the site is protected
+        # The frontend will handle this gracefully
+        return {
+            'name': '',
+            'description': '',
+            'ingredients_text': '',
+            'instructions_text': '',
+            'image_url': None,
+            'source_url': url,
+            'blocked': True,
+            'message': 'This website blocks automated access. Please copy the recipe from the website and paste it using the "Paste Text" option.'
+        }
     except Exception as e:
         logger.error(f"Fallback scraping failed: {e}")
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Could not access this recipe website. Please copy and paste the recipe text manually."
-        )
+        return {
+            'name': '',
+            'description': '',
+            'ingredients_text': '',
+            'instructions_text': '',
+            'image_url': None,
+            'source_url': url,
+            'blocked': True,
+            'message': 'Could not access this recipe website. Please copy and paste the recipe text manually.'
+        }
 
 async def extract_recipe_from_soup(soup: BeautifulSoup, url: str) -> dict:
     """Extract recipe data from BeautifulSoup object"""
