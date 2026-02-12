@@ -1796,11 +1796,13 @@ async def consolidate_ingredients_with_ai(items: List[ShoppingListItem]) -> List
         return consolidated  # Fall back to local consolidation
 
 async def scrape_recipe_from_url(url: str) -> dict:
-    """Scrape recipe data from recipe URLs"""
+    """Scrape recipe data from recipe URLs with comprehensive selector coverage"""
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client_http:
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5'
             }
             response = await client_http.get(url, headers=headers)
             response.raise_for_status()
@@ -1816,56 +1818,221 @@ async def scrape_recipe_from_url(url: str) -> dict:
                 'source_url': url
             }
             
-            title_selectors = ['h1', '.recipe-title', '[data-test-id="recipe-name"]', '.recipe-name']
-            for selector in title_selectors:
-                title_elem = soup.select_one(selector)
-                if title_elem:
-                    recipe_data['name'] = title_elem.get_text(strip=True)
-                    break
+            # Try JSON-LD structured data first (most reliable)
+            json_ld_scripts = soup.find_all('script', type='application/ld+json')
+            for script in json_ld_scripts:
+                try:
+                    data = json.loads(script.string)
+                    # Handle @graph array
+                    if isinstance(data, dict) and '@graph' in data:
+                        data = data['@graph']
+                    if isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and item.get('@type') == 'Recipe':
+                                data = item
+                                break
+                    if isinstance(data, dict) and data.get('@type') == 'Recipe':
+                        recipe_data['name'] = data.get('name', '')
+                        recipe_data['description'] = data.get('description', '')
+                        
+                        # Parse ingredients from JSON-LD
+                        ingredients = data.get('recipeIngredient', [])
+                        if ingredients:
+                            recipe_data['ingredients_text'] = '\n'.join(ingredients)
+                        
+                        # Parse instructions from JSON-LD
+                        instructions = data.get('recipeInstructions', [])
+                        if instructions:
+                            inst_text = []
+                            for inst in instructions:
+                                if isinstance(inst, str):
+                                    inst_text.append(inst)
+                                elif isinstance(inst, dict):
+                                    inst_text.append(inst.get('text', ''))
+                            recipe_data['instructions_text'] = '\n'.join(inst_text)
+                        
+                        # Get image
+                        img = data.get('image')
+                        if img:
+                            if isinstance(img, list):
+                                recipe_data['image_url'] = img[0] if img else None
+                            elif isinstance(img, dict):
+                                recipe_data['image_url'] = img.get('url', '')
+                            else:
+                                recipe_data['image_url'] = img
+                        
+                        logger.info(f"Found recipe data from JSON-LD: {recipe_data['name']}")
+                        break
+                except (json.JSONDecodeError, TypeError) as e:
+                    continue
             
-            desc_selectors = ['.recipe-description', '[data-test-id="recipe-description"]', 'meta[name="description"]']
-            for selector in desc_selectors:
-                desc_elem = soup.select_one(selector)
-                if desc_elem:
-                    if desc_elem.name == 'meta':
-                        recipe_data['description'] = desc_elem.get('content', '')
-                    else:
-                        recipe_data['description'] = desc_elem.get_text(strip=True)
-                    break
+            # Fallback to HTML scraping if JSON-LD didn't work
+            if not recipe_data['name']:
+                # Extended title selectors
+                title_selectors = [
+                    'h1.entry-title', 'h1.recipe-title', 'h1.wprm-recipe-name', 
+                    'h2.wprm-recipe-name', '.tasty-recipes-title', 
+                    '[data-test-id="recipe-name"]', '.recipe-name', 
+                    'h1[itemprop="name"]', '.recipe-header h1', 
+                    '.post-title', 'article h1', 'h1'
+                ]
+                for selector in title_selectors:
+                    title_elem = soup.select_one(selector)
+                    if title_elem and title_elem.get_text(strip=True):
+                        recipe_data['name'] = title_elem.get_text(strip=True)
+                        break
             
-            ing_selectors = ['.ingredients', '[data-test-id="ingredients"]', '.recipe-ingredients', '.ingredient-list']
-            for selector in ing_selectors:
-                ing_elem = soup.select_one(selector)
-                if ing_elem:
-                    recipe_data['ingredients_text'] = ing_elem.get_text('\n', strip=True)
-                    break
+            if not recipe_data['description']:
+                desc_selectors = [
+                    '.recipe-description', '.wprm-recipe-summary', 
+                    '[data-test-id="recipe-description"]', 'meta[name="description"]',
+                    '.recipe-summary', '[itemprop="description"]'
+                ]
+                for selector in desc_selectors:
+                    desc_elem = soup.select_one(selector)
+                    if desc_elem:
+                        if desc_elem.name == 'meta':
+                            recipe_data['description'] = desc_elem.get('content', '')
+                        else:
+                            recipe_data['description'] = desc_elem.get_text(strip=True)
+                        if recipe_data['description']:
+                            break
             
             if not recipe_data['ingredients_text']:
-                ing_items = soup.select('li[class*="ingredient"], .ingredient-item')
-                if ing_items:
-                    recipe_data['ingredients_text'] = '\n'.join([item.get_text(strip=True) for item in ing_items])
+                # Extended ingredient selectors
+                ing_selectors = [
+                    '.wprm-recipe-ingredients', '.tasty-recipes-ingredients',
+                    '.ingredients', '[data-test-id="ingredients"]', 
+                    '.recipe-ingredients', '.ingredient-list',
+                    '[itemprop="recipeIngredient"]', '.recipe-ingredients-list',
+                    '.ingredients-section', '#ingredients'
+                ]
+                for selector in ing_selectors:
+                    ing_elem = soup.select_one(selector)
+                    if ing_elem:
+                        recipe_data['ingredients_text'] = ing_elem.get_text('\n', strip=True)
+                        if recipe_data['ingredients_text']:
+                            break
+                
+                # Try individual ingredient items
+                if not recipe_data['ingredients_text']:
+                    ing_items = soup.select(
+                        'li[class*="ingredient"], .ingredient-item, '
+                        '.wprm-recipe-ingredient, li[itemprop="recipeIngredient"], '
+                        '.tasty-recipes-ingredient'
+                    )
+                    if ing_items:
+                        recipe_data['ingredients_text'] = '\n'.join([item.get_text(strip=True) for item in ing_items])
             
-            inst_selectors = ['.instructions', '[data-test-id="instructions"]', '.recipe-instructions', '.directions']
-            for selector in inst_selectors:
-                inst_elem = soup.select_one(selector)
-                if inst_elem:
-                    recipe_data['instructions_text'] = inst_elem.get_text('\n', strip=True)
-                    break
+            if not recipe_data['instructions_text']:
+                # Extended instruction selectors
+                inst_selectors = [
+                    '.wprm-recipe-instructions', '.tasty-recipes-instructions',
+                    '.instructions', '[data-test-id="instructions"]', 
+                    '.recipe-instructions', '.directions',
+                    '[itemprop="recipeInstructions"]', '.recipe-directions',
+                    '.method', '#instructions', '.steps'
+                ]
+                for selector in inst_selectors:
+                    inst_elem = soup.select_one(selector)
+                    if inst_elem:
+                        recipe_data['instructions_text'] = inst_elem.get_text('\n', strip=True)
+                        if recipe_data['instructions_text']:
+                            break
+                
+                # Try individual instruction items
+                if not recipe_data['instructions_text']:
+                    inst_items = soup.select(
+                        'li[class*="instruction"], .instruction-item, '
+                        '.wprm-recipe-instruction, li[itemprop="recipeInstructions"], '
+                        '.tasty-recipes-instruction, .step'
+                    )
+                    if inst_items:
+                        recipe_data['instructions_text'] = '\n'.join([item.get_text(strip=True) for item in inst_items])
             
-            img_selectors = ['.recipe-image img', '[data-test-id="recipe-image"]', 'meta[property="og:image"]', '.hero-image img']
-            for selector in img_selectors:
-                img_elem = soup.select_one(selector)
-                if img_elem:
-                    if img_elem.name == 'meta':
-                        recipe_data['image_url'] = img_elem.get('content')
-                    else:
-                        recipe_data['image_url'] = img_elem.get('src') or img_elem.get('data-src')
-                    break
+            if not recipe_data['image_url']:
+                img_selectors = [
+                    '.recipe-image img', '[data-test-id="recipe-image"]', 
+                    'meta[property="og:image"]', '.hero-image img',
+                    '.wprm-recipe-image img', '.post-thumbnail img',
+                    'img[itemprop="image"]', '.entry-content img'
+                ]
+                for selector in img_selectors:
+                    img_elem = soup.select_one(selector)
+                    if img_elem:
+                        if img_elem.name == 'meta':
+                            recipe_data['image_url'] = img_elem.get('content')
+                        else:
+                            recipe_data['image_url'] = img_elem.get('src') or img_elem.get('data-src')
+                        if recipe_data['image_url']:
+                            break
             
             return recipe_data
     except Exception as e:
         logger.error(f"Error scraping recipe: {e}")
         raise HTTPException(status_code=400, detail=f"Could not fetch recipe from URL: {str(e)}")
+
+async def extract_recipe_with_ai(url: str, html_content: str) -> dict:
+    """Use AI to extract recipe from webpage content when scraping fails"""
+    if not openai_client:
+        return None
+    
+    try:
+        # Limit HTML content to avoid token limits
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Remove scripts, styles, nav, footer
+        for tag in soup.find_all(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+            tag.decompose()
+        
+        # Get main content text
+        text_content = soup.get_text('\n', strip=True)
+        # Limit to ~4000 chars to stay within token limits
+        text_content = text_content[:4000]
+        
+        system_message = """You are a recipe extraction expert. Extract recipe details from webpage content.
+
+Return JSON format:
+{
+    "name": "Recipe name",
+    "ingredients": ["ingredient 1 with quantity", "ingredient 2 with quantity", ...],
+    "instructions": ["step 1", "step 2", ...]
+}
+
+If you cannot find a recipe, return {"name": "", "ingredients": [], "instructions": []}"""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": f"Extract the recipe from this webpage content:\n\n{text_content}"}
+            ],
+            max_tokens=2000
+        )
+        
+        result = response.choices[0].message.content
+        
+        # Parse JSON response
+        clean_response = result.strip()
+        if "```json" in clean_response:
+            clean_response = clean_response.split("```json")[1].split("```")[0]
+        elif "```" in clean_response:
+            parts = clean_response.split("```")
+            if len(parts) >= 2:
+                clean_response = parts[1]
+        
+        data = json.loads(clean_response.strip())
+        return {
+            'name': data.get('name', ''),
+            'description': '',
+            'ingredients_text': '\n'.join(data.get('ingredients', [])),
+            'instructions_text': '\n'.join(data.get('instructions', [])),
+            'image_url': None,
+            'source_url': url
+        }
+    except Exception as e:
+        logger.error(f"AI recipe extraction failed: {e}")
+        return None
 
 # ============== AUTH ROUTES ==============
 
