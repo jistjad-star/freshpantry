@@ -86,7 +86,27 @@ export default function AddRecipe() {
     return match ? match[0] : text.trim();
   };
 
-  // Handle image uploads
+  // Handle ingredient image uploads
+  const handleIngredientImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setIngredientImages(prev => [...prev, ...files]);
+      setIngredientPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+      setInputMethod('screenshot');
+    }
+  };
+
+  // Handle instruction image uploads
+  const handleInstructionImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setInstructionImages(prev => [...prev, ...files]);
+      setInstructionPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+      setInputMethod('screenshot');
+    }
+  };
+
+  // Legacy handler for backward compatibility
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
@@ -94,6 +114,16 @@ export default function AddRecipe() {
       setImagePreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
       setInputMethod('screenshot');
     }
+  };
+
+  const removeIngredientImage = (index) => {
+    setIngredientImages(prev => prev.filter((_, i) => i !== index));
+    setIngredientPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeInstructionImage = (index) => {
+    setInstructionImages(prev => prev.filter((_, i) => i !== index));
+    setInstructionPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeImage = (index) => {
