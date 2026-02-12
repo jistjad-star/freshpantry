@@ -11,6 +11,9 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] AI ingredient extraction from screenshots
 - [x] AI instruction extraction from screenshots
 - [x] **Separate ingredient/instruction inputs** - Paste method has two text areas to prevent mixing
+- [x] **URL Import (Improved)** - JSON-LD extraction with AI fallback for better scraping
+- [x] **Direct Submit Button** - "Save Recipe" button allows submitting pasted recipes without AI extraction
+- [x] **Screenshot Text Helpers** - Optional text boxes for ingredients/steps when scanning images
 - [x] Recipe editing after creation
 - [x] Recipe categories (Vegan, Veggie, Pescatarian, Low Fat, Quick & Easy, Can be Vegan)
 - [x] **Make Vegan conversion** - AI button converts any recipe to vegan with plant-based substitutes
