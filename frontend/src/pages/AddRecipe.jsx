@@ -694,7 +694,7 @@ export default function AddRecipe() {
                   <div className="border-2 border-dashed border-[#4A7C59]/30 rounded-xl p-4 bg-[#4A7C59]/5">
                     <h4 className="font-medium text-[#1A2E1A] mb-3 flex items-center gap-2">
                       <span className="bg-[#4A7C59] text-white text-xs px-2 py-0.5 rounded">1</span>
-                      Ingredients Photos
+                      Ingredients Files
                     </h4>
                     
                     {ingredientPreviews.length > 0 ? (
