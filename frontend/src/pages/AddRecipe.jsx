@@ -237,19 +237,6 @@ export default function AddRecipe() {
           console.error("Error parsing instruction image:", instError);
         }
       }
-          if (instResponse.data.instructions?.length > 0) {
-            allInstructions = [...allInstructions, ...instResponse.data.instructions];
-          }
-          if (instResponse.data.prep_time) foundPrepTime = instResponse.data.prep_time;
-          if (instResponse.data.cook_time) foundCookTime = instResponse.data.cook_time;
-          // Get AI-suggested name (use first one found)
-          if (instResponse.data.suggested_name && !suggestedName) {
-            suggestedName = instResponse.data.suggested_name;
-          }
-        } catch (instError) {
-          console.error("Error parsing instructions:", instError);
-        }
-      }
       
       // Remove duplicate ingredients
       const uniqueIngredients = allIngredients.reduce((acc, ing) => {
