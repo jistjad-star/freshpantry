@@ -185,9 +185,10 @@ export default function AddRecipe() {
     }
   };
 
-  // Parse recipe from screenshots
+  // Parse recipe from screenshots (with separate ingredient/instruction images)
   const parseFromScreenshots = async () => {
-    if (images.length === 0) {
+    const totalImages = ingredientImages.length + instructionImages.length;
+    if (totalImages === 0) {
       toast.error("Upload at least one image");
       return;
     }
@@ -200,24 +201,42 @@ export default function AddRecipe() {
       let foundCookTime = "";
       let suggestedName = "";
       
-      for (const file of images) {
-        console.log(`Processing image: ${file.name}, size: ${file.size}, type: ${file.type}`);
-        
-        // Try parsing as ingredients
+      // Process ingredient images
+      for (const file of ingredientImages) {
+        console.log(`Processing ingredient image: ${file.name}`);
         try {
           const ingResponse = await api.parseImage(file);
           console.log("Ingredients response:", ingResponse.data);
           if (ingResponse.data.ingredients?.length > 0) {
             allIngredients = [...allIngredients, ...ingResponse.data.ingredients];
           }
+          // Also check for suggested name
+          if (ingResponse.data.suggested_name && !suggestedName) {
+            suggestedName = ingResponse.data.suggested_name;
+          }
         } catch (ingError) {
-          console.error("Error parsing ingredients:", ingError);
+          console.error("Error parsing ingredient image:", ingError);
         }
-        
-        // Try parsing as instructions
+      }
+      
+      // Process instruction images
+      for (const file of instructionImages) {
+        console.log(`Processing instruction image: ${file.name}`);
         try {
           const instResponse = await api.parseInstructionsImage(file);
           console.log("Instructions response:", instResponse.data);
+          if (instResponse.data.instructions?.length > 0) {
+            allInstructions = [...allInstructions, ...instResponse.data.instructions];
+          }
+          if (instResponse.data.prep_time) foundPrepTime = instResponse.data.prep_time;
+          if (instResponse.data.cook_time) foundCookTime = instResponse.data.cook_time;
+          if (instResponse.data.suggested_name && !suggestedName) {
+            suggestedName = instResponse.data.suggested_name;
+          }
+        } catch (instError) {
+          console.error("Error parsing instruction image:", instError);
+        }
+      }
           if (instResponse.data.instructions?.length > 0) {
             allInstructions = [...allInstructions, ...instResponse.data.instructions];
           }
