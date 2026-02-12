@@ -48,6 +48,14 @@ export default function AddRecipe() {
   const [urlInput, setUrlInput] = useState("");
   const [pasteIngredients, setPasteIngredients] = useState("");
   const [pasteInstructions, setPasteInstructions] = useState("");
+  
+  // Separate images for ingredients and instructions
+  const [ingredientImages, setIngredientImages] = useState([]);
+  const [ingredientPreviews, setIngredientPreviews] = useState([]);
+  const [instructionImages, setInstructionImages] = useState([]);
+  const [instructionPreviews, setInstructionPreviews] = useState([]);
+  
+  // Legacy single images array (for backward compatibility)
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   
