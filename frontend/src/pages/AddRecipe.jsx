@@ -819,7 +819,7 @@ export default function AddRecipe() {
                         </button>
                       </div>
                     )}
-                    <p className="text-xs text-stone-400 mt-2 text-center">Photos or documents of cooking steps</p>
+                    <p className="text-xs text-stone-400 mt-2 text-center">Images or PDF of cooking steps</p>
                     
                     {/* Hidden inputs for instructions */}
                     <input
