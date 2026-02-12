@@ -869,54 +869,58 @@ def parse_ingredients_simple(raw_text: str) -> List[Ingredient]:
     lines = raw_text.strip().split('\n')
     
     # Common units to recognize
-    units = r'(?:cups?|tbsps?|tablespoons?|tsps?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|l|liters?|litres?|pieces?|cloves?|cans?|jars?|bunche?s?|handfuls?|pinche?s?|slices?|sticks?|sprigs?|heads?)'
+    units_pattern = r'(?:cups?|tbsps?|tablespoons?|tsps?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|l|liters?|litres?|pieces?|cloves?|cans?|jars?|bunche?s?|handfuls?|pinche?s?|slices?|sticks?|sprigs?|heads?|large|medium|small)'
     
     for line in lines:
         line = line.strip()
         if not line or len(line) < 2:
             continue
         
-        # Try to match: quantity unit ingredient
-        # Pattern: number (optional fraction) optional unit rest-is-name
+        # Skip obvious instruction lines
+        instruction_words = ['step', 'preheat', 'cook', 'stir', 'mix', 'heat', 'serve', 'bake', 'pour', 'place', 'remove', 'let', 'set aside', 'meanwhile']
+        if any(line.lower().startswith(word) for word in instruction_words):
+            continue
+        
+        qty = ''
+        unit = ''
+        name = line
+        
+        # Pattern 1: "2 cups flour" or "1/2 cup sugar"
         match = re.match(
-            rf'^(\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?)\s*({units})?\s+(.+)$',
+            rf'^(\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?)\s*({units_pattern})\.?\s+(.+)$',
             line, re.IGNORECASE
         )
         
         if match:
             qty = match.group(1).replace(',', '.')
-            unit = match.group(2) or ''
+            unit = match.group(2).lower().rstrip('.')
             name = match.group(3).strip()
-            
-            # Clean up name - remove trailing prep instructions
-            name = re.sub(r',?\s*(diced|chopped|minced|sliced|crushed|finely|roughly|to taste|optional).*$', '', name, flags=re.IGNORECASE).strip()
-            
+        else:
+            # Pattern 2: "2 onions" or "3 eggs" (number + item, no unit)
+            match2 = re.match(r'^(\d+(?:[.,/]\d+)?)\s+(.+)$', line)
+            if match2:
+                qty = match2.group(1).replace(',', '.')
+                name = match2.group(2).strip()
+            else:
+                # Pattern 3: "1lb beef" or "500g chicken" (unit attached to number)
+                match3 = re.match(rf'^(\d+(?:[.,]\d+)?)\s*({units_pattern})\.?\s+(.+)$', line, re.IGNORECASE)
+                if match3:
+                    qty = match3.group(1).replace(',', '.')
+                    unit = match3.group(2).lower().rstrip('.')
+                    name = match3.group(3).strip()
+        
+        # Clean up name - remove trailing prep instructions and parenthetical notes
+        name = re.sub(r'\s*\([^)]*\)\s*$', '', name)  # Remove trailing (notes)
+        name = re.sub(r',?\s*(diced|chopped|minced|sliced|crushed|finely|roughly|to taste|optional|divided|plus more).*$', '', name, flags=re.IGNORECASE)
+        name = name.strip(' ,')
+        
+        if name and len(name) > 1:
             ingredients.append(Ingredient(
                 name=name,
                 quantity=qty,
-                unit=unit.lower() if unit else '',
+                unit=unit,
                 category=guess_category(name)
             ))
-        else:
-            # No match - try simpler pattern or use whole line
-            simple_match = re.match(r'^(\d+(?:[.,/]\d+)?)\s+(.+)$', line)
-            if simple_match:
-                qty = simple_match.group(1).replace(',', '.')
-                name = simple_match.group(2).strip()
-                ingredients.append(Ingredient(
-                    name=name,
-                    quantity=qty,
-                    unit='',
-                    category=guess_category(name)
-                ))
-            elif not any(word in line.lower() for word in ['step', 'preheat', 'cook', 'stir', 'mix', 'heat', 'serve']):
-                # Likely an ingredient without quantity
-                ingredients.append(Ingredient(
-                    name=line,
-                    quantity='',
-                    unit='',
-                    category=guess_category(line)
-                ))
     
     return ingredients
 
