@@ -138,7 +138,16 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 
 ## Changelog
 
-### 2025-02-11 (Session 9 - Current)
+### 2025-02-12 (Session 10 - Current)
+- **Improved**: URL scraping now uses JSON-LD structured data extraction (more reliable for modern recipe sites)
+- **Improved**: AI fallback extraction when HTML scraping fails
+- **Fixed**: "Extract Ingredients" no longer requires recipe name first  
+- **Added**: "Save Recipe" direct submit button for pasted recipes (skips AI extraction)
+- **Added**: Optional text areas in Screenshot mode for ingredients/steps to help AI
+- **Improved**: MongoDB connection now uses optimized connection pooling (10-100 connections, retry writes/reads)
+- **Improved**: Pantry item formatting - better alignment with icons in 2x2 grid, cleaner layout
+
+### 2025-02-11 (Session 9)
 - **Added**: Cocktails section - New dedicated page for cocktail recipes
 - **Added**: Cocktails navigation link in header
 - **Added**: Meal/Cocktail toggle on Add Recipe page
