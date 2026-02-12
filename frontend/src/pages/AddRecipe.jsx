@@ -296,6 +296,85 @@ export default function AddRecipe() {
     }
   };
 
+  // Submit pasted recipe directly without AI extraction
+  const submitPastedRecipe = async () => {
+    if (!recipeName.trim()) {
+      toast.error("Recipe name is required");
+      return;
+    }
+    if (!pasteIngredients.trim()) {
+      toast.error("Ingredients are required");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Parse ingredients from text manually (simple line-by-line)
+      const ingredientLines = pasteIngredients.split('\n').filter(line => line.trim());
+      const parsedIngredients = ingredientLines.map(line => {
+        // Try to extract quantity, unit, and name from line
+        const match = line.match(/^(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*([a-zA-Z]*)\s+(.+)$/);
+        if (match) {
+          return {
+            name: match[3].trim(),
+            quantity: match[1].replace(',', '.'),
+            unit: match[2] || '',
+            category: 'other'
+          };
+        }
+        // Fallback: use whole line as name
+        return {
+          name: line.trim(),
+          quantity: '',
+          unit: '',
+          category: 'other'
+        };
+      });
+      
+      // Parse instructions
+      const parsedInstructions = pasteInstructions
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => line.replace(/^\d+[\.\)]\s*/, '').trim()); // Remove step numbers
+      
+      // Handle image
+      let imageUrl = "";
+      if (imageChoice === 'own' && ownPhoto) {
+        const reader = new FileReader();
+        imageUrl = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(ownPhoto);
+        });
+      } else if (imageChoice === 'none') {
+        imageUrl = "";
+      }
+      
+      const recipeData = {
+        name: recipeName,
+        description: "",
+        servings,
+        prep_time: prepTime,
+        cook_time: cookTime,
+        ingredients: parsedIngredients,
+        instructions: parsedInstructions,
+        source_url: isOwnRecipe ? "Own Recipe" : "Imported",
+        image_url: imageUrl,
+        skip_image_generation: imageChoice !== 'ai',
+        recipe_type: recipeType,
+        is_alcoholic: recipeType === 'cocktail' ? isAlcoholic : null
+      };
+      
+      const response = await api.createRecipe(recipeData);
+      toast.success(recipeType === 'cocktail' ? "Cocktail saved!" : "Recipe saved!");
+      navigate(`/recipes/${response.data.id}`);
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      toast.error("Failed to save recipe");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen py-8" data-testid="add-recipe-page">
       <div className="max-w-3xl mx-auto px-4">
