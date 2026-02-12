@@ -59,10 +59,11 @@ Build a recipe and meal planning app that creates weekly shopping lists from you
 - [x] **Barcode scanning** - Scan product barcodes to look up and add items
 - [x] **Fill level prompt** - Select how full an item is when adding via barcode
 - [x] **Merge Duplicates** - Button to consolidate duplicate pantry items
-- [x] **Filter Low Stock** (NEW) - Toggle to show only low stock items
-- [x] **Select Items** (NEW) - Checkboxes on each pantry item for selection
-- [x] **Select All / Low Stock** (NEW) - Buttons to quickly select all or only low stock items
-- [x] **Export to Shopping List** (NEW) - Add selected items to shopping list with one click
+- [x] **Filter Low Stock** - Toggle to show only low stock items
+- [x] **Select Items** - Checkboxes on each pantry item for selection
+- [x] **Select All / Low Stock** - Buttons to quickly select all or only low stock items
+- [x] **Export to Shopping List** - Add selected items to shopping list with one click
+- [x] **Improved Pantry Formatting** - Better alignment with icons in 2x2 grid layout
 
 ### Dashboard
 - [x] **Expiry Notification Banner** - Shows expired and expiring items with colored badges
