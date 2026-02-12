@@ -106,6 +106,27 @@ export default function AddRecipe() {
       const response = await api.scrapeRecipeUrl(cleanUrl);
       const data = response.data;
       
+      // Check if the website blocked access
+      if (data.blocked) {
+        toast.error(data.message || "This website blocks automated access. Please use 'Paste Text' instead.", {
+          duration: 6000
+        });
+        // Switch to paste mode to help user
+        setInputMethod('paste');
+        setLoading(false);
+        return;
+      }
+      
+      // Check if we got any useful data
+      if (!data.ingredients?.length && !data.instructions?.length && !data.name) {
+        toast.error("Could not extract recipe from this URL. Try 'Paste Text' instead.", {
+          duration: 5000
+        });
+        setInputMethod('paste');
+        setLoading(false);
+        return;
+      }
+      
       if (data.name) setRecipeName(data.name);
       if (data.ingredients?.length > 0) setIngredients(data.ingredients);
       if (data.instructions?.length > 0) setInstructions(data.instructions);
@@ -115,7 +136,12 @@ export default function AddRecipe() {
       setIsParsed(true);
       toast.success(`Found ${data.ingredients?.length || 0} ingredients!`);
     } catch (error) {
-      toast.error("Couldn't import from URL. Try screenshot or paste.");
+      console.error("URL import error:", error);
+      toast.error("Couldn't import from URL. Try 'Paste Text' instead.", {
+        duration: 5000
+      });
+      // Switch to paste mode on error
+      setInputMethod('paste');
     } finally {
       setLoading(false);
     }
