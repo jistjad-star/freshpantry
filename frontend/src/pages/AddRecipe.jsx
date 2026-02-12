@@ -628,9 +628,31 @@ Example:
                   />
                 </div>
                 
-                <Button onClick={parseFromText} disabled={loading || !recipeName.trim() || !pasteIngredients.trim()} className="btn-primary w-full">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />Extract Ingredients</>}
-                </Button>
+                <div className="flex gap-3">
+                  {/* AI Extract Button */}
+                  <Button 
+                    onClick={parseFromText} 
+                    disabled={loading || !pasteIngredients.trim()} 
+                    variant="outline"
+                    className="flex-1 border-[#4A7C59] text-[#4A7C59] hover:bg-[#4A7C59]/10"
+                    data-testid="extract-ingredients-btn"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4 mr-2" />AI Extract & Clean</>}
+                  </Button>
+                  
+                  {/* Direct Submit Button */}
+                  <Button 
+                    onClick={submitPastedRecipe} 
+                    disabled={loading || !recipeName.trim() || !pasteIngredients.trim()} 
+                    className="flex-1 btn-primary"
+                    data-testid="submit-pasted-recipe-btn"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ChefHat className="w-4 h-4 mr-2" />Save Recipe</>}
+                  </Button>
+                </div>
+                <p className="text-xs text-stone-400 text-center">
+                  "AI Extract" cleans up formatting • "Save Recipe" submits as-is
+                </p>
               </div>
             )}
           </div>
