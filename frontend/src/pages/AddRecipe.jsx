@@ -206,10 +206,6 @@ export default function AddRecipe() {
 
   // Parse recipe from pasted text
   const parseFromText = async () => {
-    if (!recipeName.trim()) {
-      toast.error("Enter a recipe name first");
-      return;
-    }
     if (!pasteIngredients.trim()) {
       toast.error("Paste some ingredients first");
       return;
@@ -217,8 +213,9 @@ export default function AddRecipe() {
     
     setLoading(true);
     try {
-      // Send ingredients and instructions separately
-      const response = await api.parseIngredients(recipeName, pasteIngredients, pasteInstructions);
+      // Send ingredients and instructions separately (recipe name is optional for parsing)
+      const nameForParsing = recipeName.trim() || "Recipe";
+      const response = await api.parseIngredients(nameForParsing, pasteIngredients, pasteInstructions);
       
       setIngredients(response.data.ingredients || []);
       setInstructions(response.data.instructions || []);
