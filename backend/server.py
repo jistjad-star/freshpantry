@@ -5170,10 +5170,13 @@ class GenerateRecipeRequest(BaseModel):
 
 @api_router.post("/suggestions/generate-recipe")
 async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeRequest = None):
-    """Generate a new AI recipe based solely on pantry ingredients"""
+    """Generate a new AI recipe based solely on pantry ingredients - with variety"""
     user_id = await get_user_id_or_none(request)
     meal_type = data.meal_type if data else None
     filter_expiring = data.expiring_soon if data else False
+    
+    # Get previously suggested recipes to avoid (from query param)
+    avoid_recipes = data.avoid_recipes if data and hasattr(data, 'avoid_recipes') else []
     
     # Get pantry
     query = {"user_id": user_id} if user_id else {"user_id": None}
@@ -5215,15 +5218,29 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
     if filter_expiring and not expiring_items:
         raise HTTPException(status_code=400, detail="No ingredients expiring soon! Your pantry is fresh.")
     
+    # Enhanced meal contexts with clear examples and exclusions
     meal_context = ""
+    avoid_context = ""
     if meal_type:
         meal_contexts = {
-            "breakfast": "Create a breakfast recipe - something suitable for morning, like eggs, pancakes, smoothies, or toast-based dishes.",
-            "lunch": "Create a lunch recipe - something light to moderate like sandwiches, salads, soups, or wraps.",
-            "dinner": "Create a dinner recipe - something hearty and satisfying like a main course with sides.",
-            "snack": "Create a snack recipe - something small and quick like dips, energy balls, or finger foods."
+            "breakfast": """Create a BREAKFAST recipe - something suitable for morning.
+Good examples: eggs (scrambled, omelette, fried), pancakes, waffles, porridge, smoothies, toast with toppings, muffins, granola bowls.
+DO NOT create: burgers, pasta, curries, stews, tacos, steaks, casseroles.""",
+            "lunch": """Create a LUNCH recipe - something light to moderate for midday.
+Good examples: sandwiches, wraps, salads, soups, light pasta dishes, quesadillas, grain bowls.
+DO NOT create: heavy roasts, steaks, large casseroles, full breakfast plates.""",
+            "dinner": """Create a DINNER recipe - something hearty and satisfying as a main evening meal.
+Good examples: burgers, steaks, pasta dishes, curries, stir-fries, roasts, casseroles, tacos, fajitas, grilled meats, rice bowls with protein.
+Burgers, pasta, curries, and hearty meals are PERFECT for dinner.""",
+            "snack": """Create a SNACK recipe - something small and quick to eat between meals.
+Good examples: dips with crackers/veggies, energy balls, fruit snacks, nuts, popcorn, small bites, cheese plates.
+DO NOT create: full meals, main courses, or anything too heavy."""
         }
         meal_context = meal_contexts.get(meal_type, "")
+    
+    # Build avoid context if we have previously suggested recipes
+    if avoid_recipes:
+        avoid_context = f"\n\nIMPORTANT: DO NOT suggest these recipes or similar variations - suggest something COMPLETELY DIFFERENT:\n- " + "\n- ".join(avoid_recipes[:5])
     
     try:
         # Different prompts depending on whether we're focusing on expiring ingredients
@@ -5232,6 +5249,9 @@ async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeR
 Your PRIMARY goal is to create a recipe that USES UP the expiring ingredients provided.
 The recipe MUST include at least 2-3 of the expiring ingredients as main components.
 {meal_context}
+{avoid_context}
+
+IMPORTANT: Consider ALL available ingredients in the pantry to create variety. Don't just focus on the most common items - explore creative combinations!
 
 Return as JSON with format:
 {{
@@ -5252,34 +5272,53 @@ Return as JSON with format:
 Categories can be: vegan, vegetarian, pescatarian, low-fat, quick-easy
 Return ONLY valid JSON, no markdown."""
         else:
-            system_msg = """You are a creative chef that generates delicious recipes.
+            system_msg = f"""You are a creative chef that generates delicious AND VARIED recipes.
 Given a list of available ingredients, create a complete recipe that uses primarily those ingredients.
+
+VARIETY IS KEY: 
+- Look at ALL the ingredients available, not just the most common ones
+- Try to use ingredients that might be overlooked
+- Create something unexpected but delicious
+- Each suggestion should be COMPLETELY DIFFERENT from previous ones
+
+{meal_context}
+{avoid_context}
+
 You can suggest 1-2 common pantry staples that might be missing.
-""" + meal_context + """
 
 Return as JSON with format:
-{
+{{
     "name": "Recipe Name",
     "description": "Brief appetizing description",
     "servings": 4,
     "prep_time": "15 min",
     "cook_time": "30 min",
     "ingredients": [
-        {"name": "ingredient", "quantity": "2", "unit": "cups", "category": "produce", "from_pantry": true}
+        {{"name": "ingredient", "quantity": "2", "unit": "cups", "category": "produce", "from_pantry": true}}
     ],
     "instructions": ["Step 1", "Step 2", ...],
     "missing_ingredients": ["any item not in pantry but needed"],
     "categories": ["vegan", "quick-easy"]
-}
+}}
 
 Categories can be: vegan, vegetarian, pescatarian, low-fat, quick-easy
 Return ONLY valid JSON, no markdown."""
         
-        # Format pantry items
-        pantry_text = "\n".join([
-            f"- {item.get('name', '')} ({item.get('quantity', '')} {item.get('unit', '')})" 
-            for item in pantry['items'] if item.get('quantity', 0) > 0
-        ])
+        # Format ALL pantry items - highlight variety
+        pantry_items_list = [item for item in pantry['items'] if item.get('quantity', 0) > 0]
+        
+        # Group by category for better AI understanding
+        categorized_items = {}
+        for item in pantry_items_list:
+            cat = item.get('category', 'other')
+            if cat not in categorized_items:
+                categorized_items[cat] = []
+            categorized_items[cat].append(f"{item.get('name', '')} ({item.get('quantity', '')} {item.get('unit', '')})")
+        
+        pantry_text = ""
+        for cat, items in categorized_items.items():
+            if items:
+                pantry_text += f"\n{cat.upper()}:\n- " + "\n- ".join(items)
         
         # Build the prompt based on filter
         if filter_expiring:
@@ -5292,11 +5331,12 @@ Return ONLY valid JSON, no markdown."""
 🚨 EXPIRING SOON - MUST USE:
 {expiring_text}
 
-OTHER AVAILABLE INGREDIENTS (optional to use):
+ALL AVAILABLE INGREDIENTS (use these too for a complete recipe):
 {pantry_text}
 
 The recipe MUST use at least 2-3 of the expiring ingredients as main components.
-This is about reducing food waste - prioritize the expiring items!"""
+This is about reducing food waste - prioritize the expiring items!
+Be creative and explore all available ingredients!"""
         else:
             # Standard prompt with expiring items as optional priority
             expiring_context = ""
@@ -5305,14 +5345,17 @@ This is about reducing food waste - prioritize the expiring items!"""
                     f"- {item['name']} (expires in {item['days_until_expiry']} days)"
                     for item in expiring_items[:5]
                 ])
-                expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and should be used:\n{expiring_text}"
+                expiring_context = f"\n\nPRIORITY - These ingredients are expiring soon and could be incorporated:\n{expiring_text}"
             
-            user_prompt = f"""Create a delicious recipe using these available ingredients:
+            user_prompt = f"""Create a delicious and UNIQUE recipe using these available ingredients:
 
 {pantry_text}{expiring_context}
 
-Make sure the recipe is practical and tasty. Use primarily ingredients from the list.
-If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil."""
+IMPORTANT: 
+- Be creative! Look at ALL the ingredients, not just the obvious ones
+- Create something different and interesting
+- Use a good variety of what's available
+- If absolutely necessary, you can include 1-2 common staples like salt, pepper, or oil"""
         
         response = await openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -5320,12 +5363,12 @@ If absolutely necessary, you can include 1-2 common staples like salt, pepper, o
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_prompt}
             ],
-            max_tokens=2000
+            max_tokens=2000,
+            temperature=0.9  # Higher temperature for more variety
         )
         
         result = response.choices[0].message.content
         
-        import json
         clean_response = result.strip()
         
         if "```json" in clean_response:
