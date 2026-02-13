@@ -55,6 +55,9 @@ export default function MealSuggestions() {
   // Track skipped recipes for variety
   const [skippedRecipeIds, setSkippedRecipeIds] = useState([]);
   
+  // Track avoided AI recipes for variety
+  const [avoidedAIRecipes, setAvoidedAIRecipes] = useState([]);
+  
   // AI Generated Recipe State
   const [generatingRecipe, setGeneratingRecipe] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
