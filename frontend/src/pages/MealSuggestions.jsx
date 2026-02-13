@@ -109,17 +109,19 @@ export default function MealSuggestions() {
 
   useEffect(() => {
     fetchSuggestions(mealTypeFilter, expiringSoonFilter, skippedRecipeIds);
-    // Regenerate AI recipe when filter changes
-    generateAIRecipe();
+    // Regenerate AI recipe when filter changes - reset avoided recipes on filter change
+    setAvoidedAIRecipes([]);
+    generateAIRecipe([]);
   }, [mealTypeFilter, expiringSoonFilter]);
 
-  const generateAIRecipe = async () => {
+  const generateAIRecipe = async (avoidList = avoidedAIRecipes) => {
     setGeneratingRecipe(true);
     setGeneratedRecipe(null);
     try {
       const response = await api.generateAIRecipe(
         mealTypeFilter !== "all" ? mealTypeFilter : getMealTypeByTime(),
-        expiringSoonFilter  // Pass the expiring filter
+        expiringSoonFilter,  // Pass the expiring filter
+        avoidList  // Pass recipes to avoid
       );
       setGeneratedRecipe(response.data.recipe);
       if (expiringSoonFilter && response.data.recipe) {
@@ -134,6 +136,18 @@ export default function MealSuggestions() {
       }
     } finally {
       setGeneratingRecipe(false);
+    }
+  };
+
+  // Skip/Refresh AI recipe - generates a completely different one
+  const skipAIRecipe = () => {
+    if (generatedRecipe?.name) {
+      const newAvoidList = [...avoidedAIRecipes, generatedRecipe.name];
+      setAvoidedAIRecipes(newAvoidList);
+      generateAIRecipe(newAvoidList);
+      toast.info("Finding a different recipe...");
+    } else {
+      generateAIRecipe(avoidedAIRecipes);
     }
   };
 
