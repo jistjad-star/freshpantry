@@ -5167,6 +5167,7 @@ async def get_shared_recipes_legacy(share_id: str):
 class GenerateRecipeRequest(BaseModel):
     meal_type: Optional[str] = None
     expiring_soon: bool = False
+    avoid_recipes: Optional[List[str]] = []  # List of recipe names to avoid for variety
 
 @api_router.post("/suggestions/generate-recipe")
 async def generate_ai_recipe_from_pantry(request: Request, data: GenerateRecipeRequest = None):
