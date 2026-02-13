@@ -110,10 +110,11 @@ export const api = {
   addFromReceipt: (items) => axios.post(`${API}/pantry/add-from-receipt`, { items }),
 
   // Meal Suggestions
-  getMealSuggestions: (mealType = null, expiringSoon = false) => {
+  getMealSuggestions: (mealType = null, expiringSoon = false, skipIds = []) => {
     const params = {};
     if (mealType) params.meal_type = mealType;
     if (expiringSoon) params.expiring_soon = true;
+    if (skipIds && skipIds.length > 0) params.skip_ids = skipIds.join(',');
     return axios.get(`${API}/suggestions/meals`, { params });
   },
   generateAIRecipe: (mealType = null, expiringSoon = false) => axios.post(`${API}/suggestions/generate-recipe`, { meal_type: mealType, expiring_soon: expiringSoon }),
