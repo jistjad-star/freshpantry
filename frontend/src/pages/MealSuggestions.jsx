@@ -66,12 +66,13 @@ export default function MealSuggestions() {
   const [savingCocktail, setSavingCocktail] = useState(false);
   const [cocktailTypeFilter, setCocktailTypeFilter] = useState(null); // null = any, true = alcoholic, false = non-alcoholic
 
-  const fetchSuggestions = async (mealType = "all", expiringSoon = false) => {
+  const fetchSuggestions = async (mealType = "all", expiringSoon = false, skipIds = []) => {
     setLoading(true);
     try {
       const response = await api.getMealSuggestions(
         mealType !== "all" ? mealType : null,
-        expiringSoon
+        expiringSoon,
+        skipIds
       );
       setSuggestions(response.data.suggestions || []);
       setMessage(response.data.message || "");
@@ -83,14 +84,28 @@ export default function MealSuggestions() {
     }
   };
 
+  // Skip a recipe and get different suggestions
+  const skipRecipe = (recipeId) => {
+    const newSkipped = [...skippedRecipeIds, recipeId];
+    setSkippedRecipeIds(newSkipped);
+    fetchSuggestions(mealTypeFilter, expiringSoonFilter, newSkipped);
+    toast.info("Showing different suggestions");
+  };
+
+  // Reset skipped recipes when filter changes
+  const handleFilterChange = (newMealType) => {
+    setMealTypeFilter(newMealType);
+    setSkippedRecipeIds([]); // Reset skips on filter change
+  };
+
   useEffect(() => {
     // Auto-generate a recipe on first load
     generateAIRecipe();
-    fetchSuggestions(mealTypeFilter, expiringSoonFilter);
+    fetchSuggestions(mealTypeFilter, expiringSoonFilter, skippedRecipeIds);
   }, []);
 
   useEffect(() => {
-    fetchSuggestions(mealTypeFilter, expiringSoonFilter);
+    fetchSuggestions(mealTypeFilter, expiringSoonFilter, skippedRecipeIds);
     // Regenerate AI recipe when filter changes
     generateAIRecipe();
   }, [mealTypeFilter, expiringSoonFilter]);
