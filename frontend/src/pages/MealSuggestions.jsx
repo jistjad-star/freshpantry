@@ -405,7 +405,7 @@ export default function MealSuggestions() {
                     </Button>
                     <Button 
                       variant="outline"
-                      onClick={generateAIRecipe}
+                      onClick={skipAIRecipe}
                       disabled={generatingRecipe}
                       className="border-orange-300 text-orange-700 hover:bg-orange-50"
                       data-testid="try-another"
