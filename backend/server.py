@@ -2684,9 +2684,14 @@ async def parse_instructions_image(file: UploadFile = File(...)):
 # ---- Meal Suggestions Route ----
 
 @api_router.get("/suggestions/meals")
-async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None, expiring_soon: bool = False):
+async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None, expiring_soon: bool = False, skip_ids: Optional[str] = None):
     """Get meal suggestions based on pantry inventory, optionally filtered by meal type or expiring ingredients"""
     user_id = await get_user_id_or_none(request)
+    
+    # Parse skipped recipe IDs
+    skipped_recipe_ids = set()
+    if skip_ids:
+        skipped_recipe_ids = set(skip_ids.split(','))
     
     # Get pantry items
     query = {"user_id": user_id} if user_id else {"user_id": None}
@@ -2748,39 +2753,40 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
                 "omelette", "omelet", "toast", "porridge", "oatmeal", "cereal", "smoothie", 
                 "muffin", "muffins", "bacon", "sausage", "hash brown", "french toast",
                 "granola", "yogurt parfait", "scrambled", "fried egg", "benedict",
-                "croissant", "bagel"
+                "croissant", "bagel", "morning"
             ],
             "lunch": [
                 "lunch", "sandwich", "sandwiches", "salad", "salads", "soup", "soups",
-                "wrap", "wraps", "bowl", "bowls", "panini", "quesadilla", "tacos", "taco",
-                "burrito", "pita", "hummus", "bruschetta", "light", "quick"
+                "wrap", "wraps", "panini", "quesadilla", "pita", "hummus", "bruschetta", 
+                "light", "quick lunch", "midday"
             ],
             "dinner": [
                 "dinner", "roast", "steak", "curry", "curries", "casserole", "pie", "pies",
                 "lasagna", "lasagne", "risotto", "stew", "beef", "pork", "lamb", "chicken",
                 "fish", "salmon", "cod", "roasted", "baked", "grilled", "braised",
                 "shepherd", "cottage pie", "bolognese", "carbonara", "tikka", "korma",
-                "thai", "chinese", "indian", "mexican", "mediterranean"
+                "thai", "chinese", "indian", "mexican", "mediterranean", "burger", "burgers",
+                "meatball", "meatballs", "chili", "chilli", "tacos", "taco", "fajita", "fajitas",
+                "enchilada", "burrito", "bowl", "bowls", "stir fry", "stir-fry", "noodles",
+                "pasta", "spaghetti", "penne", "rigatoni", "mac and cheese", "mac & cheese"
             ],
             "snack": [
                 "snack", "snacks", "cookie", "cookies", "cake", "bar", "bars", "dip", "dips",
                 "nuts", "fruit", "bites", "balls", "energy", "popcorn", "chips", "nachos",
-                "trail mix", "crackers"
+                "trail mix", "crackers", "appetizer", "appetiser"
             ]
         }
         
-        # Some items can be multi-meal - pasta and stir fry work for lunch AND dinner
-        multi_meal_items = {
-            "pasta": ["lunch", "dinner"],
-            "stir fry": ["lunch", "dinner"],
-            "stir-fry": ["lunch", "dinner"],
-            "noodles": ["lunch", "dinner"],
-            "noodle": ["lunch", "dinner"],
-            "rice": ["lunch", "dinner"],
-            "fried rice": ["lunch", "dinner"],
+        # Items that are ONLY for specific meals (exclusions)
+        meal_exclusions = {
+            "breakfast": ["burger", "steak", "curry", "lasagna", "stew", "roast", "casserole", "taco", "burrito"],
+            "lunch": ["roast", "stew", "casserole", "braised", "slow cook"],
+            "dinner": [],  # Dinner can include most things
+            "snack": ["roast", "steak", "curry", "lasagna", "stew", "pasta", "burger"]
         }
         
         keywords = meal_keywords.get(meal_type, [])
+        exclusions = meal_exclusions.get(meal_type, [])
         
         recipes = []
         for r in all_recipes:
@@ -2788,24 +2794,20 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
             recipe_desc = r.get('description', '').lower()
             recipe_text = recipe_name + " " + recipe_desc
             
+            # First check exclusions - skip if recipe contains excluded keywords
+            if any(excl in recipe_text for excl in exclusions):
+                continue
+            
             # Check if any keyword matches
             if any(kw in recipe_text for kw in keywords):
                 recipes.append(r)
-            else:
-                # Check multi-meal items
-                for item, valid_meals in multi_meal_items.items():
-                    if item in recipe_text and meal_type in valid_meals:
-                        recipes.append(r)
-                        break
         
-        # If still no matches and looking for breakfast/lunch, be more lenient
-        # Don't include heavy dinner items in breakfast/lunch
-        if not recipes and meal_type in ["breakfast", "lunch"]:
-            dinner_only_keywords = ["roast", "stew", "casserole", "braised", "slow cook"]
-            recipes = [
-                r for r in all_recipes
-                if not any(kw in r.get('name', '').lower() for kw in dinner_only_keywords)
-            ]
+        # If no matches found for dinner, include anything not excluded
+        if not recipes and meal_type == "dinner":
+            recipes = [r for r in all_recipes if not any(
+                excl in (r.get('name', '').lower() + " " + r.get('description', '').lower()) 
+                for excl in ["breakfast", "morning", "pancake", "waffle", "oatmeal", "cereal", "granola"]
+            )]
     else:
         recipes = all_recipes
     
@@ -2813,8 +2815,8 @@ async def get_meal_suggestions(request: Request, meal_type: Optional[str] = None
         meal_label = meal_type.title() if meal_type else "any"
         return {"suggestions": [], "message": f"No {meal_label} recipes found. Add some recipes first!"}
     
-    # Get improved suggestions with shared ingredient grouping
-    suggestions = await suggest_meals_with_shared_ingredients(pantry_items, recipes, expiring_soon)
+    # Get improved suggestions with variety - pass skipped IDs
+    suggestions = await suggest_meals_with_variety(pantry_items, recipes, expiring_soon, skipped_recipe_ids)
     
     meal_label = f"{meal_type} " if meal_type else ""
     expiry_label = ""
