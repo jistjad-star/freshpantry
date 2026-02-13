@@ -117,7 +117,12 @@ export const api = {
     if (skipIds && skipIds.length > 0) params.skip_ids = skipIds.join(',');
     return axios.get(`${API}/suggestions/meals`, { params });
   },
-  generateAIRecipe: (mealType = null, expiringSoon = false) => axios.post(`${API}/suggestions/generate-recipe`, { meal_type: mealType, expiring_soon: expiringSoon }),
+  generateAIRecipe: (mealType = null, expiringSoon = false, avoidRecipes = []) => 
+    axios.post(`${API}/suggestions/generate-recipe`, { 
+      meal_type: mealType, 
+      expiring_soon: expiringSoon,
+      avoid_recipes: avoidRecipes 
+    }),
   
   // Cocktail Suggestions
   generateAICocktail: (alcoholic = null) => axios.post(`${API}/suggestions/generate-cocktail`, { alcoholic }),
