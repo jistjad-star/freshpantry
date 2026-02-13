@@ -1450,6 +1450,216 @@ RULES:
         logger.error(f"Error extracting instructions from image: {e}", exc_info=True)
         return "", [], "", "", ""
 
+async def suggest_meals_with_variety(pantry_items: List[dict], recipes: List[dict], prioritize_expiring: bool = False, skipped_ids: set = None) -> List[dict]:
+    """
+    Suggest meals with variety - uses the FULL pantry and ensures diverse suggestions.
+    When recipes are skipped, suggests completely different recipes.
+    """
+    if not recipes:
+        return []
+    
+    skipped_ids = skipped_ids or set()
+    
+    # Build comprehensive pantry ingredient set
+    pantry_ingredient_names = set()
+    pantry_items_lookup = {}
+    expiring_ingredients = set()
+    
+    # Track ALL pantry items for variety scoring
+    all_pantry_names = []
+    
+    for item in pantry_items:
+        name = item.get('name', '')
+        normalized = normalize_ingredient_name(name)
+        base_name = get_base_ingredient_name(name)
+        
+        if normalized:
+            all_pantry_names.append(normalized)
+            pantry_ingredient_names.add(normalized)
+            pantry_items_lookup[normalized] = name
+            
+            if base_name and base_name != normalized:
+                pantry_ingredient_names.add(base_name)
+                pantry_items_lookup[base_name] = name
+            
+            # Add individual significant words
+            words = normalized.split()
+            for word in words:
+                if len(word) > 3 and word not in ['with', 'from', 'free', 'range', 'fresh', 'large', 'small', 'medium']:
+                    pantry_ingredient_names.add(word)
+                    pantry_items_lookup[word] = name
+            
+            # Track expiring items
+            if item.get('days_until_expiry') is not None and item['days_until_expiry'] <= 7:
+                expiring_ingredients.add(normalized)
+                if base_name:
+                    expiring_ingredients.add(base_name)
+    
+    def ingredient_matches_pantry(recipe_ing_name: str) -> tuple:
+        """Check if a recipe ingredient matches something in pantry"""
+        normalized = normalize_ingredient_name(recipe_ing_name)
+        base_name = get_base_ingredient_name(recipe_ing_name)
+        
+        if normalized in pantry_ingredient_names:
+            return True, normalized
+        if base_name in pantry_ingredient_names:
+            return True, base_name
+        
+        recipe_words = set(normalized.split())
+        for word in recipe_words:
+            if len(word) > 3 and word in pantry_ingredient_names:
+                return True, word
+        
+        for pantry_name in pantry_ingredient_names:
+            if len(pantry_name) > 3 and len(normalized) > 3:
+                if pantry_name in normalized or normalized in pantry_name:
+                    return True, pantry_name
+        
+        return False, None
+    
+    # Categorize pantry items for variety tracking
+    ingredient_categories = {
+        'protein': ['chicken', 'beef', 'pork', 'lamb', 'fish', 'salmon', 'shrimp', 'tofu', 'egg', 'turkey', 'bacon', 'sausage', 'mince'],
+        'carb': ['pasta', 'rice', 'bread', 'potato', 'noodle', 'tortilla', 'couscous', 'quinoa'],
+        'vegetable': ['onion', 'garlic', 'tomato', 'pepper', 'carrot', 'broccoli', 'spinach', 'mushroom', 'zucchini', 'lettuce', 'cabbage'],
+        'dairy': ['cheese', 'milk', 'cream', 'butter', 'yogurt'],
+        'sauce': ['sauce', 'paste', 'oil', 'vinegar', 'soy', 'mayo', 'ketchup']
+    }
+    
+    def get_recipe_category(recipe):
+        """Determine the main category of a recipe based on its key ingredients"""
+        recipe_name = recipe.get('name', '').lower()
+        ingredients = [ing.get('name', '').lower() for ing in recipe.get('ingredients', [])]
+        all_text = recipe_name + ' ' + ' '.join(ingredients)
+        
+        # Determine primary protein
+        for protein in ingredient_categories['protein']:
+            if protein in all_text:
+                return protein
+        
+        # Determine primary carb
+        for carb in ingredient_categories['carb']:
+            if carb in all_text:
+                return carb
+        
+        return 'other'
+    
+    # Score each recipe
+    suggestions = []
+    used_categories = set()  # Track categories of already-suggested recipes
+    
+    for recipe in recipes:
+        recipe_id = recipe.get('id')
+        
+        # Skip if this recipe was already skipped
+        if recipe_id in skipped_ids:
+            continue
+        
+        recipe_name = recipe.get('name', '')
+        recipe_category = get_recipe_category(recipe)
+        original_recipe_ings = [ing.get('name', '') for ing in recipe.get('ingredients', [])]
+        
+        if not original_recipe_ings:
+            continue
+        
+        # Calculate pantry matches
+        available = []
+        missing = []
+        matched_pantry_items = set()
+        
+        for ing_name in original_recipe_ings:
+            matched, matched_key = ingredient_matches_pantry(ing_name)
+            if matched:
+                available.append(ing_name)
+                matched_pantry_items.add(matched_key)
+            else:
+                missing.append(ing_name)
+        
+        total_ings = len(original_recipe_ings)
+        match_pct = int((len(available) / total_ings) * 100) if total_ings > 0 else 0
+        
+        # Calculate VARIETY score - reward recipes using DIFFERENT pantry items
+        # Count how many unique pantry items this recipe would use
+        unique_pantry_coverage = len(matched_pantry_items)
+        
+        # Count expiring ingredients used
+        expiring_used_list = []
+        if prioritize_expiring:
+            for ing_name in original_recipe_ings:
+                normalized = normalize_ingredient_name(ing_name)
+                base_name = get_base_ingredient_name(ing_name)
+                if normalized in expiring_ingredients or base_name in expiring_ingredients:
+                    expiring_used_list.append(ing_name)
+        expiring_used = len(expiring_used_list)
+        
+        # Calculate composite score with VARIETY emphasis
+        # Higher weight on pantry coverage to encourage using different items
+        base_score = (match_pct * 0.35) + (unique_pantry_coverage * 5 * 0.35)
+        expiring_bonus = expiring_used * 30 if prioritize_expiring else 0
+        
+        # Add randomization factor for variety (0-15 points)
+        import random
+        variety_factor = random.randint(0, 15)
+        
+        composite_score = base_score + expiring_bonus + variety_factor
+        
+        suggestions.append({
+            "recipe_id": recipe_id,
+            "recipe_name": recipe_name,
+            "recipe_category": recipe_category,
+            "match_percentage": match_pct,
+            "available_ingredients": list(available),
+            "missing_ingredients": list(missing),
+            "pantry_items_used": unique_pantry_coverage,
+            "expiring_ingredients_used": expiring_used if prioritize_expiring else None,
+            "expiring_ingredients_list": expiring_used_list if prioritize_expiring else [],
+            "composite_score": composite_score,
+            "recommendation": get_variety_recommendation(match_pct, unique_pantry_coverage, expiring_used if prioritize_expiring else 0, len(all_pantry_names))
+        })
+    
+    # Sort by composite score
+    suggestions.sort(key=lambda x: x['composite_score'], reverse=True)
+    
+    # Ensure variety in top results - don't show too many of same category
+    diverse_suggestions = []
+    category_counts = {}
+    
+    for suggestion in suggestions:
+        cat = suggestion['recipe_category']
+        current_count = category_counts.get(cat, 0)
+        
+        # Allow max 2 recipes per category in top results
+        if current_count < 2:
+            diverse_suggestions.append(suggestion)
+            category_counts[cat] = current_count + 1
+        
+        if len(diverse_suggestions) >= 15:
+            break
+    
+    # If we don't have enough diverse suggestions, add more
+    if len(diverse_suggestions) < 10:
+        for suggestion in suggestions:
+            if suggestion not in diverse_suggestions:
+                diverse_suggestions.append(suggestion)
+            if len(diverse_suggestions) >= 15:
+                break
+    
+    return diverse_suggestions
+
+def get_variety_recommendation(match_pct: int, pantry_coverage: int, expiring_count: int, total_pantry: int) -> str:
+    """Generate a recommendation message emphasizing variety"""
+    if expiring_count > 0:
+        return f"Uses {expiring_count} item(s) expiring soon!"
+    if match_pct >= 90:
+        return "You have everything needed!"
+    if pantry_coverage >= 5:
+        return f"Great use of {pantry_coverage} pantry items!"
+    if match_pct >= 70:
+        return "Good match with your pantry."
+    if match_pct >= 50:
+        return "A few items to buy."
+    return "Worth a try with some shopping!"
+
 async def suggest_meals_with_shared_ingredients(pantry_items: List[dict], recipes: List[dict], prioritize_expiring: bool = False) -> List[dict]:
     """
     Suggest meals with intelligent grouping based on shared ingredients.
