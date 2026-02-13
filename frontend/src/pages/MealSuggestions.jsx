@@ -52,6 +52,9 @@ export default function MealSuggestions() {
   const [mealTypeFilter, setMealTypeFilter] = useState(getMealTypeByTime());
   const [expiringSoonFilter, setExpiringSoonFilter] = useState(false);
   
+  // Track skipped recipes for variety
+  const [skippedRecipeIds, setSkippedRecipeIds] = useState([]);
+  
   // AI Generated Recipe State
   const [generatingRecipe, setGeneratingRecipe] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
